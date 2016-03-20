@@ -79,7 +79,7 @@ PHP_FUNCTION(path_lookup)
     zval *z_array, **data, **data2;
     HashTable *arr;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &path, &path_len, &z_array) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "as", &z_array, &path, &path_len) == FAILURE) {
         return;
     }
 
@@ -98,7 +98,7 @@ PHP_FUNCTION(path_lookup)
     arr = HASH_OF(z_array);
     zend_hash_internal_pointer_reset(arr);
 
-
+    array_init(return_value);
 
     while(*p != '\0') {
 
@@ -141,19 +141,14 @@ PHP_FUNCTION(path_lookup)
                 if(buildingKeyName) {
                     *curBuffer = *p;
                     curBuffer++;
+                    //IF WE AT THE END!
                     if(*(p+1) == '\0') {
                         buildingKeyName = false;
                         //Search the array for key
                         *curBuffer = '\0';
                         int len = strlen(buffer);
-                        zend_hash_find(arr, buffer, len+1, (void**)&data2);
-//
-//                        arr = HASH_OF((zval *)data);
-//
-//                        zend_hash_get_current_data(arr, (void**)&data);
-//                        zend_hash_find(arr, buffer, len+1, (void**)&data);
-//                        printf("We found a new key name: %s\n", buffer);
-                        curBuffer = buffer;
+                        zend_hash_find(arr, buffer, len+1, (void**)&data);
+                        add_next_index_zval(return_value, *data);
                     }
                 }
         }
@@ -161,8 +156,8 @@ PHP_FUNCTION(path_lookup)
         p++;
     }
 
-    RETVAL_ZVAL_FAST(*data2);
-
+    return;
+//    RETVAL_ZVAL_FAST(*data);
 //    RETURN_STRING(curBuffer, strlen(curBuffer));
 
 //    RETURN_NULL();
