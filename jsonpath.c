@@ -35,6 +35,8 @@ ZEND_DECLARE_MODULE_GLOBALS(jsonpath)
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
 
+void iterate(HashTable *arr, char * p, zval **data, zval * return_value);
+
 /* {{{ PHP_INI
  */
 /* Remove comments and fill if you need to have entries in php.ini
@@ -74,31 +76,41 @@ PHP_FUNCTION(confirm_jsonpath_compiled)
 
 PHP_FUNCTION(path_lookup)
 {
+
     char * path;
     int path_len;
-    zval *z_array, **data, **data2;
+    zval *z_array, **data;
     HashTable *arr;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "as", &z_array, &path, &path_len) == FAILURE) {
         return;
     }
 
-//Start
+    arr = HASH_OF(z_array);
+    zend_hash_internal_pointer_reset(arr);
+
+    array_init(return_value);
+
+    iterate(arr, path, data, return_value);
+
+    return;
+//    RETVAL_ZVAL_FAST(*data);
+//    RETURN_STRING(curBuffer, strlen(curBuffer));
+
+//    RETURN_NULL();
+//End
+}
+
+void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
+{
 
     int bufSize = 100;
     char buffer[bufSize];
 
     char * curBuffer = buffer;
 
-    char * p = path;
-
     bool buildingKeyName = false;
     bool insideSubExpression = true;
-
-    arr = HASH_OF(z_array);
-    zend_hash_internal_pointer_reset(arr);
-
-    array_init(return_value);
 
     while(*p != '\0') {
 
@@ -120,7 +132,7 @@ PHP_FUNCTION(path_lookup)
                 if(*(p+1) != '\0') {
                     switch(*(p+1)) {
                         case '.':
-//                            printf("This is a deep scan!\n");
+//                            iterate(arr, p, data, return_vale);
                             break;
                         case '*':
 //                            printf("This is a wildcard match\n");
@@ -149,19 +161,13 @@ PHP_FUNCTION(path_lookup)
                         int len = strlen(buffer);
                         zend_hash_find(arr, buffer, len+1, (void**)&data);
                         add_next_index_zval(return_value, *data);
+                        return;
                     }
                 }
         }
 
         p++;
     }
-
-    return;
-//    RETVAL_ZVAL_FAST(*data);
-//    RETURN_STRING(curBuffer, strlen(curBuffer));
-
-//    RETURN_NULL();
-//End
 }
 
 /* {{{ php_jsonpath_init_globals
