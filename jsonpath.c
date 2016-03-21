@@ -135,18 +135,13 @@ void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
                         case '.':
                             p++;
                             zval **tmp;
-                            char * tmp_p;
-                            HashTable *arr_tmp = arr;
                             for(
                                 zend_hash_internal_pointer_reset_ex(arr, &pos);
                                 zend_hash_get_current_data_ex(arr, (void**) &tmp, &pos) == SUCCESS;
                                 zend_hash_move_forward_ex(arr, &pos)
                             ) {
-                                tmp_p = p;
-                                arr_tmp = HASH_OF(*tmp);
-                                iterate(arr_tmp, tmp_p, tmp, return_value);
+                                iterate(HASH_OF(*tmp), p, tmp, return_value);
                             }
-//                            iterate(arr, p, data, return_vale);
                             return;
                         case '*':
 //                            printf("This is a wildcard match\n");
@@ -173,8 +168,8 @@ void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
                         //Search the array for key
                         *curBuffer = '\0';
                         int len = strlen(buffer);
+                                                    PHPWRITE(buffer, len+1);
                         if(arr != NULL && zend_hash_find(arr, buffer, len+1, (void**)&data) == SUCCESS) {
-                            PHPWRITE(buffer, len+1);
                             add_next_index_zval(return_value, *data);
                         }
                         return;
