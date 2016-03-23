@@ -36,7 +36,7 @@ ZEND_DECLARE_MODULE_GLOBALS(jsonpath)
 static int le_jsonpath;
 
 void iterate(HashTable *arr, char * p, zval **data, zval * return_value);
-
+void deepSearch(HashTable * arr, char * field_name, zval * return_value);
 /* {{{ PHP_INI
  */
 /* Remove comments and fill if you need to have entries in php.ini
@@ -106,12 +106,12 @@ void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
 
     int bufSize = 100;
     char buffer[bufSize];
+    char nextField[bufSize];
 
     char * curBuffer = buffer;
-
+    char * curNextField = nextField;
     bool buildingKeyName = false;
     bool insideSubExpression = true;
-    HashPosition pos;
 
     while(*p != '\0') {
 
@@ -133,16 +133,14 @@ void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
                 if(*(p+1) != '\0') {
                     switch(*(p+1)) {
                         case '.':
-                            p++;
-                            zval **tmp;
-                            for(
-                                zend_hash_internal_pointer_reset_ex(arr, &pos);
-                                zend_hash_get_current_data_ex(arr, (void**) &tmp, &pos) == SUCCESS;
-                                zend_hash_move_forward_ex(arr, &pos)
-                            ) {
-                                iterate(HASH_OF(*tmp), p, tmp, return_value);
+                            p+=2;
+                            while(*p != '\0') {
+                                *curNextField = *p;
+                                p++;
+                                curNextField++;
                             }
-                            return;
+                            *curNextField = '\0';
+                            deepSearch(arr, nextField, return_value);
                         case '*':
 //                            printf("This is a wildcard match\n");
                             p++;
@@ -168,7 +166,7 @@ void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
                         //Search the array for key
                         *curBuffer = '\0';
                         int len = strlen(buffer);
-                                                    PHPWRITE(buffer, len+1);
+                        PHPWRITE(buffer, len+1);
                         if(arr != NULL && zend_hash_find(arr, buffer, len+1, (void**)&data) == SUCCESS) {
                             add_next_index_zval(return_value, *data);
                         }
@@ -178,6 +176,29 @@ void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
         }
 
         p++;
+    }
+}
+
+void deepSearch(HashTable * arr, char * field_name, zval * return_value)
+{
+    if(arr == NULL) {
+        return;
+    }
+
+    zval *z_array, **data;
+
+    if(zend_hash_find(arr, field_name, strlen(field_name)+1, (void**)&data) == SUCCESS) {
+        add_next_index_zval(return_value, *data);
+    }
+
+    HashPosition pos;
+    zval **tmp;
+    for(
+        zend_hash_internal_pointer_reset_ex(arr, &pos);
+        zend_hash_get_current_data_ex(arr, (void**) &tmp, &pos) == SUCCESS;
+        zend_hash_move_forward_ex(arr, &pos)
+    ) {
+        deepSearch(HASH_OF(*tmp), field_name, return_value);
     }
 }
 
