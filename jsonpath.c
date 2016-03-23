@@ -37,6 +37,8 @@ static int le_jsonpath;
 
 void iterate(HashTable *arr, char * p, zval **data, zval * return_value);
 void deepSearch(HashTable * arr, char * field_name, zval * return_value);
+void deepJump(char * field_name, HashTable * arr, char * p, zval **data, zval * return_value);
+
 /* {{{ PHP_INI
  */
 /* Remove comments and fill if you need to have entries in php.ini
@@ -134,13 +136,19 @@ void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
                     switch(*(p+1)) {
                         case '.':
                             p+=2;
-                            while(*p != '\0') {
+                            while(*p != '\0' && *p != '.') {
                                 *curNextField = *p;
                                 p++;
                                 curNextField++;
                             }
                             *curNextField = '\0';
-                            deepSearch(arr, nextField, return_value);
+                            if(*p != '\0') {
+//                                PHPWRITE("DEEP JUMP", strlen("DEEP JUMP"));
+                                deepJump(nextField, arr, p, data, return_value);
+                            } else {
+//                                PHPWRITE("DEEP SEARCH", strlen("DEEP SEARCH"));
+                                deepSearch(arr, nextField, return_value);
+                            }
                         case '*':
 //                            printf("This is a wildcard match\n");
                             p++;
@@ -176,6 +184,29 @@ void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
         }
 
         p++;
+    }
+}
+
+void deepJump(char * field_name, HashTable * arr, char * p, zval **data, zval * return_value)
+{
+    if(arr == NULL) {
+        return;
+    }
+
+    zval *z_array, **data1;
+
+    if(zend_hash_find(arr, field_name, strlen(field_name)+1, (void**)&data1) == SUCCESS) {
+        iterate(HASH_OF(*data1), p, data, return_value);
+    }
+
+    HashPosition pos;
+    zval **tmp;
+    for(
+        zend_hash_internal_pointer_reset_ex(arr, &pos);
+        zend_hash_get_current_data_ex(arr, (void**) &tmp, &pos) == SUCCESS;
+        zend_hash_move_forward_ex(arr, &pos)
+    ) {
+        deepJump(field_name, HASH_OF(*tmp), p, data, return_value);
     }
 }
 
