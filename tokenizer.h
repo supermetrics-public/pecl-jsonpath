@@ -20,13 +20,11 @@ typedef enum {
 
 struct token {
     token_type type;
-    union {
-        struct {
-            char val[100];
-            child_type type;
-            int index_count;
-            int indexes[100];
-        } child;
+    struct {
+        char val[100];
+        child_type type;
+        int index_count;
+        int indexes[100];
     } prop;
 };
 

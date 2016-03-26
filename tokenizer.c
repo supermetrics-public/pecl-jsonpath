@@ -23,14 +23,14 @@ bool tokenize(char ** p, struct token * tok) {
                 break;
             } else {
                 tok->type = CHILD_KEY;
-                tok->prop.child.type = SINGLE_KEY;
+                tok->prop.type = SINGLE_KEY;
             }
 
-            strcpy(tok->prop.child.val, ""); //TODO Needed?
+            strcpy(tok->prop.val, ""); //TODO Needed?
 
             while(*(*p+1) != '\0' && *(*p+1) != '.' && *(*p+1) != '[') {
                 (*p)++;
-                strncat(tok->prop.child.val, *p, 1);
+                strncat(tok->prop.val, *p, 1);
             }
 
             (*p)++;
@@ -99,33 +99,33 @@ void tokenize_bracket_contents(char * contents, struct token * tok)
         switch(*what) {
             case ':':
                 what = strtok(contents, ":");
-                tok->prop.child.indexes[0] = atoi(what); //TODO error checking
+                tok->prop.indexes[0] = atoi(what); //TODO error checking
                 what = strtok(NULL, ":");
-                tok->prop.child.indexes[1] = atoi(what); //TODO error checking
-                tok->prop.child.index_count = 2;
-                tok->prop.child.type = RANGE;
+                tok->prop.indexes[1] = atoi(what); //TODO error checking
+                tok->prop.index_count = 2;
+                tok->prop.type = RANGE;
                 break;
             case '*':
                 printf("ANYaaaa");
-                tok->prop.child.type = ANY;
+                tok->prop.type = ANY;
                 break;
             case ',':
-                tok->prop.child.type = INDEX;
+                tok->prop.type = INDEX;
 
                 count = 0;
                 what = strtok(contents, ",");
-                tok->prop.child.index_count = 0;
+                tok->prop.index_count = 0;
 
                 while(what != NULL) {
-                    tok->prop.child.indexes[count++] = atoi(what); //TODO error checking
-                    tok->prop.child.index_count++;
+                    tok->prop.indexes[count++] = atoi(what); //TODO error checking
+                    tok->prop.index_count++;
                     what = strtok(NULL, ",");
                 }
                 break;
         }
     } else {
-        tok->prop.child.index_count = 1;
-        tok->prop.child.indexes[0] = atoi(contents); //TODO error checking
-        tok->prop.child.type = INDEX;
+        tok->prop.index_count = 1;
+        tok->prop.indexes[0] = atoi(contents); //TODO error checking
+        tok->prop.type = INDEX;
     }
 }
