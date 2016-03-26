@@ -14,7 +14,8 @@ typedef enum {
 typedef enum {
     RANGE,
     INDEX,
-    ANY
+    ANY,
+    SINGLE_KEY
 } child_type;
 
 struct token {

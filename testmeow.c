@@ -9,7 +9,7 @@ int main() {
 
     token_struct.type = CHILD_KEY;
 
-    char * input_str = "$.*.lol[1].hahah[1:12].hahahah[1,34,28,32]";
+        char * input_str = "$.*.lol[111].hahah[1:12].hahahah[1,34,28,32].meow";
 
     char * save_ptr = input_str;
 
@@ -42,16 +42,13 @@ int main() {
                         }
                         break;
                     case ANY:
+                    case SINGLE_KEY:
                         break;
                 }
                 printf("\n");
                 break;
         }
     }
-//    struct token a;
-//    a.type = ROOT;
-//    strcpy(a.prop.child.val, "Some string");
-//
-//    printf("%s", a.prop.child.val);
+
     return 0;
 }
