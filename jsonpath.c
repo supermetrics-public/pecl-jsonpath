@@ -130,7 +130,20 @@ void iterate(zval *arr, char * input_str, zval * return_value)
             case ROOT:
                 break;
             case WILD_CARD:
-                break;
+
+                if(*save_ptr == '\0') {
+                    //TODO Throw some error
+                }
+                for(
+                    zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
+                    zend_hash_get_current_data_ex(HASH_OF(arr), (void**) &data, &pos) == SUCCESS;
+                    zend_hash_move_forward_ex(HASH_OF(arr), &pos)
+                ) {
+                    ALLOC_ZVAL(zv_dest);
+                    MAKE_COPY_ZVAL(data, zv_dest);
+                    add_next_index_zval(return_value, zv_dest);
+                }
+                return;
             case DEEP_SCAN:
                 if(*save_ptr == '\0') {
                     deepSearch(arr, token_struct.prop.val, return_value);
