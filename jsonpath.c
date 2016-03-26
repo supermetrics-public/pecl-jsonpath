@@ -174,7 +174,24 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                         }
                         return;
                     case ANY:
-                        break;
+
+                        if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
+                            for(
+                                zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
+                                zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
+                                zend_hash_move_forward_ex(HASH_OF(*data), &pos)
+                            ) {
+                                if(*save_ptr == '\0') {
+                                    ALLOC_ZVAL(zv_dest);
+                                    MAKE_COPY_ZVAL(data2, zv_dest);
+                                    add_next_index_zval(return_value, zv_dest);
+                                } else {
+                                    iterate(*data2, save_ptr, return_value);
+                                }
+                            }
+                        }
+
+                        return;
                     case SINGLE_KEY:
                         if(arr == NULL) {
                             return;

@@ -111,7 +111,6 @@ void tokenize_bracket_contents(char * contents, struct token * tok)
                 tok->prop.type = RANGE;
                 break;
             case '*':
-                printf("ANYaaaa");
                 tok->prop.type = ANY;
                 break;
             case ',':
