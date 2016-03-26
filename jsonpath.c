@@ -22,10 +22,13 @@
 #include "config.h"
 #endif
 
+
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
+#include "jsonpathtokenizer.h"
 #include "php_jsonpath.h"
+
 #include <stdbool.h>
 
 /* If you declare any globals in php_jsonpath.h uncomment this:
@@ -35,9 +38,9 @@ ZEND_DECLARE_MODULE_GLOBALS(jsonpath)
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
 
-void iterate(HashTable *arr, char * p, zval **data, zval * return_value);
-void deepSearch(HashTable * arr, char * field_name, zval * return_value);
-void deepJump(char * field_name, HashTable * arr, char * p, zval **data, zval * return_value);
+void iterate(zval *arr, char * input_str, zval * return_value);
+void deepSearch(zval * arr, char * field_name, zval * return_value);
+void deepJump(char * field_name, zval * arr, char * p, zval * return_value);
 
 /* {{{ PHP_INI
  */
@@ -81,19 +84,18 @@ PHP_FUNCTION(path_lookup)
 
     char * path;
     int path_len;
-    zval *z_array, **data;
+    zval *z_array;
     HashTable *arr;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "as", &z_array, &path, &path_len) == FAILURE) {
         return;
     }
 
-    arr = HASH_OF(z_array);
-    zend_hash_internal_pointer_reset(arr);
+//    zend_hash_internal_pointer_reset(arr);
 
     array_init(return_value);
 
-    iterate(arr, path, data, return_value);
+    iterate(z_array, path, return_value);
 
     return;
 //    RETVAL_ZVAL_FAST(*data);
@@ -103,91 +105,150 @@ PHP_FUNCTION(path_lookup)
 //End
 }
 
-void iterate(HashTable *arr, char * p, zval **data, zval * return_value)
+void iterate(zval *arr, char * input_str, zval * return_value)
 {
+    struct token token_struct;
+    char * save_ptr = input_str;
+    struct token * token_ptr = &token_struct;
+    zval **data;
 
-    int bufSize = 100;
-    char buffer[bufSize];
-    char nextField[bufSize];
+    while(tokenize(&save_ptr, token_ptr)) {
 
-    char * curBuffer = buffer;
-    char * curNextField = nextField;
-    bool buildingKeyName = false;
-    bool insideSubExpression = true;
-
-    while(*p != '\0') {
-
-        switch(*p) {
-            case '$':
-//                printf("WE STARTIN!!\n");
+        switch(token_struct.type) {
+            case ROOT:
                 break;
-            case '.':
-                if(buildingKeyName) {
-                    buildingKeyName = false;
-                    *curBuffer = '\0';
-                    int len = strlen(buffer);
-                    zend_hash_find(arr, buffer, len+1, (void**)&data);
-
-                    arr = HASH_OF(*data);
-
-                    curBuffer = buffer;
-                }
-                if(*(p+1) != '\0') {
-                    switch(*(p+1)) {
-                        case '.':
-                            p+=2;
-                            while(*p != '\0' && *p != '.') {
-                                *curNextField = *p;
-                                p++;
-                                curNextField++;
-                            }
-                            *curNextField = '\0';
-                            if(*p != '\0') {
-//                                PHPWRITE("DEEP JUMP", strlen("DEEP JUMP"));
-                                deepJump(nextField, arr, p, data, return_value);
-                            } else {
-//                                PHPWRITE("DEEP SEARCH", strlen("DEEP SEARCH"));
-                                deepSearch(arr, nextField, return_value);
-                            }
-                        case '*':
-//                            printf("This is a wildcard match\n");
-                            p++;
-                            break;
-                        case '[':
-//                            printf("We're in some sub-expression\n");
-                            insideSubExpression = true;
-                            break;
-                        default:
-                            buildingKeyName = true;
-//                            printf("We're building a key name\n");
-                            break;
-                    }
-                }
+            case WILD_CARD:
                 break;
-            default:
-                if(buildingKeyName) {
-                    *curBuffer = *p;
-                    curBuffer++;
-                    //IF WE AT THE END!
-                    if(*(p+1) == '\0') {
-                        buildingKeyName = false;
-                        //Search the array for key
-                        *curBuffer = '\0';
-                        int len = strlen(buffer);
-                        PHPWRITE(buffer, len+1);
-                        if(arr != NULL && zend_hash_find(arr, buffer, len+1, (void**)&data) == SUCCESS) {
-                            add_next_index_zval(return_value, *data);
+            case DEEP_SCAN:
+                if(*save_ptr == '\0') {
+                    deepSearch(arr, token_struct.prop.val, return_value);
+                } else {
+                    deepJump(token_struct.prop.val, arr, save_ptr, return_value);
+                }
+                return;
+            case CHILD_KEY:
+                switch(token_struct.prop.type) {
+                    case RANGE:
+                        break;
+                    case INDEX:
+//                        for(int x = 0; x < token_struct.prop.index_count; x++) {
+//                            printf(" Index %d ", token_struct.prop.indexes[x]);
+//                        }
+                        break;
+                    case ANY:
+                        break;
+                    case SINGLE_KEY:
+                        if(arr == NULL) {
+                            return;
                         }
-                        return;
-                    }
+                        if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) != SUCCESS) {
+                            return;
+                        }
+                        arr = *data;
+                        break;
                 }
+                break;
         }
+    }
 
-        p++;
+    if(*save_ptr == '\0' && data != NULL) {
+
+        if (Z_TYPE_P(*data) == IS_ARRAY) {
+            zval *tmp;
+            zval *newarr;
+            MAKE_STD_ZVAL(newarr);
+            array_init(newarr);
+            zend_hash_copy(HASH_OF(newarr), HASH_OF(*data), (copy_ctor_func_t) zval_add_ref, &tmp, sizeof(zval*));
+            add_next_index_zval(return_value, newarr);
+
+        } else {
+            add_next_index_zval(return_value, *data);
+        }
     }
 }
 
-void deepJump(char * field_name, HashTable * arr, char * p, zval **data, zval * return_value)
+//    int bufSize = 100;
+//    char buffer[bufSize];
+//    char nextField[bufSize];
+//
+//    char * curBuffer = buffer;
+//    char * curNextField = nextField;
+//    bool buildingKeyName = false;
+//    bool insideSubExpression = true;
+//
+//    while(*p != '\0') {
+//
+//        switch(*p) {
+//            case '$':
+////                printf("WE STARTIN!!\n");
+//                break;
+//            case '.':
+//                if(buildingKeyName) {
+//                    buildingKeyName = false;
+//                    *curBuffer = '\0';
+//                    int len = strlen(buffer);
+//                    zend_hash_find(arr, buffer, len+1, (void**)&data);
+//
+//                    arr = HASH_OF(*data);
+//
+//                    curBuffer = buffer;
+//                }
+//                if(*(p+1) != '\0') {
+//                    switch(*(p+1)) {
+//                        case '.':
+//                            p+=2;
+//                            while(*p != '\0' && *p != '.') {
+//                                *curNextField = *p;
+//                                p++;
+//                                curNextField++;
+//                            }
+//                            *curNextField = '\0';
+//                            if(*p != '\0') {
+////                                PHPWRITE("DEEP JUMP", strlen("DEEP JUMP"));
+//                                deepJump(nextField, arr, p, data, return_value);
+//                            } else {
+////                                PHPWRITE("DEEP SEARCH", strlen("DEEP SEARCH"));
+//                                deepSearch(arr, nextField, return_value);
+//                            }
+//                        case '*':
+////                            printf("This is a wildcard match\n");
+//                            p++;
+//                            break;
+//                        case '[':
+////                            printf("We're in some sub-expression\n");
+//                            insideSubExpression = true;
+//                            break;
+//                        default:
+//                            buildingKeyName = true;
+////                            printf("We're building a key name\n");
+//                            break;
+//                    }
+//                }
+//                break;
+//            default:
+//                if(buildingKeyName) {
+//                    *curBuffer = *p;
+//                    curBuffer++;
+//                    //IF WE AT THE END!
+//                    if(*(p+1) == '\0') {
+//                        buildingKeyName = false;
+//                        //Search the array for key
+//                        *curBuffer = '\0';
+//                        int len = strlen(buffer);
+//                        PHPWRITE(buffer, len+1);
+//                        if(arr != NULL && zend_hash_find(arr, buffer, len+1, (void**)&data) == SUCCESS) {
+//                            add_next_index_zval(return_value, *data);
+//                        }
+//                        return;
+//                    }
+//                }
+//        }
+//
+//        p++;
+//    }
+//}
+//
+void deepJump(char * field_name, zval * arr, char * save_ptr, zval * return_value)
 {
     if(arr == NULL) {
         return;
@@ -196,7 +257,7 @@ void deepJump(char * field_name, HashTable * arr, char * p, zval **data, zval * 
     zval *z_array, **data1;
 
     if(zend_hash_find(arr, field_name, strlen(field_name)+1, (void**)&data1) == SUCCESS) {
-        iterate(HASH_OF(*data1), p, data, return_value);
+        iterate(HASH_OF(*data1), save_ptr, return_value);
     }
 
     HashPosition pos;
@@ -206,11 +267,11 @@ void deepJump(char * field_name, HashTable * arr, char * p, zval **data, zval * 
         zend_hash_get_current_data_ex(arr, (void**) &tmp, &pos) == SUCCESS;
         zend_hash_move_forward_ex(arr, &pos)
     ) {
-        deepJump(field_name, HASH_OF(*tmp), p, data, return_value);
+        deepJump(field_name, HASH_OF(*tmp), save_ptr, return_value);
     }
 }
 
-void deepSearch(HashTable * arr, char * field_name, zval * return_value)
+void deepSearch(zval * arr, char * field_name, zval * return_value)
 {
     if(arr == NULL) {
         return;
