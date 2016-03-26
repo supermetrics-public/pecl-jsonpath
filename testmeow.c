@@ -2,17 +2,9 @@
 
 int main() {
 
-    int list_size = 100;
-    int total_tokens = -1;
-
     struct token token_struct;
-
-    token_struct.type = CHILD_KEY;
-
-    char * input_str = "$..lol[111:116].key[3]";
-
+    char * input_str = "$.key.key2[7,8,9].key2[2,5].key2[1]..kedey";
     char * save_ptr = input_str;
-
     struct token * token_ptr = &token_struct;
 
     while(tokenize(&save_ptr, token_ptr)) {

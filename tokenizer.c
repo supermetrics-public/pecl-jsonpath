@@ -6,7 +6,7 @@ void tokenize_bracket_contents(char * contents, struct token * tok);
 
 bool tokenize(char ** p, struct token * tok) {
 
-    char buffer[100];
+    char buffer[250];
 
     switch(**p) {
 
@@ -17,6 +17,8 @@ bool tokenize(char ** p, struct token * tok) {
             if(*(*p+1) == '.') {
                 (*p)++;
                 tok->type = DEEP_SCAN;
+                tok->prop.type = SINGLE_KEY;
+                tok->prop.index_count = 0;
             } else if(*(*p+1) == '*') {
                 (*p)++;
                 tok->type = WILD_CARD;
@@ -33,7 +35,10 @@ bool tokenize(char ** p, struct token * tok) {
                 strncat(tok->prop.val, *p, 1);
             }
 
-            (*p)++;
+            if(*(*p+1) == '[') {
+                (*p)++;
+            }
+
             if(**p == '[') {
 
                 memset(buffer,0,strlen(buffer));
