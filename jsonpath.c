@@ -153,144 +153,65 @@ void iterate(zval *arr, char * input_str, zval * return_value)
 
     if(*save_ptr == '\0' && data != NULL) {
 
-        if (Z_TYPE_P(*data) == IS_ARRAY) {
-            zval *tmp;
-            zval *newarr;
-            MAKE_STD_ZVAL(newarr);
-            array_init(newarr);
-            zend_hash_copy(HASH_OF(newarr), HASH_OF(*data), (copy_ctor_func_t) zval_add_ref, &tmp, sizeof(zval*));
-            add_next_index_zval(return_value, newarr);
+        zval *newarr;
+        MAKE_STD_ZVAL(newarr);
+        array_init(newarr);
 
-        } else {
-            add_next_index_zval(return_value, *data);
-        }
+        MAKE_COPY_ZVAL(data, newarr);
+
+        add_next_index_zval(return_value, newarr);
     }
 }
 
-//    int bufSize = 100;
-//    char buffer[bufSize];
-//    char nextField[bufSize];
-//
-//    char * curBuffer = buffer;
-//    char * curNextField = nextField;
-//    bool buildingKeyName = false;
-//    bool insideSubExpression = true;
-//
-//    while(*p != '\0') {
-//
-//        switch(*p) {
-//            case '$':
-////                printf("WE STARTIN!!\n");
-//                break;
-//            case '.':
-//                if(buildingKeyName) {
-//                    buildingKeyName = false;
-//                    *curBuffer = '\0';
-//                    int len = strlen(buffer);
-//                    zend_hash_find(arr, buffer, len+1, (void**)&data);
-//
-//                    arr = HASH_OF(*data);
-//
-//                    curBuffer = buffer;
-//                }
-//                if(*(p+1) != '\0') {
-//                    switch(*(p+1)) {
-//                        case '.':
-//                            p+=2;
-//                            while(*p != '\0' && *p != '.') {
-//                                *curNextField = *p;
-//                                p++;
-//                                curNextField++;
-//                            }
-//                            *curNextField = '\0';
-//                            if(*p != '\0') {
-////                                PHPWRITE("DEEP JUMP", strlen("DEEP JUMP"));
-//                                deepJump(nextField, arr, p, data, return_value);
-//                            } else {
-////                                PHPWRITE("DEEP SEARCH", strlen("DEEP SEARCH"));
-//                                deepSearch(arr, nextField, return_value);
-//                            }
-//                        case '*':
-////                            printf("This is a wildcard match\n");
-//                            p++;
-//                            break;
-//                        case '[':
-////                            printf("We're in some sub-expression\n");
-//                            insideSubExpression = true;
-//                            break;
-//                        default:
-//                            buildingKeyName = true;
-////                            printf("We're building a key name\n");
-//                            break;
-//                    }
-//                }
-//                break;
-//            default:
-//                if(buildingKeyName) {
-//                    *curBuffer = *p;
-//                    curBuffer++;
-//                    //IF WE AT THE END!
-//                    if(*(p+1) == '\0') {
-//                        buildingKeyName = false;
-//                        //Search the array for key
-//                        *curBuffer = '\0';
-//                        int len = strlen(buffer);
-//                        PHPWRITE(buffer, len+1);
-//                        if(arr != NULL && zend_hash_find(arr, buffer, len+1, (void**)&data) == SUCCESS) {
-//                            add_next_index_zval(return_value, *data);
-//                        }
-//                        return;
-//                    }
-//                }
-//        }
-//
-//        p++;
-//    }
-//}
-//
 void deepJump(char * field_name, zval * arr, char * save_ptr, zval * return_value)
 {
-    if(arr == NULL) {
+    if(arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
         return;
     }
 
     zval *z_array, **data1;
 
-    if(zend_hash_find(arr, field_name, strlen(field_name)+1, (void**)&data1) == SUCCESS) {
-        iterate(HASH_OF(*data1), save_ptr, return_value);
+    if(zend_hash_find(HASH_OF(arr), field_name, strlen(field_name)+1, (void**)&data1) == SUCCESS) {
+        iterate(*data1, save_ptr, return_value);
     }
 
     HashPosition pos;
     zval **tmp;
     for(
-        zend_hash_internal_pointer_reset_ex(arr, &pos);
-        zend_hash_get_current_data_ex(arr, (void**) &tmp, &pos) == SUCCESS;
-        zend_hash_move_forward_ex(arr, &pos)
+        zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
+        zend_hash_get_current_data_ex(HASH_OF(arr), (void**) &tmp, &pos) == SUCCESS;
+        zend_hash_move_forward_ex(HASH_OF(arr), &pos)
     ) {
-        deepJump(field_name, HASH_OF(*tmp), save_ptr, return_value);
+        deepJump(field_name, *tmp, save_ptr, return_value);
     }
 }
 
 void deepSearch(zval * arr, char * field_name, zval * return_value)
 {
-    if(arr == NULL) {
+    if(arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
         return;
     }
 
     zval *z_array, **data;
-
-    if(zend_hash_find(arr, field_name, strlen(field_name)+1, (void**)&data) == SUCCESS) {
-        add_next_index_zval(return_value, *data);
+    zval *tmp;
+            
+    if(zend_hash_find(HASH_OF(arr), field_name, strlen(field_name)+1, (void**)&data) == SUCCESS) {
+        zval *newarr;
+        MAKE_STD_ZVAL(newarr);
+        array_init(newarr);
+        MAKE_COPY_ZVAL(data, newarr);
+        add_next_index_zval(return_value, newarr);
     }
 
     HashPosition pos;
-    zval **tmp;
+    zval **atmp;
+
     for(
-        zend_hash_internal_pointer_reset_ex(arr, &pos);
-        zend_hash_get_current_data_ex(arr, (void**) &tmp, &pos) == SUCCESS;
-        zend_hash_move_forward_ex(arr, &pos)
+        zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
+        zend_hash_get_current_data_ex(HASH_OF(arr), (void**) &atmp, &pos) == SUCCESS;
+        zend_hash_move_forward_ex(HASH_OF(arr), &pos)
     ) {
-        deepSearch(HASH_OF(*tmp), field_name, return_value);
+        deepSearch(*atmp, field_name, return_value);
     }
 }
 
