@@ -110,7 +110,18 @@ void iterate(zval *arr, char * input_str, zval * return_value)
     struct token token_struct;
     char * save_ptr = input_str;
     struct token * token_ptr = &token_struct;
-    zval **data;
+    zval **data, **data2;
+
+    zval *newarr;
+    MAKE_STD_ZVAL(newarr);
+    array_init(newarr);
+
+    zval *tmp;
+    MAKE_STD_ZVAL(tmp);
+    int x;
+    HashPosition pos;
+
+    zval *zv_dest;
 
     while(tokenize(&save_ptr, token_ptr)) {
 
@@ -131,9 +142,19 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                     case RANGE:
                         break;
                     case INDEX:
-//                        for(int x = 0; x < token_struct.prop.index_count; x++) {
-//                            printf(" Index %d ", token_struct.prop.indexes[x]);
-//                        }
+
+                        if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
+                            for(x = 0; x < token_struct.prop.index_count; x++) {
+                                if(zend_hash_index_find(HASH_OF(*data), token_struct.prop.indexes[x], (void**)&data2) == SUCCESS) {
+                                    ALLOC_ZVAL(zv_dest);
+                                    MAKE_COPY_ZVAL(data2, zv_dest);
+                                    add_next_index_zval(newarr, zv_dest);
+                                }
+                            }
+                        }
+
+                        *data = newarr;
+
                         break;
                     case ANY:
                         break;
