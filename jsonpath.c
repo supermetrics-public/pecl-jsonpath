@@ -107,6 +107,7 @@ PHP_FUNCTION(path_lookup)
 
 void iterate(zval *arr, char * input_str, zval * return_value)
 {
+
     struct token token_struct;
     char * save_ptr = input_str;
     struct token * token_ptr = &token_struct;
@@ -146,16 +147,17 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                         if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
                             for(x = 0; x < token_struct.prop.index_count; x++) {
                                 if(zend_hash_index_find(HASH_OF(*data), token_struct.prop.indexes[x], (void**)&data2) == SUCCESS) {
-                                    ALLOC_ZVAL(zv_dest);
-                                    MAKE_COPY_ZVAL(data2, zv_dest);
-                                    add_next_index_zval(newarr, zv_dest);
+                                    if(*save_ptr == '\0') {
+                                        ALLOC_ZVAL(zv_dest);
+                                        MAKE_COPY_ZVAL(data2, zv_dest);
+                                        add_next_index_zval(return_value, zv_dest);
+                                    } else {
+                                        iterate(*data2, save_ptr, return_value);
+                                    }
                                 }
                             }
                         }
-
-                        *data = newarr;
-
-                        break;
+                        return;
                     case ANY:
                         break;
                     case SINGLE_KEY:
