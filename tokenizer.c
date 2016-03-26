@@ -2,13 +2,11 @@
 #include <stdbool.h>
 
 int extract_bracket_contents(char * start, char *buffer);
+void tokenize_bracket_contents(char * contents, struct token * tok);
 
 bool tokenize(char ** p, struct token * tok) {
 
     char buffer[100];
-
-    char * what;
-    int count = 0;
 
     switch(**p) {
 
@@ -46,44 +44,8 @@ bool tokenize(char ** p, struct token * tok) {
 
                 (*p) += strlen(buffer) + 1;
 
-                what = strpbrk(buffer, ":*,");
-
-                if(what != NULL) {
-                    switch(*what) {
-                        case ':':
-                            what = strtok(buffer, ":");
-                            tok->prop.child.indexes[0] = atoi(what); //TODO error checking
-                            what = strtok(NULL, ":");
-                            tok->prop.child.indexes[1] = atoi(what); //TODO error checking
-                            tok->prop.child.index_count = 2;
-                            tok->prop.child.type = RANGE;
-                            break;
-                        case '*':
-                            printf("ANYaaaa");
-                            tok->prop.child.type = ANY;
-                            return true;
-                        case ',':
-                            tok->prop.child.type = INDEX;
-
-                            count = 0;
-                            what = strtok(buffer, ",");
-                            tok->prop.child.index_count = 0;
-
-                            while(what != NULL) {
-                                tok->prop.child.indexes[count++] = atoi(what); //TODO error checking
-                                tok->prop.child.index_count++;
-                                what = strtok(NULL, ",");
-                            }
-                            break;
-                    }
-                } else {
-                    tok->prop.child.index_count = 1;
-                    tok->prop.child.indexes[0] = atoi(buffer); //TODO error checking
-                    tok->prop.child.type = INDEX;
-                    break;
-                }
+                tokenize_bracket_contents(buffer, tok);
             }
-
             break;
         case '\0':
         default:
@@ -124,4 +86,46 @@ int extract_bracket_contents(char * start, char *buffer) {
     }
 
     return 0;
+}
+
+void tokenize_bracket_contents(char * contents, struct token * tok)
+{
+    char * what;
+    int count = 0;
+
+    what = strpbrk(contents, ":*,");
+
+    if(what != NULL) {
+        switch(*what) {
+            case ':':
+                what = strtok(contents, ":");
+                tok->prop.child.indexes[0] = atoi(what); //TODO error checking
+                what = strtok(NULL, ":");
+                tok->prop.child.indexes[1] = atoi(what); //TODO error checking
+                tok->prop.child.index_count = 2;
+                tok->prop.child.type = RANGE;
+                break;
+            case '*':
+                printf("ANYaaaa");
+                tok->prop.child.type = ANY;
+                break;
+            case ',':
+                tok->prop.child.type = INDEX;
+
+                count = 0;
+                what = strtok(contents, ",");
+                tok->prop.child.index_count = 0;
+
+                while(what != NULL) {
+                    tok->prop.child.indexes[count++] = atoi(what); //TODO error checking
+                    tok->prop.child.index_count++;
+                    what = strtok(NULL, ",");
+                }
+                break;
+        }
+    } else {
+        tok->prop.child.index_count = 1;
+        tok->prop.child.indexes[0] = atoi(contents); //TODO error checking
+        tok->prop.child.type = INDEX;
+    }
 }
