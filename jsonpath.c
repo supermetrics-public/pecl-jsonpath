@@ -141,7 +141,22 @@ void iterate(zval *arr, char * input_str, zval * return_value)
             case CHILD_KEY:
                 switch(token_struct.prop.type) {
                     case RANGE:
-                        break;
+
+                        if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
+                            for(x = token_struct.prop.indexes[0]; x < token_struct.prop.indexes[1]; x++) {
+                                if(zend_hash_index_find(HASH_OF(*data), x, (void**)&data2) == SUCCESS) {
+                                    if(*save_ptr == '\0') {
+                                        ALLOC_ZVAL(zv_dest);
+                                        MAKE_COPY_ZVAL(data2, zv_dest);
+                                        add_next_index_zval(return_value, zv_dest);
+                                    } else {
+                                        iterate(*data2, save_ptr, return_value);
+                                    }
+                                }
+                            }
+                        }
+
+                        return;
                     case INDEX:
 
                         if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
