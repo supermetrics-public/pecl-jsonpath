@@ -40,7 +40,7 @@ static int le_jsonpath;
 
 void iterate(zval *arr, char * input_str, zval * return_value);
 void deepSearch(zval * arr, char * field_name, zval * return_value);
-void deepJump(char * field_name, zval * arr, char * p, zval * return_value);
+void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * return_value);
 
 /* {{{ PHP_INI
  */
@@ -148,7 +148,7 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                 if(*save_ptr == '\0') {
                     deepSearch(arr, token_struct.prop.val, return_value);
                 } else {
-                    deepJump(token_struct.prop.val, arr, save_ptr, return_value);
+                    deepJump(token_struct, arr, save_ptr, return_value);
                 }
                 return;
             case CHILD_KEY:
@@ -231,26 +231,74 @@ void iterate(zval *arr, char * input_str, zval * return_value)
     }
 }
 
-void deepJump(char * field_name, zval * arr, char * save_ptr, zval * return_value)
+void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * return_value)
 {
     if(arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
         return;
     }
 
-    zval *z_array, **data1;
-
-    if(zend_hash_find(HASH_OF(arr), field_name, strlen(field_name)+1, (void**)&data1) == SUCCESS) {
-        iterate(*data1, save_ptr, return_value);
-    }
+    zval *z_array, **data1, **data2, **data3;
+    int x;
 
     HashPosition pos;
+
+    if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val)+1, (void**)&data1) == SUCCESS) {
+
+
+        switch(token_struct.prop.type) {
+            case RANGE:
+
+                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data2) == SUCCESS) {
+                    for(x = token_struct.prop.indexes[0]; x < token_struct.prop.indexes[1]; x++) {
+                        if(zend_hash_index_find(HASH_OF(*data2), x, (void**)&data3) == SUCCESS) {
+                            iterate(*data3, save_ptr, return_value);
+                        }
+                    }
+                }
+
+                break;
+            case INDEX:
+
+                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data2) == SUCCESS) {
+                    for(x = 0; x < token_struct.prop.index_count; x++) {
+                        if(zend_hash_index_find(HASH_OF(*data2), token_struct.prop.indexes[x], (void**)&data3) == SUCCESS) {
+                            iterate(*data3, save_ptr, return_value);
+                        }
+                    }
+                }
+                break;
+            case ANY:
+
+                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data2) == SUCCESS) {
+                    for(
+                        zend_hash_internal_pointer_reset_ex(HASH_OF(*data2), &pos);
+                        zend_hash_get_current_data_ex(HASH_OF(*data2), (void**) &data3, &pos) == SUCCESS;
+                        zend_hash_move_forward_ex(HASH_OF(*data2), &pos)
+                    ) {
+                        iterate(*data3, save_ptr, return_value);
+                    }
+                }
+
+                break;
+            case SINGLE_KEY:
+//                if(arr == NULL) {
+//                    return;
+//                }
+//                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) != SUCCESS) {
+//                    return;
+//                }
+//                arr = *data;
+                break;
+        }
+    }
+
     zval **tmp;
     for(
         zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
         zend_hash_get_current_data_ex(HASH_OF(arr), (void**) &tmp, &pos) == SUCCESS;
         zend_hash_move_forward_ex(HASH_OF(arr), &pos)
     ) {
-        deepJump(field_name, *tmp, save_ptr, return_value);
+        deepJump(token_struct, *tmp, save_ptr, return_value);
     }
 }
 
