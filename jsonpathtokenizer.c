@@ -19,7 +19,9 @@ bool tokenize(char ** p, struct token * tok) {
         case '$':
             tok->type = ROOT;
             break;
+        case '[':
         case '.':
+
             if(*(*p+1) == '.') {
                 (*p)++;
                 tok->type = DEEP_SCAN;
@@ -34,14 +36,30 @@ bool tokenize(char ** p, struct token * tok) {
                 tok->prop.type = SINGLE_KEY;
             }
 
+            if(*(*p+1) == '[') {
+                (*p)++;
+            }
+
+            if(*(*p+1) == '\'') {
+                (*p)++;
+            }
+
             strcpy(tok->prop.val, ""); //TODO Needed?
 
-            while(*(*p+1) != '\0' && *(*p+1) != '.' && *(*p+1) != '[') {
+            while(*(*p+1) != '\0' && *(*p+1) != '.' && *(*p+1) != '[' && *(*p+1) != ']' && *(*p+1) != '\'') {
                 (*p)++;
                 strncat(tok->prop.val, *p, 1);
             }
 
-            if(*(*p+1) == '[') {
+            if(*(*p+1) == '\'') {
+                (*p)++;
+            }
+
+            if(*(*p+1) == ']') {
+                (*p)++;
+            }
+
+            if(*(*p+1) == '[' && *(*p+2 ) != '\'') {
                 (*p)++;
             }
 
