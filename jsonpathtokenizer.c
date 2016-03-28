@@ -3,6 +3,12 @@
 
 int extract_bracket_contents(char * start, char *buffer);
 void tokenize_bracket_contents(char * contents, struct token * tok);
+void tokenize_filter_string(char * contents, struct token * tok);
+
+typedef enum {
+    SQUARE_BRACKETS,
+    PARENTHESES
+} balanced_brackets_t;
 
 bool tokenize(char ** p, struct token * tok) {
 
@@ -43,7 +49,7 @@ bool tokenize(char ** p, struct token * tok) {
 
                 memset(buffer,0,strlen(buffer));
 
-                if(!extract_bracket_contents(*p, buffer)) {
+                if(!extract_balanced_bracket_contents(*p, buffer, SQUARE_BRACKETS)) {
                     printf("Unable to extract contents");
                 }
 
@@ -62,9 +68,23 @@ bool tokenize(char ** p, struct token * tok) {
     return true;
 }
 
-int extract_bracket_contents(char * start, char *buffer) {
+int extract_balanced_bracket_contents(char * start, char *buffer, balanced_brackets_t b_type) {
 
-    if(*start != '[') {
+    char open;
+    char close;
+
+    switch(b_type) {
+        case SQUARE_BRACKETS:
+            open = '[';
+            close = ']';
+            break;
+        case PARENTHESES:
+            open = '(';
+            close = ')';
+            break;
+    }
+
+    if(*start != open) {
         return 0;
     }
 
@@ -73,16 +93,16 @@ int extract_bracket_contents(char * start, char *buffer) {
     p = start;
 
     while(*p != '\0') {
-        if(*p == '[') {
+        if(*p == open) {
             --x;
         }
 
-        if(*p == ']') {
+        if(*p == close) {
             ++x;
             if(x == 0) {
                 start++;
                 strncpy(buffer, start, p - start);
-                strcat(buffer, "\0");
+                buffer[(p - start)] = '\0';
                 return 1;
             }
         }
@@ -98,7 +118,7 @@ void tokenize_bracket_contents(char * contents, struct token * tok)
     char * what;
     int count = 0;
 
-    what = strpbrk(contents, ":*,");
+    what = strpbrk(contents, ":*,?");
 
     if(what != NULL) {
         switch(*what) {
@@ -126,10 +146,30 @@ void tokenize_bracket_contents(char * contents, struct token * tok)
                     what = strtok(NULL, ",");
                 }
                 break;
+            case '?':
+                contents++;
+                tokenize_filter_string(contents, tok);
+                break;
+
         }
     } else {
         tok->prop.index_count = 1;
         tok->prop.indexes[0] = atoi(contents); //TODO error checking
         tok->prop.type = INDEX;
     }
+}
+
+void tokenize_filter_string(char * contents, struct token * tok)
+{
+    char * p;
+    char buffer[250];
+
+    if(!extract_balanced_bracket_contents(contents, buffer, PARENTHESES)) {
+        printf("Unable to extract contents ()");
+    }
+
+    printf("Extracted string: %s\n", buffer);
+
+    p = buffer;
+
 }
