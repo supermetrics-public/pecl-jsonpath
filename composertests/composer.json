@@ -1,0 +1,7 @@
+{
+  "name": "nytm/cms-papi",
+  "description": "Publishing API",
+  "require": {
+    "peekmo/jsonpath": "dev-master"
+  }
+}
