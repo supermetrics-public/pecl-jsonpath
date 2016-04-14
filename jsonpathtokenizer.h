@@ -18,8 +18,25 @@ typedef enum {
     RANGE,
     INDEX,
     ANY,
-    SINGLE_KEY
+    SINGLE_KEY,
+    FILTER
 } child_type;
+
+typedef enum {
+     CUR_NODE,
+     JSON_PATH,
+     CONST_VAL,
+     REGEX
+} operand_type;
+
+typedef enum {
+    EQ,
+    NE,
+    LT,
+    LTE,
+    GT,
+    GTE
+} operator_type;
 
 struct token {
     token_type type;
@@ -28,6 +45,11 @@ struct token {
         child_type type;
         int index_count;
         int indexes[100];
+        struct {
+            char rh[100];
+            char lh[100];
+            operator_type op;
+        } expr;
     } prop;
 };
 

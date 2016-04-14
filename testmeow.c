@@ -1,11 +1,13 @@
-#include "tokenizer.h"
+#include "jsonpathtokenizer.h"
 
 int main() {
 
     struct token token_struct;
-    char * input_str = "$.key.key2[7,8,9].key2[2,5].key2[1]..kedey.lol";
+    char * input_str = "$.key[?('EXPRESSIONX' \"EXPRESSION\" <= < > >= @.name @.meow )]";
     char * save_ptr = input_str;
     struct token * token_ptr = &token_struct;
+
+    int x;
 
     while(tokenize(&save_ptr, token_ptr)) {
 
@@ -26,7 +28,7 @@ int main() {
                         printf(" Index From %d to %d", token_struct.prop.indexes[0], token_struct.prop.indexes[1]);
                         break;
                     case INDEX:
-                        for(int x = 0; x < token_struct.prop.index_count; x++) {
+                        for(x = 0; x < token_struct.prop.index_count; x++) {
                             printf(" Index %d ", token_struct.prop.indexes[x]);
                         }
                         break;
@@ -42,7 +44,7 @@ int main() {
                         printf("Child key Index From %d to %d", token_struct.prop.indexes[0], token_struct.prop.indexes[1]);
                         break;
                     case INDEX:
-                        for(int x = 0; x < token_struct.prop.index_count; x++) {
+                        for(x = 0; x < token_struct.prop.index_count; x++) {
                             printf("Child key Index %d ", token_struct.prop.indexes[x]);
                         }
                         break;
