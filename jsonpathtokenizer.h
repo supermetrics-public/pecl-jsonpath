@@ -23,10 +23,10 @@ typedef enum {
 } child_type;
 
 typedef enum {
-     CUR_NODE,
-     JSON_PATH,
-     CONST_VAL,
-     REGEX
+    CUR_NODE,
+    JSON_PATH,
+    CONST_VAL,
+    REGEX
 } operand_type;
 
 typedef enum {
@@ -35,8 +35,14 @@ typedef enum {
     LT,
     LTE,
     GT,
-    GTE
+    GTE,
+    ISSET
 } operator_type;
+
+typedef enum {
+    NODE_VAL,
+    STR_VAL
+} expr_type;
 
 struct token {
     token_type type;
@@ -46,8 +52,10 @@ struct token {
         int index_count;
         int indexes[100];
         struct {
-            char rh[100];
-            char lh[100];
+            expr_type lh_type;
+            char lh_val[100];
+            expr_type rh_type;
+            char rh_val[100];
             operator_type op;
         } expr;
     } prop;

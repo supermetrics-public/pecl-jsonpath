@@ -1,9 +1,14 @@
 #include "jsonpathtokenizer.h"
 
+const char* exprType[] = {
+    "Node Value",
+    "Expression"
+};
+
 int main() {
 
     struct token token_struct;
-    char * input_str = "$.key[?('EXPRESSIONX' \"EXPRESSION\" <= < > >= @.name @.meow )]";
+    char * input_str = "$.key[?(@.property >= 'const string')]";
     char * save_ptr = input_str;
     struct token * token_ptr = &token_struct;
 
@@ -52,6 +57,67 @@ int main() {
                         break;
                     case SINGLE_KEY:
                         printf("Child key Name `%s` ", token_struct.prop.val);
+                        break;
+                    case FILTER:
+                        switch(token_struct.prop.expr.op) {
+                            case EQ:
+                                printf(
+                                    "Expression: = | lhs: (%s) %s | rhs: (%s) %s",
+                                    exprType[token_struct.prop.expr.lh_type],
+                                    token_struct.prop.expr.lh_val,
+                                    exprType[token_struct.prop.expr.rh_type],
+                                    token_struct.prop.expr.rh_val
+                                );
+                                break;
+                            case NE:
+                                printf(
+                                    "Expression: != | lhs: (%s) %s | rhs: (%s) %s",
+                                    exprType[token_struct.prop.expr.lh_type],
+                                    token_struct.prop.expr.lh_val,
+                                    exprType[token_struct.prop.expr.rh_type],
+                                    token_struct.prop.expr.rh_val
+                                );
+                                break;
+                            case LT:
+                                printf(
+                                    "Expression: < | lhs: (%s) %s | rhs: (%s) %s",
+                                    exprType[token_struct.prop.expr.lh_type],
+                                    token_struct.prop.expr.lh_val,
+                                    exprType[token_struct.prop.expr.rh_type],
+                                    token_struct.prop.expr.rh_val
+                                );
+                                break;
+                            case LTE:
+                                printf(
+                                    "Expression: <= | lhs: (%s) %s | rhs: (%s) %s",
+                                    exprType[token_struct.prop.expr.lh_type],
+                                    token_struct.prop.expr.lh_val,
+                                    exprType[token_struct.prop.expr.rh_type],
+                                    token_struct.prop.expr.rh_val
+                                );
+                                break;
+                            case GT:
+                                printf(
+                                    "Expression: > | lhs: (%s) %s | rhs: (%s) %s",
+                                    exprType[token_struct.prop.expr.lh_type],
+                                    token_struct.prop.expr.lh_val,
+                                    exprType[token_struct.prop.expr.rh_type],
+                                    token_struct.prop.expr.rh_val
+                                );
+                                break;
+                            case GTE:
+                                printf(
+                                    "Expression: >= | lhs: (%s) %s | rhs: (%s) %s",
+                                    exprType[token_struct.prop.expr.lh_type],
+                                    token_struct.prop.expr.lh_val,
+                                    exprType[token_struct.prop.expr.rh_type],
+                                    token_struct.prop.expr.rh_val
+                                );
+                                break;
+                            case ISSET:
+                                printf("Expression: isset | lhs: (%s) %s ", exprType[token_struct.prop.expr.lh_type], token_struct.prop.expr.lh_val);
+                                break;
+                        }
                         break;
                 }
                 printf("\n");

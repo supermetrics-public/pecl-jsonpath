@@ -238,16 +238,15 @@ void tokenize_filter_expression(char * contents, struct token * tok)
         printf("Unable to extract contents ()");
     }
 
-    printf("Extracted string: `%s`\n", buffer);
+//    printf("Extracted string: `%s`\n", buffer);
 
     p = buffer;
 
-    memset(tok,0,strlen(buffer));
-
+    bool left_side = true;
 
     while(*p != '\0') {
 
-        memset(tok,0,strlen(buffer2));
+        memset(buffer2,0,strlen(buffer2));
 
         switch(*p) {
 
@@ -258,12 +257,29 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                 }
                 p++;
 
-                what = strpbrk(p, " <>)");
+                what = strpbrk(p, " )<>");
+
+                //TODO GETTING END OF STRING
+                if (what) {
+                    strncpy(buffer2, p, what - p);
+                    buffer2[(what - p)] = '\0';
+                } else {
+                    strcpy(buffer2, p);
+                    tok->prop.expr.op = ISSET;
+                }
+
+//                printf("Extracted a name: %s\n", buffer2);
 
 
-                strncpy(buffer, p, what - p);
-                buffer[(what - p)] = '\0';
-                printf("Extracted a name: %s\n", buffer);
+                if(left_side) {
+                    tok->prop.expr.lh_type = NODE_VAL;
+                    strcpy(tok->prop.expr.lh_val, buffer2);
+                } else {
+                    tok->prop.expr.rh_type = NODE_VAL;
+                    strcpy(tok->prop.expr.rh_val, buffer2);
+                }
+
+                left_side ^= left_side;
 
                 break;
             case '\'':
@@ -271,7 +287,17 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                     printf("Unable to extract contents ''");
                 } else {
                     p += strlen(buffer2) + 1;
-                    printf("Extracted contents from single quotes: %s\n", buffer2);
+//                    printf("Extracted contents from single quotes: %s\n", buffer2);
+
+                    if(left_side) {
+                        tok->prop.expr.lh_type = STR_VAL;
+                        strcpy(tok->prop.expr.lh_val, buffer2);
+                    } else {
+                        tok->prop.expr.rh_type = STR_VAL;
+                        strcpy(tok->prop.expr.rh_val, buffer2);
+                    }
+
+                    left_side ^= left_side;
                 }
                 break;
             case '"':
@@ -279,27 +305,38 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                     printf("Unable to extract contents ''");
                 } else {
                     p += strlen(buffer2) + 1;
-                    printf("Extracted contents from double quotes: %s\n", buffer2);
+//                    printf("Extracted contents from double quotes: %s\n", buffer2);
+
+                    if(left_side) {
+                        tok->prop.expr.lh_type = STR_VAL;
+                        strcpy(tok->prop.expr.lh_val, buffer2);
+                    } else {
+                        tok->prop.expr.rh_type = STR_VAL;
+                        strcpy(tok->prop.expr.rh_val, buffer2);
+                    }
+
+                    left_side ^= left_side;
+
                 }
                 break;
             case '<':
                 if(*(p+1) == '=') {
-                    printf("Found <=\n");
-    //                tok->expr.op = LTE;
+//                    printf("Found <=\n");
+                    tok->prop.expr.op = LTE;
                     p++;
                 } else {
-                    printf("Found <\n");
-    //                tok->expr.op = LT;
+//                    printf("Found <\n");
+                    tok->prop.expr.op = LT;
                 }
                 break;
             case '>':
                 if(*(p+1) == '=') {
-                    printf("Found >=\n");
-    //                tok->expr.op = GTE;
+//                    printf("Found >=\n");
+                    tok->prop.expr.op = GTE;
                     p++;
                 } else {
-                    printf("Found >\n");
-    //                tok->expr.op = GT;
+//                    printf("Found >\n");
+                    tok->prop.expr.op = GT;
                 }
                 break;
             case '!':
