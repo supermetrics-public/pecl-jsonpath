@@ -244,6 +244,8 @@ void tokenize_filter_expression(char * contents, struct token * tok)
 
     bool left_side = true;
 
+    tok->prop.expr.op = ISSET;
+
     while(*p != '\0') {
 
         memset(buffer2,0,strlen(buffer2));
@@ -265,7 +267,6 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                     buffer2[(what - p)] = '\0';
                 } else {
                     strcpy(buffer2, p);
-                    tok->prop.expr.op = ISSET;
                 }
 
 //                printf("Extracted a name: %s\n", buffer2);
@@ -349,6 +350,42 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                 break;
             case '/':
                 break;
+            case '.':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+
+                what = strpbrk(p, " )<>");
+
+                //TODO GETTING END OF STRING
+                if (what) {
+                    strncpy(buffer2, p, what - p);
+                    buffer2[(what - p)] = '\0';
+                } else {
+                    strcpy(buffer2, p);
+                }
+
+
+                if(left_side) {
+                    tok->prop.expr.lh_type = NUM_VAL;
+                    strcpy(tok->prop.expr.lh_val, buffer2);
+                } else {
+                    tok->prop.expr.rh_type = NUM_VAL;
+                    strcpy(tok->prop.expr.rh_val, buffer2);
+                }
+
+                p += strlen(buffer2) + 1;
+
+                left_side ^= left_side;
+
+                break;
+
             default:
                 break;
         }

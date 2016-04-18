@@ -41,7 +41,8 @@ typedef enum {
 
 typedef enum {
     NODE_VAL,
-    STR_VAL
+    STR_VAL,
+    NUM_VAL
 } expr_type;
 
 struct token {
