@@ -343,6 +343,11 @@ void tokenize_filter_expression(char * contents, struct token * tok)
             case '!':
                 break;
             case '=':
+                if(*(p + 1) != '=') {
+                    printf("There is an error");
+                }
+                p++;
+                tok->prop.expr.op = EQ;
                 break;
             case ')':
                 break;

@@ -25,8 +25,7 @@ typedef enum {
 typedef enum {
     CUR_NODE,
     JSON_PATH,
-    CONST_VAL,
-    REGEX
+    CONST_VAL
 } operand_type;
 
 typedef enum {

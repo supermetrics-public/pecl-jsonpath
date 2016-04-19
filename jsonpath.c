@@ -40,6 +40,7 @@ static int le_jsonpath;
 
 void iterate(zval *arr, char * input_str, zval * return_value);
 void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * return_value);
+void findByValue(char * key, zval *value, zval *arr, zval * return_value);
 
 /* {{{ PHP_INI
  */
@@ -106,22 +107,24 @@ PHP_FUNCTION(path_lookup)
 
 void iterate(zval *arr, char * input_str, zval * return_value)
 {
-
     struct token token_struct;
     char * save_ptr = input_str;
     struct token * token_ptr = &token_struct;
     zval **data, **data2;
+    zval *tmp;
 
     zval *newarr;
     MAKE_STD_ZVAL(newarr);
     array_init(newarr);
 
-    zval *tmp;
+    zval *tmpz;
     MAKE_STD_ZVAL(tmp);
     int x;
     HashPosition pos;
 
     zval *zv_dest;
+
+    MAKE_STD_ZVAL(tmpz);
 
     while(tokenize(&save_ptr, token_ptr)) {
 
@@ -208,6 +211,59 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                             return;
                         }
                         arr = *data;
+                        break;
+                    case FILTER:
+
+                        switch(token_struct.prop.expr.op) {
+
+                            case EQ:
+                                ZVAL_STRING(tmpz, token_struct.prop.expr.rh_val, 1);
+                                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
+                                    for(
+                                        zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
+                                        zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
+                                        zend_hash_move_forward_ex(HASH_OF(*data), &pos)
+                                    ) {
+
+                                        findByValue(token_struct.prop.expr.lh_val, tmpz, *data2, return_value);
+                                    }
+                                }
+                                break;
+                            case NE:
+                                printf("BOOPING EQ!");
+                                break;
+                            case LT:
+                                printf("CLOOPING EQ!");
+                                break;
+                            case LTE:
+                                ZVAL_STRING(tmpz, token_struct.prop.expr.rh_val, 1);
+
+
+                                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
+                                    for(
+                                        zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
+                                        zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
+                                        zend_hash_move_forward_ex(HASH_OF(*data), &pos)
+                                    ) {
+
+                                        findByValue(token_struct.prop.expr.lh_val, tmpz, *data2, return_value);
+                                    }
+                                }
+
+                                break;
+                            case GT:
+                                printf("ELOOPING EQ!");
+                                break;
+                            case GTE:
+                                printf("FLOOPING EQ!");
+                                break;
+                            case ISSET:
+                                printf("GLOOPING EQ!");
+                                break;
+                        }
+
+                        data = NULL;
+
                         break;
                 }
                 break;
@@ -320,6 +376,59 @@ void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * ret
             deepJump(token_struct, *tmp, save_ptr, return_value);
 //        }
     }
+}
+
+/**
+ * *value   value to check for
+ * *array   array to check in
+ * **entry  pointer to array entry
+ */
+void findByValue(char * key, zval *value, zval *arr, zval * return_value)
+{
+	zval *entry,				/* pointer to array entry */
+        * res,					/* comparison result */
+        ** data;
+
+    zval *zv_dest;
+
+	HashPosition pos;			/* hash iterator */
+
+    MAKE_STD_ZVAL(res);
+    MAKE_STD_ZVAL(entry);
+
+
+    //TODO key is not a trailing \0
+    if(zend_hash_find(HASH_OF(arr), key, strlen(key) + 1, (void**)&data) == SUCCESS) {
+
+        string_compare_function_ex(res, value, *data, 1 TSRMLS_CC);
+
+//        compare_function(res, value, *data TSRMLS_CC);
+
+        if (Z_LVAL(*res) == 0) {
+
+//            zend_hash_get_current_key_zval_ex(HASH_OF(arr), entry, &pos);
+
+            ALLOC_ZVAL(zv_dest);
+            MAKE_COPY_ZVAL(&arr, zv_dest);
+            add_next_index_zval(return_value, zv_dest);
+        }
+    }
+
+
+//    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(array), (void **)&entry, &pos) == SUCCESS) {
+////
+//		compare_function(&res, value, *entry TSRMLS_CC);
+////
+//		if (Z_LVAL(res)) {
+//            zend_hash_get_current_key_zval_ex(Z_ARRVAL_P(array), entry, &pos);
+//////
+////            ALLOC_ZVAL(zv_dest);
+////            MAKE_COPY_ZVAL(&data, zv_dest);
+////            add_next_index_zval(return_value, zv_dest);
+//		}
+////
+//		zend_hash_move_forward_ex(Z_ARRVAL_P(array), &pos);
+//    }
 }
 
 /* {{{ php_jsonpath_init_globals
