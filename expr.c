@@ -93,11 +93,67 @@ void testOne() {
     printf("Expected: OP1 OP2 && OP3 || OP4 &&\n");
     printf("Actual: ");
     output_postifx_expr(expr_out, out_count);
+    printf("\n");
+}
+
+void testTwo() {
+
+    expr expr_in[] = {
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "OP1"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+           "OP2"
+        },
+        {
+            PAREN_RIGHT
+        },
+        {
+            OR
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "OP3"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+           "OP4"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+    printf("Expected: OP1 OP2 && OP3 OP4 && ||\n");
+    printf("Actual: ");
+    output_postifx_expr(expr_out, out_count);
+    printf("\n");
 }
 
 int main() {
 
     testOne();
+    testTwo();
 
     return 0;
 }
@@ -106,7 +162,6 @@ void output_postifx_expr(expr * expr, int count) {
 
     int i;
 
-    /** OUTPUT **/
     for(i = 0; i < count; i++) {
         switch(get_token_type(expr[i].type)) {
             case TYPE_OPERATOR:
@@ -120,6 +175,7 @@ void output_postifx_expr(expr * expr, int count) {
     }
 }
 
+// See http://csis.pace.edu/~wolf/CS122/infix-postfix.htm
 void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out_count) {
 
     Stack S;
@@ -133,15 +189,12 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out
     for(i = 0; i < in_count; i++) {
         switch(get_token_type(expr_in[i].type)) {
             case TYPE_OPERAND:
-                printf("Parsing operand\n");
                 expr_out[(*out_count)++] = expr_in[i];
                 break;
             case TYPE_OPERATOR:
                 if(!S.size || (*Stack_Top(&S)).type == PAREN_LEFT) {
-                    printf("Parsing operator: Empty or left paren\n");
                     Stack_Push(&S, &expr_in[i]);
                 } else {
-                    printf("Parsing operator: Not empty\n");
                     expr_out[(*out_count)++] = *Stack_Top(&S);
                     Stack_Pop(&S);
                     Stack_Push(&S, &expr_in[i]);
@@ -149,19 +202,17 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out
                 break;
             case TYPE_PAREN:
                 if(expr_in[i].type == PAREN_LEFT) {
-                    printf("Parsing left\n");
                     Stack_Push(&S, &expr_in[i]);
                 } else {
-                    printf("Parsing right\n");
-    //                    for(
-    //                        ;
-    //                        S.size && (*expr_tmp).type != PAREN_LEFT;
-    //                        Stack_Pop(&S), expr_tmp = Stack_Top(&S)
-    //                    ) {
-    //                        expr_out[(*out_count)++] = *expr_tmp;
-    //                    }
-
-                    Stack_Pop(&S);
+                    while(S.size) {
+                        expr_tmp = Stack_Top(&S);
+                        Stack_Pop(&S);
+                        if((*expr_tmp).type != PAREN_LEFT) {
+                            expr_out[(*out_count)++] = *expr_tmp;
+                        } else {
+                            break;
+                        }
+                    }
                 }
                 break;
         }
@@ -170,6 +221,9 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out
     for(
         ;
         S.size;
-        expr_tmp = Stack_Top(&S), expr_out[(*out_count)++] = *expr_tmp, Stack_Pop(&S)
+        expr_tmp = Stack_Top(&S),
+        expr_out[(*out_count)++] = *expr_tmp,
+        Stack_Pop(&S)
     );
+
 }
