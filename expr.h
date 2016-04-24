@@ -27,4 +27,6 @@ typedef struct {
     char value[100];
 } expr;
 
+void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out_count);
+
 #endif /* EXPR_H */

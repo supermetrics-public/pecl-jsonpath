@@ -3,7 +3,6 @@
 #include "expr.h"
 #include "stack.h"
 
-void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out_count);
 void output_postifx_expr(expr * expr, int count);
 
 const char * const visible[] = {
@@ -40,19 +39,6 @@ token_type get_token_type(token token) {
                return TYPE_OPERAND;
     }
 }
-
-/*
-RULES
-First of all we need two things first a stack and a  Postfix string.
-Scan the input Infix string from left to right.
-If the input is an operand add it to the Postfix String.
-If the input is an operator then two cases one the stack is empty or if it is not.
-If the stack is empty we add the operator directly to the stack.
-If the stack is non empty we add then we compare the precedence of the operator on the top of the stack to that we just got.
-If the operator on the top of the stack has more precedence than the one we just got then we remove it from the stack and add it to the Postfix String. We go on doing it until the operator precedence on the top of the stack is less than the operator we just got.(Or until the stack is empty). Then we add the operator on the stack.
-If we get a left parenthesis is found we add it directly to the stack.
-If we get a right parenthesis we repeatedly pop out operators from the stack until we get a left parenthesis and add it to the Postfix String. Then we remove the left parenthesis. The parenthesis are not used in the Postfix expressions.
-*/
 
 void testOne() {
 
@@ -91,7 +77,7 @@ void testOne() {
 
     convert_to_postfix(expr_in, in_count, expr_out, &out_count);
     printf("Expected: OP1 OP2 && OP3 || OP4 &&\n");
-    printf("Actual: ");
+    printf("Actual:   ");
     output_postifx_expr(expr_out, out_count);
     printf("\n");
 }
@@ -145,15 +131,60 @@ void testTwo() {
 
     convert_to_postfix(expr_in, in_count, expr_out, &out_count);
     printf("Expected: OP1 OP2 && OP3 OP4 && ||\n");
-    printf("Actual: ");
+    printf("Actual:   ");
+    output_postifx_expr(expr_out, out_count);
+    printf("\n");
+}
+
+void testThree() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "OP1"
+        },
+        {
+            AND
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "OP2"
+        },
+        {
+            OR
+        },
+        {
+            LITERAL,
+           "OP3"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+    printf("Expected: OP1 OP2 OP3 || &&\n");
+    printf("Actual:   ");
     output_postifx_expr(expr_out, out_count);
     printf("\n");
 }
 
 int main() {
 
+    printf("**** Test 1 ****\n");
     testOne();
+    printf("**** Test 2 ****\n");
     testTwo();
+    printf("**** Test 3 ****\n");
+    testThree();
 
     return 0;
 }
@@ -184,7 +215,7 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out
 
     *out_count = 0;
 
-    int i = 0;
+    int i;
 
     for(i = 0; i < in_count; i++) {
         switch(get_token_type(expr_in[i].type)) {
@@ -207,11 +238,10 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out
                     while(S.size) {
                         expr_tmp = Stack_Top(&S);
                         Stack_Pop(&S);
-                        if((*expr_tmp).type != PAREN_LEFT) {
-                            expr_out[(*out_count)++] = *expr_tmp;
-                        } else {
+                        if((*expr_tmp).type == PAREN_LEFT) {
                             break;
                         }
+                        expr_out[(*out_count)++] = *expr_tmp;
                     }
                 }
                 break;
