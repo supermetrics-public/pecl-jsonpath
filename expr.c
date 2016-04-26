@@ -182,102 +182,19 @@ void testThree() {
 
 bool testFour() {
 
-    callback_instance cb;
 
-    strcpy(cb.lh.value, "10\0");
-    strcpy(cb.rh.value, "30\0");
-
-    cb.compare_fn = compare_lt;
-
-    bool result;
-
-    result = cb.compare_fn(&cb.lh, &cb.rh);
-
-    printf("Expected: TRUE\n");
-    printf("Actual:   ");
-
-    if(result) {
-        printf("TRUE\n");
-    } else {
-        printf("FALSE\n");
-    }
-
-    return result;
 }
 
 bool testFive() {
 
-    callback_instance cb;
-
-    strcpy(cb.lh.value, "30\0");
-    strcpy(cb.rh.value, "10\0");
-
-    cb.compare_fn = compare_lt;
-
-    bool result;
-
-    result = cb.compare_fn(&cb.lh, &cb.rh);
-
-    printf("Expected: FALSE\n");
-    printf("Actual:   ");
-
-    if(result) {
-        printf("TRUE\n");
-    } else {
-        printf("FALSE\n");
-    }
-
-    return result;
 }
 
 bool testSix() {
 
-    callback_instance cb;
-
-    strcpy(cb.lh.value, "10\0");
-    strcpy(cb.rh.value, "30\0");
-
-    cb.compare_fn = compare_gt;
-
-    bool result;
-
-    result = cb.compare_fn(&cb.lh, &cb.rh);
-
-    printf("Expected: FALSE\n");
-    printf("Actual:   ");
-
-    if(result) {
-        printf("TRUE\n");
-    } else {
-        printf("FALSE\n");
-    }
-
-    return result;
 }
 
 bool testSeven() {
 
-    callback_instance cb;
-
-    strcpy(cb.lh.value, "30\0");
-    strcpy(cb.rh.value, "10\0");
-
-    cb.compare_fn = compare_gt;
-
-    bool result;
-
-    result = cb.compare_fn(&cb.lh, &cb.rh);
-
-    printf("Expected: TRUE\n");
-    printf("Actual:   ");
-
-    if(result) {
-        printf("TRUE\n");
-    } else {
-        printf("FALSE\n");
-    }
-
-    return result;
 }
 
 bool testEight() {

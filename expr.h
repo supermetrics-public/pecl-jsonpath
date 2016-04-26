@@ -33,12 +33,6 @@ typedef struct {
 
 typedef bool (*compare_cb)(expr *, expr *);
 
-typedef struct {
-    expr lh;
-    expr rh;
-    compare_cb compare_fn;
-} callback_instance;
-
 void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out_count);
 bool evaluate_postfix_expression(expr * expr, int count);
 compare_cb exec_cb_by_token(token);
