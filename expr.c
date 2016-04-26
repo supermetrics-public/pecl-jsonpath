@@ -7,6 +7,8 @@
 void output_postifx_expr(expr * expr, int count);
 bool compare_lt(expr * lh, expr * rh);
 bool compare_gt(expr * lh, expr * rh);
+bool compare_and(expr * lh, expr * rh);
+bool compare_or(expr * lh, expr * rh);
 
 const char * const visible[] = {
     "=\0",
@@ -43,7 +45,7 @@ token_type get_token_type(token token) {
     }
 }
 
-void testOne() {
+void test1() {
 
     expr expr_in[] = {
         {
@@ -85,7 +87,7 @@ void testOne() {
     printf("\n");
 }
 
-void testTwo() {
+void test2() {
 
     expr expr_in[] = {
         {
@@ -139,7 +141,7 @@ void testTwo() {
     printf("\n");
 }
 
-void testThree() {
+void test3() {
 
     expr expr_in[] = {
         {
@@ -180,24 +182,419 @@ void testThree() {
     printf("\n");
 }
 
-bool testFour() {
+bool test4() {
 
+    expr expr_in[] = {
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        },
+        {
+            AND
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+    printf("Expected: 10 30 < 30 10 > &&\n");
+    printf("Actual:   ");
+    output_postifx_expr(expr_out, out_count);
+    printf("\n");
 
 }
 
-bool testFive() {
+bool test5() {
+
+    expr expr_in[] = {
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        },
+        {
+            AND
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+bool test6() {
+
+    expr expr_in[] = {
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        },
+        {
+            AND
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: FALSE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+bool test7() {
+
+    expr expr_in[] = {
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "40"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        },
+        {
+            OR
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+bool test8() {
+
+    expr expr_in[] = {
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        },
+        {
+            OR
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
 
 }
 
-bool testSix() {
+bool test9() {
+
+    expr expr_in[] = {
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "50"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        },
+        {
+            OR
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: FALSE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+bool test10() {
+
+    expr expr_in[] = {
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        },
+        {
+            OR
+        },
+        {
+            PAREN_LEFT
+        },
+        {
+            LITERAL,
+            "50"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            PAREN_RIGHT
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
 
 }
 
-bool testSeven() {
 
-}
-
-bool testEight() {
+bool test11() {
 
     expr expr_in[] = {
         {
@@ -223,7 +620,7 @@ bool testEight() {
     }
 }
 
-bool testNine() {
+bool test12() {
 
     expr expr_in[] = {
         {
@@ -252,23 +649,29 @@ bool testNine() {
 int main() {
 
     printf("**** Test 1 ****\n");
-    testOne();
+    test1();
     printf("**** Test 2 ****\n");
-    testTwo();
+    test2();
     printf("**** Test 3 ****\n");
-    testThree();
+    test3();
     printf("**** Test 4 ****\n");
-    testFour();
+    test4();
     printf("**** Test 5 ****\n");
-    testFive();
+    test5();
     printf("**** Test 6 ****\n");
-    testSix();
+    test6();
     printf("**** Test 7 ****\n");
-    testSeven();
+    test7();
     printf("**** Test 8 ****\n");
-    testEight();
+    test8();
     printf("**** Test 9 ****\n");
-    testNine();
+    test9();
+    printf("**** Test 10 ****\n");
+    test10();
+    printf("**** Test 11 ****\n");
+    test11();
+    printf("**** Test 12 ****\n");
+    test12();
 
     return 0;
 }
@@ -279,6 +682,14 @@ bool compare_lt(expr * lh, expr * rh) {
 
 bool compare_gt(expr * lh, expr * rh) {
     return atoi((*lh).value) > atoi((*rh).value);
+}
+
+bool compare_and(expr * lh, expr * rh) {
+    return (*lh).value_bool && (*rh).value_bool;
+}
+
+bool compare_or(expr * lh, expr * rh) {
+    return (*lh).value_bool || (*rh).value_bool;
 }
 
 void output_postifx_expr(expr * expr, int count) {
@@ -411,11 +822,10 @@ compare_cb exec_cb_by_token(token token_type) {
             printf("Callback not supported yet");
            break;
         case OR:
-            printf("Callback not supported yet");
+            return compare_or;
            break;
         case AND:
-            printf("Callback not supported yet");
-           break;
+            return compare_and;
         case PAREN_LEFT:
         case PAREN_RIGHT:
         case LITERAL:
