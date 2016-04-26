@@ -5,6 +5,8 @@
 #include "stack.h"
 
 void output_postifx_expr(expr * expr, int count);
+bool compare_lt(expr * lh, expr * rh);
+bool compare_gt(expr * lh, expr * rh);
 
 const char * const visible[] = {
     "=\0",
@@ -406,7 +408,7 @@ bool evaluate_postfix_expression(expr * expression, int count) {
                 Stack_Pop(&S);
                 expr_lh = Stack_Top(&S);
 
-                temp_res = compare_lt(expr_lh, expr_rh);
+                temp_res = exec_cb_by_token(expression[i].type)(expr_lh, expr_rh);
 
                 (*expr_lh).type = BOOL;
                 (*expr_lh).value_bool = temp_res;
@@ -467,4 +469,42 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out
         Stack_Pop(&S)
     );
 
+}
+
+compare_cb exec_cb_by_token(token token_type) {
+
+    switch(token_type) {
+        case EQ:
+            printf("Callback not supported yet");
+            break;
+        case NE:
+            printf("Callback not supported yet");
+           break;
+        case LT:
+            return compare_lt;
+        case LTE:
+            printf("Callback not supported yet");
+           break;
+        case GT:
+            return compare_gt;
+        case GTE:
+            printf("Callback not supported yet");
+           break;
+        case ISSET:
+            printf("Callback not supported yet");
+           break;
+        case OR:
+            printf("Callback not supported yet");
+           break;
+        case AND:
+            printf("Callback not supported yet");
+           break;
+        case PAREN_LEFT:
+        case PAREN_RIGHT:
+        case LITERAL:
+        case BOOL:
+        default:
+            printf("Error, no callback for token");
+            break;
+    }
 }
