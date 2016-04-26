@@ -278,6 +278,58 @@ bool testSeven() {
     return result;
 }
 
+bool testEight() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            LT
+        }
+    };
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_in, 3)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+bool testNine() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        }
+    };
+
+    printf("Expected: FALSE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_in, 3)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
 int main() {
 
     printf("**** Test 1 ****\n");
@@ -294,6 +346,10 @@ int main() {
     testSix();
     printf("**** Test 7 ****\n");
     testSeven();
+    printf("**** Test 8 ****\n");
+    testEight();
+    printf("**** Test 9 ****\n");
+    testNine();
 
     return 0;
 }
@@ -321,6 +377,44 @@ void output_postifx_expr(expr * expr, int count) {
                 break;
         }
     }
+}
+
+/*
+Scan the Postfix string from left to right.
+Initialise an empty stack.
+If the scannned character is an operand, add it to the stack. If the scanned character is an operator, there will be atleast two operands in the stack.
+If the scanned character is an Operator, then we store the top most element of the stack(topStack) in a variable temp. Pop the stack. Now evaluate topStack(Operator)temp. Let the result of this operation be retVal. Pop the stack and Push retVal into the stack.
+Repeat this step till all the characters are scanned.
+After all characters are scanned, we will have only one element in the stack. Return topStack.
+*/
+bool evaluate_postfix_expression(expr * expression, int count) {
+
+    Stack S;
+    Stack_Init(&S);
+    expr * expr_lh;
+    expr * expr_rh;
+    bool temp_res;
+    int i;
+
+    for(i = 0; i < count; i++) {
+        switch(get_token_type(expression[i].type)) {
+            case TYPE_OPERAND:
+                Stack_Push(&S, &expression[i]);
+                break;
+            case TYPE_OPERATOR:
+                expr_rh = Stack_Top(&S);
+                Stack_Pop(&S);
+                expr_lh = Stack_Top(&S);
+
+                temp_res = compare_lt(expr_lh, expr_rh);
+
+                (*expr_lh).type = BOOL;
+                (*expr_lh).value_bool = temp_res;
+                break;
+        }
+    }
+
+    return (*expr_lh).value_bool;
 }
 
 // See http://csis.pace.edu/~wolf/CS122/infix-postfix.htm

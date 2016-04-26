@@ -15,7 +15,8 @@ typedef enum {
     AND,
     PAREN_LEFT,
     PAREN_RIGHT,
-    LITERAL
+    LITERAL,
+    BOOL
 } token;
 
 typedef enum {
@@ -27,6 +28,7 @@ typedef enum {
 typedef struct {
     token type;
     char value[100];
+    bool value_bool;
 } expr;
 
 typedef bool (*compare_cb)(expr *, expr *);
@@ -38,7 +40,7 @@ typedef struct {
 } callback_instance;
 
 void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out_count);
-
+bool evaluate_postfix_expression(expr * expr, int count);
 bool compare_lt(expr * lh, expr * rh);
 bool compare_gt(expr * lh, expr * rh);
 
