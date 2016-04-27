@@ -9,9 +9,11 @@ bool compare_lt(expr * lh, expr * rh);
 bool compare_gt(expr * lh, expr * rh);
 bool compare_and(expr * lh, expr * rh);
 bool compare_or(expr * lh, expr * rh);
+bool compare_eq(expr * lh, expr * rh);
+
 
 const char * const visible[] = {
-    "=\0",
+    "==\0",
     "!=\0",
     "<\0",
     "<=\0",
@@ -235,6 +237,228 @@ bool test4() {
     output_postifx_expr(expr_out, out_count);
     printf("\n");
 
+}
+
+bool test4a() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+    printf("Expected: 10 30 < 30 10 > &&\n");
+    printf("Actual:   ");
+    output_postifx_expr(expr_out, out_count);
+    printf("\n");
+
+}
+
+bool test4b() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            EQ
+        },
+        {
+            LITERAL,
+            "10"
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+    printf("Expected: 10 30 < 30 10 > && 10 10 == &&\n");
+    printf("Actual:   ");
+    output_postifx_expr(expr_out, out_count);
+    printf("\n");
+
+}
+
+bool test4c() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            EQ
+        },
+        {
+            LITERAL,
+            "10"
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+bool test4d() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            EQ
+        },
+        {
+            LITERAL,
+            "20"
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: FALSE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
 }
 
 bool test5() {
@@ -590,9 +814,54 @@ bool test10() {
     } else {
         printf("FALSE\n");
     }
-
 }
 
+bool test10a() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            LT
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            OR
+        },
+        {
+            LITERAL,
+            "50"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "30"
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
 
 bool test11() {
 
@@ -656,6 +925,14 @@ int main() {
     test3();
     printf("**** Test 4 ****\n");
     test4();
+    printf("**** Test 4a ****\n");
+    test4a();
+    printf("**** Test 4b ****\n");
+    test4b();
+    printf("**** Test 4c ****\n");
+    test4c();
+    printf("**** Test 4d ****\n");
+    test4d();
     printf("**** Test 5 ****\n");
     test5();
     printf("**** Test 6 ****\n");
@@ -668,6 +945,8 @@ int main() {
     test9();
     printf("**** Test 10 ****\n");
     test10();
+    printf("**** Test 10a ****\n");
+    test10a();
     printf("**** Test 11 ****\n");
     test11();
     printf("**** Test 12 ****\n");
@@ -692,6 +971,10 @@ bool compare_or(expr * lh, expr * rh) {
     return (*lh).value_bool || (*rh).value_bool;
 }
 
+bool compare_eq(expr * lh, expr * rh) {
+    return atoi((*lh).value) == atoi((*rh).value);
+}
+
 void output_postifx_expr(expr * expr, int count) {
 
     int i;
@@ -709,14 +992,6 @@ void output_postifx_expr(expr * expr, int count) {
     }
 }
 
-/*
-Scan the Postfix string from left to right.
-Initialise an empty stack.
-If the scannned character is an operand, add it to the stack. If the scanned character is an operator, there will be atleast two operands in the stack.
-If the scanned character is an Operator, then we store the top most element of the stack(topStack) in a variable temp. Pop the stack. Now evaluate topStack(Operator)temp. Let the result of this operation be retVal. Pop the stack and Push retVal into the stack.
-Repeat this step till all the characters are scanned.
-After all characters are scanned, we will have only one element in the stack. Return topStack.
-*/
 bool evaluate_postfix_expression(expr * expression, int count) {
 
     Stack S;
@@ -767,9 +1042,21 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out
                 if(!S.size || (*Stack_Top(&S)).type == PAREN_LEFT) {
                     Stack_Push(&S, &expr_in[i]);
                 } else {
-                    expr_out[(*out_count)++] = *Stack_Top(&S);
-                    Stack_Pop(&S);
-                    Stack_Push(&S, &expr_in[i]);
+
+                    expr_tmp = Stack_Top(&S);
+
+                    //TODO compare macro or assign to var?
+                    if(get_operator_precedence(expr_in[i].type) < get_operator_precedence((*expr_tmp).type)) {
+                        Stack_Push(&S, &expr_in[i]);
+                    } else if(get_operator_precedence(expr_in[i].type) > get_operator_precedence((*expr_tmp).type)) {
+                        expr_out[(*out_count)++] = *Stack_Top(&S);
+                        Stack_Pop(&S);
+                        i--; //Try the incoming token again in the next loop iteration
+                    } else {
+                        expr_out[(*out_count)++] = *Stack_Top(&S);
+                        Stack_Pop(&S);
+                        Stack_Push(&S, &expr_in[i]);
+                    }
                 }
                 break;
             case TYPE_PAREN:
@@ -803,8 +1090,7 @@ compare_cb exec_cb_by_token(token token_type) {
 
     switch(token_type) {
         case EQ:
-            printf("Callback not supported yet");
-            break;
+            return compare_eq;
         case NE:
             printf("Callback not supported yet");
            break;
@@ -826,6 +1112,38 @@ compare_cb exec_cb_by_token(token token_type) {
            break;
         case AND:
             return compare_and;
+        case PAREN_LEFT:
+        case PAREN_RIGHT:
+        case LITERAL:
+        case BOOL:
+        default:
+            printf("Error, no callback for token");
+            break;
+    }
+}
+
+//TODO: Distinguish between operator and token?
+int get_operator_precedence(token token_type) {
+
+    switch(token_type) {
+        case LT:
+            return 0;
+        case LTE:
+            return 0;
+           break;
+        case GT:
+            return 0;
+        case GTE:
+            return 0;
+        case NE:
+            return 1;
+        case EQ:
+            return 1;
+        case AND:
+            return 2;
+        case OR:
+            return 2;
+        case ISSET:
         case PAREN_LEFT:
         case PAREN_RIGHT:
         case LITERAL:
