@@ -11,7 +11,10 @@ typedef enum {
     ROOT,
     WILD_CARD,
     DEEP_SCAN,
-    CHILD_KEY
+    CHILD_KEY,
+    TYPE_OPERAND,
+    TYPE_OPERATOR,
+    TYPE_PAREN,
 } token_type;
 
 typedef enum {
@@ -28,6 +31,13 @@ typedef enum {
     CONST_VAL
 } operand_type;
 
+
+typedef enum {
+    NODE_VAL,
+    STR_VAL,
+    NUM_VAL
+} expr_type;
+
 typedef enum {
     EQ,
     NE,
@@ -35,14 +45,14 @@ typedef enum {
     LTE,
     GT,
     GTE,
-    ISSET
-} operator_type;
-
-typedef enum {
-    NODE_VAL,
-    STR_VAL,
-    NUM_VAL
-} expr_type;
+    ISSET,
+    OR,
+    AND,
+    PAREN_LEFT,
+    PAREN_RIGHT,
+    LITERAL,
+    BOOL
+} token;
 
 struct token {
     token_type type;
@@ -56,11 +66,48 @@ struct token {
             char lh_val[100];
             expr_type rh_type;
             char rh_val[100];
-            operator_type op;
+            token op;
         } expr;
     } prop;
 };
 
 bool tokenize(char ** input, struct token * tok);
+
+/** START All things imported from expr.h **/
+
+
+typedef struct {
+    token type;
+    char value[100];
+    bool value_bool;
+} expr;
+
+typedef bool (*compare_cb)(expr *, expr *);
+
+void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out_count);
+bool evaluate_postfix_expression(expr * expr, int count);
+compare_cb exec_cb_by_token(token);
+token_type get_token_type(token token);
+
+bool compare_lt(expr * lh, expr * rh);
+bool compare_gt(expr * lh, expr * rh);
+bool compare_and(expr * lh, expr * rh);
+bool compare_or(expr * lh, expr * rh);
+bool compare_eq(expr * lh, expr * rh);
+
+#define STACK_MAX 100
+
+struct Stack {
+    expr     * data[STACK_MAX];
+    int     size;
+};
+typedef struct Stack Stack;
+
+void Stack_Init(Stack *S);
+expr * Stack_Top(Stack *S);
+void Stack_Push(Stack *S, expr * expr);
+void Stack_Pop(Stack *S);
+
+/** END All things imported from expr.h **/
 
 #endif /* TOKENIZER_H */
