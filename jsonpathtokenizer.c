@@ -318,6 +318,22 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                 expr_list[i].type = EQ;
                 i++;
                 break;
+            case '|':
+                if(*(p + 1) != '|') {
+                    printf("There is an error");
+                }
+                p++;
+                expr_list[i].type = OR;
+                i++;
+                break;
+            case '&':
+                if(*(p + 1) != '&') {
+                    printf("There is an error");
+                }
+                p++;
+                expr_list[i].type = AND;
+                i++;
+                break;
             case ')':
                 break;
             case '$':
