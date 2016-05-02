@@ -233,18 +233,14 @@ void tokenize_filter_expression(char * contents, struct token * tok)
     char buffer[250];
     char buffer2[250];
     char * what;
+    int i = 0;
+    expr expr_list[100];
 
     if(!extract_balanced_element_contents(contents, buffer, PARENTHESES)) {
         printf("Unable to extract contents ()");
     }
 
-//    printf("Extracted string: `%s`\n", buffer);
-
     p = buffer;
-
-    bool left_side = true;
-
-    tok->prop.expr.op = ISSET;
 
     while(*p != '\0') {
 
@@ -263,42 +259,24 @@ void tokenize_filter_expression(char * contents, struct token * tok)
 
                 //TODO GETTING END OF STRING
                 if (what) {
-                    strncpy(buffer2, p, what - p);
+                    strncpy(expr_list[i].label, p, what - p);
                     buffer2[(what - p)] = '\0';
                 } else {
-                    strcpy(buffer2, p);
+                    strcpy(expr_list[i].label, p);
                 }
 
-//                printf("Extracted a name: %s\n", buffer2);
-
-
-                if(left_side) {
-                    tok->prop.expr.lh_type = NODE_VAL;
-                    strcpy(tok->prop.expr.lh_val, buffer2);
-                } else {
-                    tok->prop.expr.rh_type = NODE_VAL;
-                    strcpy(tok->prop.expr.rh_val, buffer2);
-                }
-
-                left_side ^= left_side;
-
+                expr_list[i].type = NODE_NAME;
+                i++;
                 break;
             case '\'':
                 if(!extract_quoted_contents(p, buffer2, SINGLE_QUOTES)) {
                     printf("Unable to extract contents ''");
                 } else {
                     p += strlen(buffer2) + 1;
-//                    printf("Extracted contents from single quotes: %s\n", buffer2);
 
-                    if(left_side) {
-                        tok->prop.expr.lh_type = STR_VAL;
-                        strcpy(tok->prop.expr.lh_val, buffer2);
-                    } else {
-                        tok->prop.expr.rh_type = STR_VAL;
-                        strcpy(tok->prop.expr.rh_val, buffer2);
-                    }
-
-                    left_side ^= left_side;
+                    strcpy(expr_list[i].value, buffer2);
+                    expr_list[i].type = LITERAL;
+                    i++;
                 }
                 break;
             case '"':
@@ -306,39 +284,29 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                     printf("Unable to extract contents ''");
                 } else {
                     p += strlen(buffer2) + 1;
-//                    printf("Extracted contents from double quotes: %s\n", buffer2);
 
-                    if(left_side) {
-                        tok->prop.expr.lh_type = STR_VAL;
-                        strcpy(tok->prop.expr.lh_val, buffer2);
-                    } else {
-                        tok->prop.expr.rh_type = STR_VAL;
-                        strcpy(tok->prop.expr.rh_val, buffer2);
-                    }
-
-                    left_side ^= left_side;
-
+                    strcpy(expr_list[i].value, buffer2);
+                    expr_list[i].type = LITERAL;
+                    i++;
                 }
                 break;
             case '<':
                 if(*(p+1) == '=') {
-//                    printf("Found <=\n");
-                    tok->prop.expr.op = LTE;
+                    expr_list[i].type = LTE;
                     p++;
                 } else {
-//                    printf("Found <\n");
-                    tok->prop.expr.op = LT;
+                    expr_list[i].type = LT;
                 }
+                i++;
                 break;
             case '>':
                 if(*(p+1) == '=') {
-//                    printf("Found >=\n");
-                    tok->prop.expr.op = GTE;
+                    expr_list[i].type = GTE;
                     p++;
                 } else {
-//                    printf("Found >\n");
-                    tok->prop.expr.op = GT;
+                    expr_list[i].type = GT;
                 }
+                i++;
                 break;
             case '!':
                 break;
@@ -347,7 +315,8 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                     printf("There is an error");
                 }
                 p++;
-                tok->prop.expr.op = EQ;
+                expr_list[i].type = EQ;
+                i++;
                 break;
             case ')':
                 break;
@@ -376,51 +345,28 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                     strcpy(buffer2, p);
                 }
 
-
-                if(left_side) {
-                    tok->prop.expr.lh_type = NUM_VAL;
-                    strcpy(tok->prop.expr.lh_val, buffer2);
-                } else {
-                    tok->prop.expr.rh_type = NUM_VAL;
-                    strcpy(tok->prop.expr.rh_val, buffer2);
-                }
+                expr_list[i].type = LITERAL;
+                strcpy(expr_list[i].value, buffer2);
 
                 p += strlen(buffer2) + 1;
-
-                left_side ^= left_side;
-
+                i++;
                 break;
-
             default:
                 break;
         }
 
-
         p++;
     }
+//printf("The count is %d\n", i);
+//printf("The val is %s\n", expr_list[0].value);
+//printf("The type is %d\n", expr_list[0].type);
+//output_postifx_expr(expr_list, i);
+    printf("CONVERT TO POSTFIX\n");
+    convert_to_postfix(expr_list, i, tok->prop.expr_list, &tok->prop.expr_count);
+//printf("The count is %d\n", tok->prop.expr_count);
 }
 
 /** START Code imported from expr.c **/
-
-bool compare_lt(expr * lh, expr * rh) {
-    return atoi((*lh).value) < atoi((*rh).value);
-}
-
-bool compare_gt(expr * lh, expr * rh) {
-    return atoi((*lh).value) > atoi((*rh).value);
-}
-
-bool compare_and(expr * lh, expr * rh) {
-    return (*lh).value_bool && (*rh).value_bool;
-}
-
-bool compare_or(expr * lh, expr * rh) {
-    return (*lh).value_bool || (*rh).value_bool;
-}
-
-bool compare_eq(expr * lh, expr * rh) {
-    return atoi((*lh).value) == atoi((*rh).value);
-}
 
 void Stack_Init(Stack *S)
 {
@@ -469,11 +415,20 @@ token_type get_token_type(token token) {
         case PAREN_RIGHT:
                return TYPE_PAREN;
         case LITERAL:
+        case NODE_NAME:
                return TYPE_OPERAND;
     }
 }
 
-bool evaluate_postfix_expression(expr * expression, int count) {
+bool evaluate_postfix_expression(expr * expression_original, int count) {
+
+
+    expr expression[100];
+
+    memcpy(expression, expression_original, sizeof(expr) * sizeof(expression_original));
+
+//    memcpy ( &expression, &expression_original, sizeof(expr)* count);
+
 
     Stack S;
     Stack_Init(&S);

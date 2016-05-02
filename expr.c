@@ -945,3 +945,23 @@ int main() {
 
     return 0;
 }
+
+bool compare_lt(expr * lh, expr * rh) {
+    return atoi((*lh).value) < atoi((*rh).value);
+}
+
+bool compare_gt(expr * lh, expr * rh) {
+    return atoi((*lh).value) > atoi((*rh).value);
+}
+
+bool compare_and(expr * lh, expr * rh) {
+    return (*lh).value_bool && (*rh).value_bool;
+}
+
+bool compare_or(expr * lh, expr * rh) {
+    return (*lh).value_bool || (*rh).value_bool;
+}
+
+bool compare_eq(expr * lh, expr * rh) {
+    return atoi((*lh).value) == atoi((*rh).value);
+}

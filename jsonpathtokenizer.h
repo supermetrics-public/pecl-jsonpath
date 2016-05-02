@@ -51,8 +51,16 @@ typedef enum {
     PAREN_LEFT,
     PAREN_RIGHT,
     LITERAL,
-    BOOL
+    BOOL,
+    NODE_NAME
 } token;
+
+typedef struct {
+    token type;
+    char value[100];
+    bool value_bool;
+    char label[100];
+} expr;
 
 struct token {
     token_type type;
@@ -61,26 +69,14 @@ struct token {
         child_type type;
         int index_count;
         int indexes[100];
-        struct {
-            expr_type lh_type;
-            char lh_val[100];
-            expr_type rh_type;
-            char rh_val[100];
-            token op;
-        } expr;
+        expr expr_list[100];
+        int expr_count;
     } prop;
 };
 
 bool tokenize(char ** input, struct token * tok);
 
 /** START All things imported from expr.h **/
-
-
-typedef struct {
-    token type;
-    char value[100];
-    bool value_bool;
-} expr;
 
 typedef bool (*compare_cb)(expr *, expr *);
 
