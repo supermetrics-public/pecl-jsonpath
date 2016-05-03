@@ -39,20 +39,20 @@ typedef enum {
 } expr_type;
 
 typedef enum {
-    EQ,
-    NE,
-    LT,
-    LTE,
-    GT,
-    GTE,
-    ISSET,
-    OR,
-    AND,
-    PAREN_LEFT,
-    PAREN_RIGHT,
-    LITERAL,
-    BOOL,
-    NODE_NAME
+    EQ,             //0
+    NE,             //1
+    LT,             //2
+    LTE,            //3
+    GT,             //4
+    GTE,            //5
+    ISSET,          //6
+    OR,             //7
+    AND,            //8
+    PAREN_LEFT,     //9
+    PAREN_RIGHT,    //10
+    LITERAL,        //11
+    BOOL,           //12
+    NODE_NAME       //13
 } token;
 
 typedef struct {

@@ -39,7 +39,7 @@ ZEND_DECLARE_MODULE_GLOBALS(jsonpath)
 static int le_jsonpath;
 
 void iterate(zval *arr, char * input_str, zval * return_value);
-void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * return_value);
+void deepJump(struct token * token_struct, zval * arr, char * save_ptr, zval * return_value);
 void findByValue(char * key, zval *arr, char * str_ptr);
 
 /* {{{ PHP_INI
@@ -128,11 +128,11 @@ const char * const visible[] = {
     for(i = 0; i < count; i++) {
         switch(get_token_type(expr[i].type)) {
             case TYPE_OPERATOR:
-                printf("%s ", visible[expr[i].type]);
+                printf("%d %s \n", i, visible[expr[i].type]);
                 break;
             case TYPE_OPERAND:
             case TYPE_PAREN:
-                printf("%s%s ", expr[i].value, expr[i].label);
+                printf("%d %s (%s) \n", i, expr[i].value, expr[i].label);
                 break;
         }
     }
@@ -182,7 +182,7 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                 }
                 return;
             case DEEP_SCAN:
-                deepJump(token_struct, arr, save_ptr, return_value);
+                deepJump(&token_struct, arr, save_ptr, return_value);
                 return;
             case CHILD_KEY:
                 switch(token_struct.prop.type) {
@@ -350,7 +350,7 @@ void iterate(zval *arr, char * input_str, zval * return_value)
     }
 }
 
-void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * return_value)
+void deepJump(struct token * token_struct, zval * arr, char * save_ptr, zval * return_value)
 {
     if(arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
         return;
@@ -363,13 +363,13 @@ void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * ret
 
     zval *zv_dest;
 
-    if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val)+1, (void**)&data1) == SUCCESS) {
+    if(zend_hash_find(HASH_OF(arr), token_struct->prop.val, strlen(token_struct->prop.val)+1, (void**)&data1) == SUCCESS) {
 
-        switch(token_struct.prop.type) {
+        switch(token_struct->prop.type) {
             case RANGE:
 
-                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data2) == SUCCESS) {
-                    for(x = token_struct.prop.indexes[0]; x < token_struct.prop.indexes[1]; x++) {
+                if(zend_hash_find(HASH_OF(arr), token_struct->prop.val, strlen(token_struct->prop.val) + 1, (void**)&data2) == SUCCESS) {
+                    for(x = token_struct->prop.indexes[0]; x < token_struct->prop.indexes[1]; x++) {
                         if(zend_hash_index_find(HASH_OF(*data2), x, (void**)&data3) == SUCCESS) {
                             if(*save_ptr == '\0') {
                                 ALLOC_ZVAL(zv_dest);
@@ -385,9 +385,9 @@ void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * ret
                 break;
             case INDEX:
 
-                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data2) == SUCCESS) {
-                    for(x = 0; x < token_struct.prop.index_count; x++) {
-                        if(zend_hash_index_find(HASH_OF(*data2), token_struct.prop.indexes[x], (void**)&data3) == SUCCESS) {
+                if(zend_hash_find(HASH_OF(arr), token_struct->prop.val, strlen(token_struct->prop.val) + 1, (void**)&data2) == SUCCESS) {
+                    for(x = 0; x < token_struct->prop.index_count; x++) {
+                        if(zend_hash_index_find(HASH_OF(*data2), token_struct->prop.indexes[x], (void**)&data3) == SUCCESS) {
                             if(*save_ptr == '\0') {
                                 ALLOC_ZVAL(zv_dest);
                                 MAKE_COPY_ZVAL(data3, zv_dest);
@@ -401,7 +401,7 @@ void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * ret
                 break;
             case ANY:
 
-                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data2) == SUCCESS) {
+                if(zend_hash_find(HASH_OF(arr), token_struct->prop.val, strlen(token_struct->prop.val) + 1, (void**)&data2) == SUCCESS) {
                     for(
                         zend_hash_internal_pointer_reset_ex(HASH_OF(*data2), &pos);
                         zend_hash_get_current_data_ex(HASH_OF(*data2), (void**) &data3, &pos) == SUCCESS;
@@ -420,7 +420,7 @@ void deepJump(struct token token_struct, zval * arr, char * save_ptr, zval * ret
                 break;
             case SINGLE_KEY:
             default:
-                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data2) == SUCCESS) {
+                if(zend_hash_find(HASH_OF(arr), token_struct->prop.val, strlen(token_struct->prop.val) + 1, (void**)&data2) == SUCCESS) {
                     if(*save_ptr == '\0') {
                         ALLOC_ZVAL(zv_dest);
                         MAKE_COPY_ZVAL(data2, zv_dest);
@@ -501,17 +501,14 @@ void findByValue(char * key, zval *arr, char * str_ptr)
 }
 
 bool compare_lt(expr * lh, expr * rh) {
-    printf("DOING A COMPARISON!");
     return atoi((*lh).value) < atoi((*rh).value);
 }
 
 bool compare_gt(expr * lh, expr * rh) {
-    printf("DOING A COMPARISON!");
     return atoi((*lh).value) > atoi((*rh).value);
 }
 
 bool compare_and(expr * lh, expr * rh) {
-    printf("DOING A COMPARISON!");
     return (*lh).value_bool && (*rh).value_bool;
 }
 

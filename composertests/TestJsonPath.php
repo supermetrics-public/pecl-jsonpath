@@ -23,9 +23,9 @@ class TestJsonPath extends PHPUnit_Framework_TestCase
         "book": [
             {
                 "category": "reference",
-                "author": "Nigel Rees",
                 "title": "Sayings of the Century",
-                "price": 8.95
+                "price": 8.95,
+                "author": "Nigel Rees"
             },
             {
                 "category": "fiction",
@@ -127,7 +127,7 @@ JSON;
     {
         $this->compare("$..['store']..['title']");
     }
-
+//
     public function test7()
     {
         $this->compare('$..title');
@@ -191,6 +191,36 @@ JSON;
     public function test19()
     {
         $this->compare('$..book[*].title');
+    }
+
+    public function test20()
+    {
+        $this->compare('$.store.book[?(@.author == "Evelyn Waugh")]');
+    }
+
+    public function test21()
+    {
+        $this->compare('$.store.book[?(@.author == "Evelyn Waugh" || @.author == "Nigel Rees")]');
+    }
+
+    public function test22()
+    {
+        $this->compare('$.store.book[?(@.author == "Nigel Rees" || @.title == "Moby Dick")]');
+    }
+
+    public function test23()
+    {
+        $this->compare('$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick")]');
+    }
+
+    public function test24()
+    {
+        $this->compare('$.store.book[?(@.category == "fiction")]'); //Returns 3 of a kind
+    }
+
+    public function test25()
+    {
+        $this->compare('$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick" || @.author == "Herman Melville")]');
     }
 
     public function compare($path)

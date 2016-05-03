@@ -260,7 +260,7 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                 //TODO GETTING END OF STRING
                 if (what) {
                     strncpy(expr_list[i].label, p, what - p);
-                    buffer2[(what - p)] = '\0';
+                    expr_list[i].label[(what - p)] = '\0';
                 } else {
                     strcpy(expr_list[i].label, p);
                 }
@@ -432,6 +432,7 @@ token_type get_token_type(token token) {
                return TYPE_PAREN;
         case LITERAL:
         case NODE_NAME:
+        case BOOL:
                return TYPE_OPERAND;
     }
 }
@@ -439,9 +440,9 @@ token_type get_token_type(token token) {
 bool evaluate_postfix_expression(expr * expression_original, int count) {
 
 
-    expr expression[100];
+    expr expression[100] = {0};
 
-    memcpy(expression, expression_original, sizeof(expr) * sizeof(expression_original));
+    memcpy(expression, expression_original, sizeof(expr) * count);
 
 //    memcpy ( &expression, &expression_original, sizeof(expr)* count);
 
@@ -454,19 +455,21 @@ bool evaluate_postfix_expression(expr * expression_original, int count) {
     int i;
 
     for(i = 0; i < count; i++) {
+
         switch(get_token_type(expression[i].type)) {
-            case TYPE_OPERAND:
-                Stack_Push(&S, &expression[i]);
-                break;
             case TYPE_OPERATOR:
                 expr_rh = Stack_Top(&S);
                 Stack_Pop(&S);
+
                 expr_lh = Stack_Top(&S);
 
                 temp_res = exec_cb_by_token(expression[i].type)(expr_lh, expr_rh);
 
                 (*expr_lh).type = BOOL;
                 (*expr_lh).value_bool = temp_res;
+                break;
+            case TYPE_OPERAND:
+                Stack_Push(&S, &expression[i]);
                 break;
         }
     }
