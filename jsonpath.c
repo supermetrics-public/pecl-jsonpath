@@ -132,7 +132,7 @@ const char * const visible[] = {
                 break;
             case TYPE_OPERAND:
             case TYPE_PAREN:
-                printf("%d %s (%s) \n", i, expr[i].value, expr[i].label);
+                printf("%d %s (%s) \n", i, expr[i].value, expr[i].label[0]);
                 break;
         }
     }
@@ -263,7 +263,7 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                                 // Fill up expression NODE_NAME VALS
                                 for(i = 0; i < token_struct.prop.expr_count; i++) {
                                     if(token_struct.prop.expr_list[i].type == NODE_NAME) {
-                                        findByValue(token_struct.prop.expr_list[i].label, *data2, token_struct.prop.expr_list[i].value);
+                                        findByValue(token_struct.prop.expr_list[i].label[0], *data2, token_struct.prop.expr_list[i].value);
                                         printf("LAbel is %s", token_struct.prop.expr_list[i].value);
 //                                        printf("BACK AT THE TOP count is %d label is %s %s\n", token_struct.prop.expr_count, token_struct.prop.expr_list[i].value, token_struct.prop.expr_list[i].label);
                                     }

@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#define MAX_NODE_DEPTH 5
+#define MAX_NODE_NAME_LEN 50 /* Includes null-terminator */
+
 typedef enum {
     DEFAULT,
     ROOT,
@@ -59,7 +62,8 @@ typedef struct {
     token type;
     char value[100];
     bool value_bool;
-    char label[100];
+    char label[MAX_NODE_DEPTH][MAX_NODE_NAME_LEN];
+    int label_count;
 } expr;
 
 struct token {

@@ -227,6 +227,65 @@ void tokenize_bracket_contents(char * contents, struct token * tok)
     }
 }
 
+/*
+    Break down node hierarchy string into array
+*/
+void tok_node_name(expr * node, char * cur)
+{
+    int x = 0, cpy_len = 0;
+    char * end, * start;
+
+    end = strpbrk(cur, " )<>");
+
+    node->label_count = 0;
+
+    if(end == NULL) {
+        fprintf(stderr, "Error: Unable to find end of node name\n");
+        return;
+    }
+
+    for(; cur < end; cur++) {
+
+        if(x == MAX_NODE_DEPTH) {
+            printf("Error: Exceeded max node depth of %d\n", MAX_NODE_DEPTH);
+            return;
+        }
+
+        /* Find the start of an expr segment */
+        if(*cur == '.') {
+            start = (cur + 1);
+        } else {
+            /*
+                If this character is the last in the current segment, copy
+                the segment name over
+            */
+            if(*(cur + 1) == '.' || (cur + 1) == end) {
+
+                cpy_len = cur - start + 1;
+
+                if(cpy_len > MAX_NODE_NAME_LEN - 1) {
+                    printf("Error: Exceeded max node name length of %d\n", MAX_NODE_NAME_LEN - 1);
+                    return;
+                }
+
+                strncpy(node->label[x], start, cpy_len);
+                node->label[x][cpy_len] = '\0';
+                node->label_count++;
+
+                x++;
+            }
+        }
+    }
+
+    int i;
+
+    for(i = 0; i < node->label_count; i++) {
+        printf("Label: %s\n", node->label[i]);
+    }
+    
+    printf("Total Labels: %d\n", node->label_count);
+}
+
 void tokenize_filter_expression(char * contents, struct token * tok)
 {
     char * p;
@@ -250,20 +309,8 @@ void tokenize_filter_expression(char * contents, struct token * tok)
 
             case '@':
                 p++;
-                if(*p != '.') {
-                    printf("Missing period .");
-                }
-                p++;
 
-                what = strpbrk(p, " )<>");
-
-                //TODO GETTING END OF STRING
-                if (what) {
-                    strncpy(expr_list[i].label, p, what - p);
-                    expr_list[i].label[(what - p)] = '\0';
-                } else {
-                    strcpy(expr_list[i].label, p);
-                }
+                tok_node_name(&expr_list[i], p);
 
                 expr_list[i].type = NODE_NAME;
                 i++;
