@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 #define MAX_NODE_DEPTH 5
-#define MAX_NODE_NAME_LEN 50 /* Includes null-terminator */
+#define MAX_NODE_NAME_LEN 25 /* Includes null-terminator */
 
 typedef enum {
     DEFAULT,
@@ -80,8 +80,6 @@ struct token {
 
 bool tokenize(char ** input, struct token * tok);
 
-/** START All things imported from expr.h **/
-
 typedef bool (*compare_cb)(expr *, expr *);
 
 void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int * out_count);
@@ -107,7 +105,5 @@ void Stack_Init(Stack *S);
 expr * Stack_Top(Stack *S);
 void Stack_Push(Stack *S, expr * expr);
 void Stack_Pop(Stack *S);
-
-/** END All things imported from expr.h **/
 
 #endif /* TOKENIZER_H */

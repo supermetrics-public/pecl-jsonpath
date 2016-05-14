@@ -40,7 +40,7 @@ static int le_jsonpath;
 
 void iterate(zval *arr, char * input_str, zval * return_value);
 void deepJump(struct token * token_struct, zval * arr, char * save_ptr, zval * return_value);
-void findByValue(char * key, zval *arr, char * str_ptr);
+bool findByValue(zval *arr, expr * node);
 
 /* {{{ PHP_INI
  */
@@ -107,6 +107,7 @@ PHP_FUNCTION(path_lookup)
 
 void output_postifx_expr(expr * expr, int count) {
 
+    printf("Expression output:\n");
     int i;
 
 const char * const visible[] = {
@@ -132,7 +133,7 @@ const char * const visible[] = {
                 break;
             case TYPE_OPERAND:
             case TYPE_PAREN:
-                printf("%d %s (%s) \n", i, expr[i].value, expr[i].label[0]);
+                printf("%d %s (%s) \n", i, expr[i].value, expr[i].label[1]);
                 break;
         }
     }
@@ -249,7 +250,6 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                         break;
                     case FILTER:
 
-//                        ZVAL_STRING(tmpz, token_struct.prop.expr.rh_val, 1);
                         if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
                             for(
                                 zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
@@ -257,78 +257,24 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                                 zend_hash_move_forward_ex(HASH_OF(*data), &pos)
                             ) {
 
-
-
                                 // For each array entry, find the node names and populate their values
                                 // Fill up expression NODE_NAME VALS
                                 for(i = 0; i < token_struct.prop.expr_count; i++) {
                                     if(token_struct.prop.expr_list[i].type == NODE_NAME) {
-                                        findByValue(token_struct.prop.expr_list[i].label[0], *data2, token_struct.prop.expr_list[i].value);
-                                        printf("LAbel is %s", token_struct.prop.expr_list[i].value);
-//                                        printf("BACK AT THE TOP count is %d label is %s %s\n", token_struct.prop.expr_count, token_struct.prop.expr_list[i].value, token_struct.prop.expr_list[i].label);
+                                        if(!findByValue(*data2, &token_struct.prop.expr_list[i])) {
+                                            continue;
+                                        }
                                     }
                                 }
-
-                                printf("\nThe expr count is %d\n", token_struct.prop.expr_count);
-                                output_postifx_expr(token_struct.prop.expr_list, token_struct.prop.expr_count);
+//                                output_postifx_expr(token_struct.prop.expr_list, token_struct.prop.expr_count);
 
                                 if(evaluate_postfix_expression(token_struct.prop.expr_list, token_struct.prop.expr_count)) {
                                     ALLOC_ZVAL(zv_dest);
                                     MAKE_COPY_ZVAL(data2, zv_dest);
                                     add_next_index_zval(return_value, zv_dest);
-                                } else {
-                                    printf("Unsuccessful evaluation EXPR COUNT%d\n", token_struct.prop.expr_count);
                                 }
                             }
                         }
-
-//                        switch(token_struct.prop.expr.op) {
-//
-//                            case EQ:
-//                                ZVAL_STRING(tmpz, token_struct.prop.expr.rh_val, 1);
-//                                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
-//                                    for(
-//                                        zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
-//                                        zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
-//                                        zend_hash_move_forward_ex(HASH_OF(*data), &pos)
-//                                    ) {
-//
-//                                        findByValue(token_struct.prop.expr.lh_val, tmpz, *data2, return_value);
-//                                    }
-//                                }
-//                                break;
-//                            case NE:
-//                                printf("BOOPING EQ!");
-//                                break;
-//                            case LT:
-//                                printf("CLOOPING EQ!");
-//                                break;
-//                            case LTE:
-//                                ZVAL_STRING(tmpz, token_struct.prop.expr.rh_val, 1);
-//
-//
-//                                if(zend_hash_find(HASH_OF(arr), token_struct.prop.val, strlen(token_struct.prop.val) + 1, (void**)&data) == SUCCESS) {
-//                                    for(
-//                                        zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
-//                                        zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
-//                                        zend_hash_move_forward_ex(HASH_OF(*data), &pos)
-//                                    ) {
-//
-//                                        findByValue(token_struct.prop.expr.lh_val, tmpz, *data2, return_value);
-//                                    }
-//                                }
-//
-//                                break;
-//                            case GT:
-//                                printf("ELOOPING EQ!");
-//                                break;
-//                            case GTE:
-//                                printf("FLOOPING EQ!");
-//                                break;
-//                            case ISSET:
-//                                printf("GLOOPING EQ!");
-//                                break;
-//                        }
 
                         data = NULL;
 
@@ -451,7 +397,7 @@ void deepJump(struct token * token_struct, zval * arr, char * save_ptr, zval * r
  * *array   array to check in
  * **entry  pointer to array entry
  */
-void findByValue(char * key, zval *arr, char * str_ptr)
+bool findByValue(zval *arr, expr * node)
 {
 	zval *entry,				/* pointer to array entry */
         * res,					/* comparison result */
@@ -464,40 +410,24 @@ void findByValue(char * key, zval *arr, char * str_ptr)
     MAKE_STD_ZVAL(res);
     MAKE_STD_ZVAL(entry);
 
-    zval *var;
-    char *cstr;
-    int cstrlen;
+    int i;
 
-    //TODO key is not a trailing \0
-    if(zend_hash_find(HASH_OF(arr), key, strlen(key) + 1, (void**)&data) == SUCCESS) {
-
-        if (Z_TYPE_P(*data) != IS_STRING) {
-            convert_to_string(*data);
+    for(i = 0; i < node->label_count; i++) {
+        if(zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i])+1, (void**)&data) == SUCCESS) {
+            arr = *data;
+        } else {
+            node->value[0] = '\0';
+            return false;
         }
-//printf("FOUND!");
-        strcpy(str_ptr, Z_STRVAL_P(*data));
-        printf("ddd %s!", Z_STRVAL_P(*data));
-//        cstr =
-//        cstrlen = Z_STRLEN_P(var);
-    } else {
-//        printf("NOT FOUND!");
     }
 
+    if (Z_TYPE_P(*data) != IS_STRING) {
+        convert_to_string(*data);
+    }
 
-//    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(array), (void **)&entry, &pos) == SUCCESS) {
-////
-//		compare_function(&res, value, *entry TSRMLS_CC);
-////
-//		if (Z_LVAL(res)) {
-//            zend_hash_get_current_key_zval_ex(Z_ARRVAL_P(array), entry, &pos);
-//////
-////            ALLOC_ZVAL(zv_dest);
-////            MAKE_COPY_ZVAL(&data, zv_dest);
-////            add_next_index_zval(return_value, zv_dest);
-//		}
-////
-//		zend_hash_move_forward_ex(Z_ARRVAL_P(array), &pos);
-//    }
+    strcpy(node->value, Z_STRVAL_P(*data));
+
+    return true;
 }
 
 bool compare_lt(expr * lh, expr * rh) {

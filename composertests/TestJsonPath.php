@@ -68,7 +68,10 @@ class TestJsonPath extends PHPUnit_Framework_TestCase
             "category": "reference",
             "author": "Nigel Rees",
             "title": "Sayings of the Century",
-            "price": 8.95
+            "price": 8.95,
+            "id" : {
+                "isbn": "684832674"
+            }
         },
         {
             "category": "fiction",
@@ -221,7 +224,27 @@ JSON;
 
     public function test25()
     {
-        $this->compare('$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick" || @.author == "Evelyn Waugh")]');
+        $this->compare(
+            '$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick" || @.author == "Evelyn Waugh")]'
+        );
+    }
+
+    public function test26()
+    {
+        //TODO test "0684832674"
+        $this->compare('$.book[?(@.id.isbn == "684832674")]');
+    }
+
+    public function test27()
+    {
+        //TODO test "0684832674"
+        $this->compare('$.book[?(@.id.isbn == "684832674" && @.author == "Nigel Rees")]');
+    }
+
+    public function test28()
+    {
+        //TODO test "0684832674"
+        $this->compare('$.book[?(@.id.isbn == "684832674" || @.author == "Herman Melville")]');
     }
 
     public function compare($path)
