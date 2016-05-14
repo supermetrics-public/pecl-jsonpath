@@ -127,6 +127,7 @@ JSON;
     {
         $this->compare("$..['store']..['title']");
     }
+
 //
     public function test7()
     {
@@ -220,7 +221,7 @@ JSON;
 
     public function test25()
     {
-        $this->compare('$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick" || @.author == "Herman Melville")]');
+        $this->compare('$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick" || @.author == "Evelyn Waugh")]');
     }
 
     public function compare($path)
