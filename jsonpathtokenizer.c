@@ -233,16 +233,17 @@ void tokenize_bracket_contents(char * contents, struct token * tok)
 void tok_node_name(expr * node, char ** cur) {
 
     int x = 0, cpy_len = 0;
-    char * end, * start;
+    char * end, * start, * next;
 
+    /* Location where node name list terminates */
     end = strpbrk(*cur, " )<>");
-
-    node->label_count = 0;
 
     if(end == NULL) {
         fprintf(stderr, "Error: Unable to find end of node name\n");
         return;
     }
+
+    node->label_count = 0;
 
     for(; *cur < end; (*cur)++) {
 
@@ -252,28 +253,37 @@ void tok_node_name(expr * node, char ** cur) {
         }
 
         /* Find the start of an expr segment */
-        if(**cur == '.') {
+        if(**cur == '.' || **cur == '\'' || **cur == '"') {
+
             start = (*cur + 1);
-        } else {
-            /*
-                If this character is the last in the current segment, copy
-                the segment name over
-            */
-            if(*(*cur + 1) == '.' || (*cur + 1) == end) {
 
-                cpy_len = *cur - start + 1;
+            /* Find the boundary char for current node name */
+            next = strpbrk(start, ".\"'") ?: end;
 
-                if(cpy_len > MAX_NODE_NAME_LEN - 1) {
-                    printf("Error: Exceeded max node name length of %d\n", MAX_NODE_NAME_LEN - 1);
-                    return;
-                }
-
-                strncpy(node->label[x], start, cpy_len);
-                node->label[x][cpy_len] = '\0';
-                node->label_count++;
-
-                x++;
+            /* Make sure boundary char is not in another expression */
+            if(**cur == '.' && next > end) {
+                next = end;
             }
+
+            cpy_len = next - start;
+
+            if(cpy_len > MAX_NODE_NAME_LEN - 1) {
+                printf("Error: Exceeded max node name length of %d\n", MAX_NODE_NAME_LEN - 1);
+                return;
+            }
+
+            strncpy(node->label[x], start, cpy_len);
+            node->label[x][cpy_len] = '\0';
+            node->label_count++;
+
+            /* Make sure loop doesn't do another pass on boundary char */
+            if(**cur == '\'' || **cur == '"') {
+                (*cur)++;
+            }
+
+            *cur += cpy_len;
+
+            x++;
         }
     }
 }
