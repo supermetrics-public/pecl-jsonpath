@@ -889,6 +889,221 @@ bool test12() {
     }
 }
 
+void test13() {
+
+    expr expr_in[] = {
+        {
+            ISSET
+        },
+        {
+            LITERAL,
+            "OP1",
+            true
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+    printf("Expected: OP1 ISSET 30 10 > &&\n");
+    printf("Actual:   ");
+    output_postifx_expr(expr_out, out_count);
+    printf("\n");
+}
+
+void test14() {
+
+    expr expr_in[] = {
+        {
+            ISSET
+        },
+        {
+            LITERAL,
+            "OP1",
+            true
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+void test15() {
+
+    expr expr_in[] = {
+        {
+            ISSET
+        },
+        {
+            LITERAL,
+            "OP1",
+            false
+        },
+        {
+            AND
+        },
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: FALSE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+void test16() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            AND
+        },
+        {
+            ISSET
+        },
+        {
+            LITERAL,
+            "OP1",
+            true
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: TRUE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
+void test17() {
+
+    expr expr_in[] = {
+        {
+            LITERAL,
+            "30"
+        },
+        {
+            GT
+        },
+        {
+            LITERAL,
+            "10"
+        },
+        {
+            AND
+        },
+        {
+            ISSET
+        },
+        {
+            LITERAL,
+            "OP1",
+            false
+        }
+    };
+
+    expr expr_out[100];
+
+    int in_count = sizeof(expr_in) / sizeof(expr_in[0]),
+        out_count = 0;
+
+    convert_to_postfix(expr_in, in_count, expr_out, &out_count);
+
+    printf("Expected: FALSE\n");
+    printf("Actual:   ");
+
+    if(evaluate_postfix_expression(expr_out, out_count)) {
+        printf("TRUE\n");
+    } else {
+        printf("FALSE\n");
+    }
+}
+
 void output_postifx_expr(expr * expr, int count) {
 
     int i;
@@ -942,6 +1157,16 @@ int main() {
     test11();
     printf("**** Test 12 ****\n");
     test12();
+    printf("**** Test 13 ****\n");
+    test13();
+    printf("**** Test 14 ****\n");
+    test14();
+    printf("**** Test 15 ****\n");
+    test15();
+    printf("**** Test 16 ****\n");
+    test16();
+    printf("**** Test 17 ****\n");
+    test17();
 
     return 0;
 }
@@ -964,4 +1189,8 @@ bool compare_or(expr * lh, expr * rh) {
 
 bool compare_eq(expr * lh, expr * rh) {
     return atoi((*lh).value) == atoi((*rh).value);
+}
+
+bool isset(expr * lh, expr * rh) {
+    return (*rh).value_bool;
 }

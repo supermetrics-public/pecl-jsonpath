@@ -4,6 +4,7 @@
 int extract_bracket_contents(char * start, char *buffer);
 void tokenize_bracket_contents(char * contents, struct token * tok);
 void tokenize_filter_expression(char * contents, struct token * tok);
+bool is_unary(token token_type);
 
 typedef enum {
     SQUARE_BRACKETS,
@@ -469,6 +470,7 @@ token_type get_token_type(token token) {
         case GTE:
         case OR:
         case AND:
+        case ISSET:
                return TYPE_OPERATOR;
         case PAREN_LEFT:
         case PAREN_RIGHT:
@@ -497,10 +499,15 @@ bool evaluate_postfix_expression(expr * expression_original, int count) {
 
         switch(get_token_type(expression[i].type)) {
             case TYPE_OPERATOR:
-                expr_rh = Stack_Top(&S);
-                Stack_Pop(&S);
 
-                expr_lh = Stack_Top(&S);
+                if(!is_unary(expression[i].type)) {
+                    expr_rh = Stack_Top(&S);
+                    Stack_Pop(&S);
+                    expr_lh = Stack_Top(&S);
+                } else {
+                    expr_rh = Stack_Top(&S);
+                    expr_lh = expr_rh;
+                }
 
                 temp_res = exec_cb_by_token(expression[i].type)(expr_lh, expr_rh);
 
@@ -599,8 +606,7 @@ compare_cb exec_cb_by_token(token token_type) {
             printf("Callback not supported yet");
            break;
         case ISSET:
-            printf("Callback not supported yet");
-           break;
+            return isset;
         case OR:
             return compare_or;
            break;
@@ -614,6 +620,10 @@ compare_cb exec_cb_by_token(token token_type) {
             printf("Error, no callback for token");
             break;
     }
+}
+
+bool is_unary(token token_type) {
+    return token_type == ISSET;
 }
 
 //TODO: Distinguish between operator and token?
@@ -638,6 +648,7 @@ int get_operator_precedence(token token_type) {
         case OR:
             return 2;
         case ISSET:
+            return -1;
         case PAREN_LEFT:
         case PAREN_RIGHT:
         case LITERAL:
@@ -647,3 +658,4 @@ int get_operator_precedence(token token_type) {
             break;
     }
 }
+
