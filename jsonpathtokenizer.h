@@ -92,7 +92,7 @@ bool compare_gt(expr * lh, expr * rh);
 bool compare_and(expr * lh, expr * rh);
 bool compare_or(expr * lh, expr * rh);
 bool compare_eq(expr * lh, expr * rh);
-bool isset(expr * lh, expr * rh); // lh = rh
+bool isset2(expr * lh, expr * rh); // lh = rh
 
 #define STACK_MAX 100
 

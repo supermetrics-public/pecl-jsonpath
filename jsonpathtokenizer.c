@@ -297,6 +297,7 @@ void tokenize_filter_expression(char * contents, struct token * tok)
     char * what;
     int i = 0;
     expr expr_list[100];
+    int x = 0;
 
     if(!extract_balanced_element_contents(contents, buffer, PARENTHESES)) {
         printf("Unable to extract contents ()");
@@ -372,6 +373,12 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                     printf("There is an error");
                 }
                 p++;
+
+                if(expr_list[i-1].type == NODE_NAME) {
+                    expr_list[i].type = ISSET;
+                    i++;
+                }
+
                 expr_list[i].type = OR;
                 i++;
                 break;
@@ -380,7 +387,15 @@ void tokenize_filter_expression(char * contents, struct token * tok)
                     printf("There is an error");
                 }
                 p++;
+
+                if(expr_list[i-1].type == NODE_NAME) {
+                    expr_list[i].type = ISSET;
+                    i++;
+                }
+
                 expr_list[i].type = AND;
+
+
                 i++;
                 break;
             case ')':
@@ -606,7 +621,7 @@ compare_cb exec_cb_by_token(token token_type) {
             printf("Callback not supported yet");
            break;
         case ISSET:
-            return isset;
+            return isset2;
         case OR:
             return compare_or;
            break;

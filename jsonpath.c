@@ -41,6 +41,7 @@ static int le_jsonpath;
 void iterate(zval *arr, char * input_str, zval * return_value);
 void deepJump(struct token * token_struct, zval * arr, char * save_ptr, zval * return_value);
 bool findByValue(zval *arr, expr * node);
+bool checkIfKeyExists(zval *arr, expr * node);
 
 /* {{{ PHP_INI
  */
@@ -260,13 +261,17 @@ void iterate(zval *arr, char * input_str, zval * return_value)
                                 // For each array entry, find the node names and populate their values
                                 // Fill up expression NODE_NAME VALS
                                 for(i = 0; i < token_struct.prop.expr_count; i++) {
-                                    if(token_struct.prop.expr_list[i].type == NODE_NAME) {
+
+                                    if(token_struct.prop.expr_list[i+1].type == ISSET) {
+                                        if(!checkIfKeyExists(*data2, &token_struct.prop.expr_list[i])) {
+                                            continue;
+                                        }
+                                    } else if(token_struct.prop.expr_list[i].type == NODE_NAME) {
                                         if(!findByValue(*data2, &token_struct.prop.expr_list[i])) {
                                             continue;
                                         }
                                     }
                                 }
-//                                output_postifx_expr(token_struct.prop.expr_list, token_struct.prop.expr_count);
 
                                 if(evaluate_postfix_expression(token_struct.prop.expr_list, token_struct.prop.expr_count)) {
                                     ALLOC_ZVAL(zv_dest);
@@ -430,6 +435,40 @@ bool findByValue(zval *arr, expr * node)
     return true;
 }
 
+/**
+ * *value   value to check for
+ * *array   array to check in
+ * **entry  pointer to array entry
+ */
+bool checkIfKeyExists(zval *arr, expr * node) {
+
+	zval *entry,				/* pointer to array entry */
+        * res,					/* comparison result */
+        ** data;
+
+    zval *zv_dest;
+
+	HashPosition pos;			/* hash iterator */
+
+    int i;
+
+    node->value_bool = false;
+
+    //TODO clean this up?
+
+    for(i = 0; i < node->label_count; i++) {
+        if(zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i])+1, (void**)&data) != SUCCESS) {
+            node->value_bool = false;
+            return false;
+        } else {
+            node->value_bool = true;
+            arr = *data;
+        }
+    }
+
+    return true;
+}
+
 bool compare_lt(expr * lh, expr * rh) {
     return atoi((*lh).value) < atoi((*rh).value);
 }
@@ -459,6 +498,10 @@ bool compare_eq(expr * lh, expr * rh) {
     compare_function(result, a, b TSRMLS_CC);
 
     return Z_LVAL_P(result) == 0;
+}
+
+bool isset2(expr * lh, expr * rh) {
+    return (*lh).value_bool && (*rh).value_bool;
 }
 
 /* {{{ php_jsonpath_init_globals
