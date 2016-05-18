@@ -49,6 +49,7 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                 } else {
                     (*p)++;
                     extract_unbounded_literal(*p, buffer, bufSize);
+                    *p += strlen(buffer);
                     found_token = CHILD_NODE;
                 }
                 //TODO some exception for deep scanning on bracket ..['']
@@ -61,10 +62,12 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                 switch(**p) {
                     case '\'':
                         extract_quoted_literal(*p, buffer, bufSize);
+                        *p += strlen(buffer) + 1;
                         found_token = CHILD_NODE;
                         break;
                     case '"':
                         extract_quoted_literal(*p, buffer, bufSize);
+                        *p += strlen(buffer) + 1;
                         found_token = CHILD_NODE;
                         break;
                     case '?':
@@ -129,10 +132,12 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                 break;
             case '\'':
                 extract_quoted_literal(*p, buffer, bufSize);
+                *p += strlen(buffer) + 1;
                 found_token = LITERAL;
                 break;
             case '"':
                 extract_quoted_literal(*p, buffer, bufSize);
+                *p += strlen(buffer) + 1;
                 found_token = LITERAL;
                 break;
         }
