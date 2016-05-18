@@ -4,12 +4,13 @@
 #include <stdio.h>
 
 typedef enum {
+    NOT_FOUND,      /* Token not found */
     ROOT,           /* $ */
     CUR_NODE,       /* @ */
     WILD_CARD,      /* * */
     DEEP_SCAN,      /* .. */
-    CHILD_NODE,     /* .child, ['child'] */
-    RIGHT_SQ,       /* ] */
+    NODE,           /* .child, ['child'] */
+    EXPR_END,       /* ] */
     SLICE,          /* : */
     CHILD_SEP,      /* , */
     EXPR_START,     /* ? */

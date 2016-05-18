@@ -11,13 +11,15 @@ int main() {
 
     char buffer[1000];
 
+    printf("Input stream: %s\n", p);
+
     printf("Token stream: \n");
 
-    while((scan_val = scan(&p, buffer, sizeof(buffer))) != -1) {
+    while((scan_val = scan(&p, buffer, sizeof(buffer))) != NOT_FOUND) {
 
         printf("%s ", visible[scan_val]);
 
-        if(scan_val == CHILD_NODE || scan_val == LITERAL) {
+        if(scan_val == NODE || scan_val == LITERAL) {
             printf("the value is `%s`", buffer);
         }
 

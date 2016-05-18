@@ -6,12 +6,13 @@ static void extract_quoted_literal(char *p, char * buffer, size_t bufSize);
 static void extract_unbounded_literal(char *p, char * buffer, size_t bufSize);
 
 const char * visible[] = {
+    "NOT_FOUND,      /* Token not found */",
     "ROOT,          /* $ */",
     "CUR_NODE,      /* @ */",
     "WILD_CARD,     /* * */",
     "DEEP_SCAN,     /* .. */",
-    "CHILD_NODE,    /* .child, ['child'] */",
-    "RIGHT_SQ,      /* ] */",
+    "NODE,          /* .child, ['child'] */",
+    "EXPR_END,      /* ] */",
     "SLICE,         /* : */",
     "CHILD_SEP,     /* , */",
     "EXPR_START,    /* ? */",
@@ -34,9 +35,9 @@ const char * visible[] = {
 
 token scan(char ** p, char * buffer, size_t bufSize) {
 
-    token found_token = -1;
+    token found_token = NOT_FOUND;
 
-    while(**p != '\0' && found_token == -1) {
+    while(**p != '\0' && found_token == NOT_FOUND) {
 
         switch(**p) {
 
@@ -46,11 +47,9 @@ token scan(char ** p, char * buffer, size_t bufSize) {
             case '.':
                 if(*(*p+1) == '.') {
                     found_token = DEEP_SCAN;
-                } else {
                     (*p)++;
-                    extract_unbounded_literal(*p, buffer, bufSize);
-                    *p += strlen(buffer);
-                    found_token = CHILD_NODE;
+                } else {
+                    found_token = NODE;
                 }
                 //TODO some exception for deep scanning on bracket ..['']
                 break;
@@ -61,14 +60,10 @@ token scan(char ** p, char * buffer, size_t bufSize) {
 
                 switch(**p) {
                     case '\'':
-                        extract_quoted_literal(*p, buffer, bufSize);
-                        *p += strlen(buffer) + 1;
-                        found_token = CHILD_NODE;
+                        found_token = NODE;
                         break;
                     case '"':
-                        extract_quoted_literal(*p, buffer, bufSize);
-                        *p += strlen(buffer) + 1;
-                        found_token = CHILD_NODE;
+                        found_token = NODE;
                         break;
                     case '?':
                         found_token = EXPR_START;
@@ -76,7 +71,7 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                 }
                 break;
             case ']':
-                found_token = RIGHT_SQ;
+                found_token = EXPR_END;
                 break;
             case '@':
                 found_token = CUR_NODE;
