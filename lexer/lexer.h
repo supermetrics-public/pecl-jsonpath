@@ -28,7 +28,8 @@ typedef enum {
     EMPTY,          /* empty */
     PAREN_OPEN,     /* ( */
     PAREN_CLOSE,    /* ) */
-    LITERAL         /* "some string" 'some string' */
+    LITERAL,        /* "some string" 'some string' */
+    FILTER_START    /* [ */
 } token;
 
 extern const char * visible[];

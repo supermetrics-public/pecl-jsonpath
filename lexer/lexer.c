@@ -7,30 +7,31 @@ static void extract_unbounded_literal(char *p, char * buffer, size_t bufSize);
 
 const char * visible[] = {
     "NOT_FOUND,      /* Token not found */",
-    "ROOT,          /* $ */",
-    "CUR_NODE,      /* @ */",
-    "WILD_CARD,     /* * */",
-    "DEEP_SCAN,     /* .. */",
-    "NODE,          /* .child, ['child'] */",
-    "EXPR_END,      /* ] */",
-    "SLICE,         /* : */",
-    "CHILD_SEP,     /* , */",
-    "EXPR_START,    /* ? */",
-    "STR,           /* \"a string\" 'a string' */",
-    "EQ,            /* == */",
-    "NEQ,           /* != */",
-    "LT,            /* < */",
-    "LTE,           /* <= */",
-    "GT,            /* > */",
-    "GTE,           /* >= */",
-    "RGXP,          /* =~ */",
-    "IN,            /* in */",
-    "NIN,           /* nin */",
-    "SIZE,          /*   */",
-    "EMPTY,         /* empty */",
-    "PAREN_OPEN,    /* ( * /",
-    "PAREN_CLOSE,   /* ) * /",
-    "LITERAL,       /* \"some string\" 'some string' */"
+    "ROOT,           /* $ */",
+    "CUR_NODE,       /* @ */",
+    "WILD_CARD,      /* * */",
+    "DEEP_SCAN,      /* .. */",
+    "NODE,           /* .child, ['child'] */",
+    "EXPR_END,       /* ] */",
+    "SLICE,          /* : */",
+    "CHILD_SEP,      /* , */",
+    "EXPR_START,     /* ? */",
+    "STR,            /* \"a string\" 'a string' */",
+    "EQ,             /* == */",
+    "NEQ,            /* != */",
+    "LT,             /* < */",
+    "LTE,            /* <= */",
+    "GT,             /* > */",
+    "GTE,            /* >= */",
+    "RGXP,           /* =~ */",
+    "IN,             /* in */",
+    "NIN,            /* nin */",
+    "SIZE,           /*   */",
+    "EMPTY,          /* empty */",
+    "PAREN_OPEN,     /* ( */",
+    "PAREN_CLOSE,    /* ) */",
+    "LITERAL         /* \"some string\" 'some string' */",
+    "FILTER_START    /* [ */"
 };
 
 token scan(char ** p, char * buffer, size_t bufSize) {
@@ -47,8 +48,10 @@ token scan(char ** p, char * buffer, size_t bufSize) {
             case '.':
                 if(*(*p+1) == '.') {
                     found_token = DEEP_SCAN;
-                    (*p)++;
                 } else {
+                    (*p)++;
+                    extract_unbounded_literal(*p, buffer, bufSize);
+                    *p += strlen(buffer) - 1;
                     found_token = NODE;
                 }
                 //TODO some exception for deep scanning on bracket ..['']
@@ -60,13 +63,34 @@ token scan(char ** p, char * buffer, size_t bufSize) {
 
                 switch(**p) {
                     case '\'':
+                        extract_quoted_literal(*p, buffer, bufSize);
+                        *p += strlen(buffer) + 2;
+
+                        for (; **p != '\0' && **p == ' '; (*p)++);
+
+                        if(**p != ']') {
+                            //Lexing error
+                        }
                         found_token = NODE;
                         break;
                     case '"':
+                        extract_quoted_literal(*p, buffer, bufSize);
+                        *p += strlen(buffer) + 2;
+
+                        for (; **p != '\0' && **p == ' '; (*p)++);
+
+                        if(**p != ']') {
+                            //Lexing error
+                        }
                         found_token = NODE;
                         break;
                     case '?':
                         found_token = EXPR_START;
+                        break;
+                    default:
+                        /* Pick up start in next iteration, maybe simplify */
+                        (*p)--;
+                        found_token = FILTER_START;
                         break;
                 }
                 break;
@@ -134,6 +158,9 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                 extract_quoted_literal(*p, buffer, bufSize);
                 *p += strlen(buffer) + 1;
                 found_token = LITERAL;
+                break;
+            case '*':
+                found_token = WILD_CARD;
                 break;
         }
 

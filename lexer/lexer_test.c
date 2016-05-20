@@ -3,7 +3,7 @@
 
 int main() {
 
-    char * input_str = "@.some_texst['some_more_text']<>>=<==~:,==!=[?(@.field == 'VALUE' )]";
+    char * input_str = "@.some_texst..some_texst['some_more_text'][*]<>>=<==~:,==!=[?(@.field == 'VALUE' )]";
 
     char * p = input_str;
 
