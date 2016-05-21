@@ -72,26 +72,6 @@ class TestJsonPath extends PHPUnit_Framework_TestCase
             "id" : {
                 "isbn": "684832674"
             }
-        },
-        {
-            "category": "fiction",
-            "author": "Evelyn Waugh",
-            "title": "Sword of Honour",
-            "price": 12.99
-        },
-        {
-            "category": "fiction",
-            "author": "Herman Melville",
-            "title": "Moby Dick",
-            "isbn": "0-553-21311-3",
-            "price": 8.99
-        },
-        {
-            "category": "fiction",
-            "author": "J. R. R. Tolkien",
-            "title": "The Lord of the Rings",
-            "isbn": "0-395-19395-8",
-            "price": 22.99
         }
     ]
 }
@@ -131,7 +111,6 @@ JSON;
         $this->compare("$..['store']..['title']");
     }
 
-//
     public function test7()
     {
         $this->compare('$..title');
@@ -245,6 +224,40 @@ JSON;
     {
         //TODO test "0684832674"
         $this->compare('$.book[?(@.id.isbn == "684832674" || @.author == "Herman Melville")]');
+    }
+
+    public function test29()
+    {
+        $this->compare('$.store.book[?(@["author"] == "Evelyn Waugh")]');
+    }
+
+    public function test30()
+    {
+        $this->compare("$.store.book[?(@['author'] == 'Evelyn Waugh')]");
+    }
+
+    public function test31()
+    {
+        //TODO test "0684832674"
+        $this->compare('$.book[?(@["id"]["isbn"] == "684832674")]');
+    }
+
+    public function test32()
+    {
+        //TODO test "0684832674"
+        $this->compare("$.book[?(@['id']['isbn'] == '684832674')]");
+    }
+
+    public function test33()
+    {
+        //TODO test "0684832674"
+        $this->compare('$.book[?(@["id"]["isbn"] == "684832674" || @.author == "Herman Melville")]');
+    }
+
+    public function test34()
+    {
+        //TODO test "0684832674"
+        $this->compare('$.book[?(@["id"]["isbn"] && @.author == "Nigel Rees")]');
     }
 
     public function compare($path)
