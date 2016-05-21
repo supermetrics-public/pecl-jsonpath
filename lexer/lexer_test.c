@@ -59,13 +59,33 @@ int main() {
     ) ? successes++: failures++;
 
     test(
-        "parse node operator in dot notation",
+        "parse node operator in dot notation and stop at next node operator",
         ".nodename.nextnode", NODE, "nodename", ".nextnode"
+    ) ? successes++: failures++;
+
+    test(
+        "parse node operator in dot notation and stop at space",
+        ".nodename ", NODE, "nodename", " "
+    ) ? successes++: failures++;
+
+    test(
+        "parse node operator in dot notation and stop at bracket",
+        ".nodename[", NODE, "nodename", "["
+    ) ? successes++: failures++;
+
+    test(
+        "parse root node operator",
+        "$.nodename[?()]", ROOT, "", ".nodename[?()]"
     ) ? successes++: failures++;
 
     test(
         "parse node operator in bracket notation and single quotes",
         "['nodename']['nextnode']", NODE, "nodename", "['nextnode']"
+    ) ? successes++: failures++;
+
+    test(
+        "parse node operator in bracket notation and single quotes and ignore extra node name operator",
+        ".['nodename']['nextnode']", NODE, "nodename", "['nextnode']"
     ) ? successes++: failures++;
 
     test(
@@ -75,12 +95,12 @@ int main() {
 
     test(
         "parse deep scan (recursive) operator in dot notation",
-        "..nodename.nodename", DEEP_SCAN, "nodename", ".nodename"
+        "..nodename.nodename", DEEP_SCAN, "", ".nodename.nodename"
     ) ? successes++: failures++;
 
     test(
         "parse deep scan (recursive) operator in bracket notation",
-        "..['nodename']..['nodename']", DEEP_SCAN, "nodename", "..['nodename']"
+        "..['nodename']..['nodename']", DEEP_SCAN, "", ".['nodename']..['nodename']"
     ) ? successes++: failures++;
 
     test(

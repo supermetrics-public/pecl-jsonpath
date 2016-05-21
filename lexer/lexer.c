@@ -41,18 +41,29 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                 found_token = ROOT;
                 break;
             case '.':
-                if(*(*p+1) == '.') {
-                    (*p)++;
-                    found_token = DEEP_SCAN;
-                } else {
-                    found_token = NODE;
+
+                switch(*(*p+1)) {
+                    case '.':
+                        found_token = DEEP_SCAN;
+                        break;
+                    case ' ':  /* space is invalid in . ['node'] */
+                        /* Throw parsing error */
+                        break;
+                    case '[':
+                        break;  /* dot is superfluous in .['node'] */
+                    default:
+                        found_token = NODE;
+                        break;
+
                 }
 
-                (*p)++;
+                if(found_token == NODE) {
+                    (*p)++;
 
-                extract_unbounded_literal(*p, buffer, bufSize);
+                    extract_unbounded_literal(*p, buffer, bufSize);
 
-                *p += strlen(buffer) - 1;
+                    *p += strlen(buffer) - 1;
+                }
 
                 break;
             case '[':
@@ -202,7 +213,7 @@ static void extract_unbounded_literal(char *p, char * buffer, size_t bufSize) {
 
     start = p;
 
-    for (; *p != '\0' && (isalnum(*p) || *p == '_' || *p == '-'); p++);
+    for (; *p != '\0' && !isspace(*p) && !ispunct(*p); p++);
 
     cpy_len = (size_t) (p - start);
 
