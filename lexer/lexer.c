@@ -1,7 +1,8 @@
 #include "lexer.h"
 #include <string.h>
+#ifndef S_SPLINT_S
 #include <ctype.h>
-
+#endif
 static void extract_quoted_literal(char *p, char * buffer, size_t bufSize);
 static void extract_unbounded_literal(char *p, char * buffer, size_t bufSize);
 

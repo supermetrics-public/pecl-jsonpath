@@ -14,14 +14,14 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
-void print_test_behavior(
+static void print_test_behavior(
     char * description,
     char ** p,
     char * buffer,
     size_t bufSize
 );
 
-bool evaluate_test(
+static bool evaluate_test(
     token expected_token,
     char * expected_value,
     char * expected_remaining,
@@ -30,7 +30,7 @@ bool evaluate_test(
     char * actual_remaining
 );
 
-bool test(
+static bool test(
     char * description,
     char * input_str,
     token expected_token,
@@ -230,7 +230,7 @@ void print_test_behavior(
     printf("With parameters:\n");
     printf(
         "\t- %s%s\n\t- %s%s\n\t- %d\n\n",
-        *p, strlen(*p) ? "" : "(Empty)", buffer, strlen(buffer) ? "" : "(Empty)", (int)bufSize
+        *p, strlen(*p) > 0 ? "" : "(Empty)", buffer, strlen(buffer) > 0 ? "" : "(Empty)", (int)bufSize
     );
     printf("Should:\n");
     printf("\t%s\n\n", description);
@@ -250,8 +250,8 @@ bool evaluate_test(
         "\tvalue\t'%s%s'\n"
         "\tremain\t'%s%s'\n\n",
         visible[expected_token],
-        expected_value, strlen(expected_value) ? "" : "(Empty)",
-        expected_remaining, strlen(expected_remaining) ? "" : "(Empty)"
+        expected_value, strlen(expected_value) > 0 ? "" : "(Empty)",
+        expected_remaining, strlen(expected_remaining) > 0 ? "" : "(Empty)"
     );
     printf(ANSI_COLOR_BLUE "Actual:\n" ANSI_COLOR_RESET);
     printf(
@@ -259,8 +259,8 @@ bool evaluate_test(
         "\tvalue\t'%s%s'\n"
         "\tremain\t'%s%s'\n\n",
         visible[actual_token],
-        actual_value, strlen(actual_value) ? "" : "(Empty)",
-        actual_remaining, strlen(actual_remaining) ? "" : "(Empty)"
+        actual_value, strlen(actual_value) > 0 ? "" : "(Empty)",
+        actual_remaining, strlen(actual_remaining) > 0 ? "" : "(Empty)"
     );
     printf("Result:\n");
     if(
