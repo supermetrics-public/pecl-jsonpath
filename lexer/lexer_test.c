@@ -1,30 +1,208 @@
 #include "lexer.h"
 #include <string.h>
+#include <stdbool.h>
+
+/*
+ Source:
+ http://stackoverflow.com/questions/3219393/stdlib-and-colored-output-in-c
+*/
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+void print_test_behavior(
+    char * description,
+    char ** p,
+    char * buffer,
+    size_t bufSize
+);
+
+bool evaluate_test(
+    token expected_token,
+    char * expected_value,
+    char * expected_remaining,
+    token actual_token,
+    char * actual_value,
+    char * actual_remaining
+);
+
+bool test(
+    char * description,
+    char * input_str,
+    token expected_token,
+    char * expected_value,
+    char * expected_remaining
+);
+
 
 int main() {
 
-    char * input_str = "@.some_texst..some_texst['some_more_text'][*]<>>=<==~:,==!=[?(@.field == 'VALUE' )]";
+    int failures = 0, successes = 0;
 
-    char * p = input_str;
+    test(
+        "return no results found for empty path",
+        "", NOT_FOUND, "", ""
+    ) ? successes++: failures++;
 
-    token scan_val;
+    test(
+        "parse root node operator",
+        "$.nodename", ROOT, "", ".nodename"
+    ) ? successes++: failures++;
 
-    char buffer[1000];
+    test(
+        "parse current node operator",
+        "@.nodename", CUR_NODE, "", ".nodename"
+    ) ? successes++: failures++;
 
-    printf("Input stream: %s\n", p);
+    test(
+        "parse node operator in dot notation",
+        ".nodename.nextnode", NODE, "nodename", ".nextnode"
+    ) ? successes++: failures++;
 
-    printf("Token stream: \n");
+    test(
+        "parse node operator in bracket notation and single quotes",
+        "['nodename']['nextnode']", NODE, "nodename", "['nextnode']"
+    ) ? successes++: failures++;
 
-    while((scan_val = scan(&p, buffer, sizeof(buffer))) != NOT_FOUND) {
+    test(
+        "parse node operator in bracket notation and double quotes",
+        "[\"nodename\"][\"nextnode\"]", NODE, "nodename", "[\"nextnode\"]"
+    ) ? successes++: failures++;
 
-        printf("%s ", visible[scan_val]);
+    test(
+        "parse deep scan (recursive) operator in dot notation",
+        "..nodename.nodename", DEEP_SCAN, "nodename", ".nodename"
+    ) ? successes++: failures++;
 
-        if(scan_val == NODE || scan_val == LITERAL) {
-            printf("the value is `%s`", buffer);
-        }
+    test(
+        "parse deep scan (recursive) operator in bracket notation",
+        "..['nodename']..['nodename']", DEEP_SCAN, "nodename", "..['nodename']"
+    ) ? successes++: failures++;
 
-        printf("\n");
-    }
+    test(
+        "parse wild card operator",
+        "*.nodeName", WILD_CARD, "", ".nodeName"
+    ) ? successes++: failures++;
+
+    test(
+        "parse an expression terminator operator",
+        "].nodename", EXPR_END, "", ".nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse an expression slice operator",
+        ":.nodename", SLICE, "", ".nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse an expression child separator operator",
+        ",.nodename", CHILD_SEP, "", ".nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse the start of an expression",
+        "[?()]", EXPR_START, "", "()]"
+    ) ? successes++: failures++;
+
+
+    printf("\n--------------------\n\n");
+    printf("%d test(s) executed\n", successes + failures);
+    printf("Success:\t%d\n", successes);
+    printf("Failures:\t%d\n\n", failures);
 
     return 0;
+}
+
+
+
+void print_test_behavior(
+    char * description,
+    char ** p,
+    char * buffer,
+    size_t bufSize
+) {
+    printf("\n--------------------\n\n");
+    printf("scan()\n\n");
+    printf("With parameters:\n");
+    printf(
+        "\t- %s%s\n\t- %s%s\n\t- %d\n\n",
+        *p, strlen(*p) ? "" : "(Empty)", buffer, strlen(buffer) ? "" : "(Empty)", (int)bufSize
+    );
+    printf("Should:\n");
+    printf("\t%s\n\n", description);
+}
+
+bool evaluate_test(
+    token expected_token,
+    char * expected_value,
+    char * expected_remaining,
+    token actual_token,
+    char * actual_value,
+    char * actual_remaining
+) {
+    printf(ANSI_COLOR_BLUE "Expected:\n" ANSI_COLOR_RESET);
+    printf(
+        "\ttoken\t%s\n"
+        "\tvalue\t'%s%s'\n"
+        "\tremain\t'%s%s'\n\n",
+        visible[expected_token],
+        expected_value, strlen(expected_value) ? "" : "(Empty)",
+        expected_remaining, strlen(expected_remaining) ? "" : "(Empty)"
+    );
+    printf(ANSI_COLOR_BLUE "Actual:\n" ANSI_COLOR_RESET);
+    printf(
+        "\ttoken\t%s\n"
+        "\tvalue\t'%s%s'\n"
+        "\tremain\t'%s%s'\n\n",
+        visible[actual_token],
+        actual_value, strlen(actual_value) ? "" : "(Empty)",
+        actual_remaining, strlen(actual_remaining) ? "" : "(Empty)"
+    );
+    printf("Result:\n");
+    if(
+        strcmp(expected_value, actual_value) == 0
+        && expected_token == actual_token
+        && strcmp(expected_remaining, actual_remaining) == 0
+    ) {
+        printf(ANSI_COLOR_GREEN "\tSuccess\n" ANSI_COLOR_RESET);
+        return true;
+    } else {
+        printf(ANSI_COLOR_RED "\tFailure\n" ANSI_COLOR_RESET);
+        return false;
+    }
+}
+
+bool test(
+    char * description,
+    char * input_str,
+    token expected_token,
+    char * expected_value,
+    char * expected_remaining
+) {
+
+    token actual_token;
+    char buffer[1000];
+    buffer[0] = '\0';
+
+    print_test_behavior(
+        description,
+        &input_str,
+        buffer,
+        sizeof(buffer)
+    );
+
+    actual_token = scan(&input_str, buffer, sizeof(buffer));
+
+    return evaluate_test(
+        expected_token,
+        expected_value,
+        expected_remaining,
+        actual_token,
+        buffer,
+        input_str
+    );
 }

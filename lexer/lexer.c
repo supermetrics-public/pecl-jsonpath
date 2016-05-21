@@ -47,14 +47,18 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                 break;
             case '.':
                 if(*(*p+1) == '.') {
+                    (*p)++;
                     found_token = DEEP_SCAN;
                 } else {
-                    (*p)++;
-                    extract_unbounded_literal(*p, buffer, bufSize);
-                    *p += strlen(buffer) - 1;
                     found_token = NODE;
                 }
-                //TODO some exception for deep scanning on bracket ..['']
+
+                (*p)++;
+
+                extract_unbounded_literal(*p, buffer, bufSize);
+
+                *p += strlen(buffer) - 1;
+
                 break;
             case '[':
                 (*p)++;
