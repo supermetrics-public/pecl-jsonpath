@@ -14,7 +14,6 @@ typedef enum {
     SLICE,          /* : */
     CHILD_SEP,      /* , */
     EXPR_START,     /* ? */
-    STR,            /* "a string" 'a string' */
     EQ,             /* == */
     NEQ,            /* != */
     LT,             /* < */
@@ -22,10 +21,6 @@ typedef enum {
     GT,             /* > */
     GTE,            /* >= */
     RGXP,           /* =~ */
-    IN,             /* in */
-    NIN,            /* nin */
-    SIZE,           /*   */
-    EMPTY,          /* empty */
     PAREN_OPEN,     /* ( */
     PAREN_CLOSE,    /* ) */
     LITERAL,        /* "some string" 'some string' */

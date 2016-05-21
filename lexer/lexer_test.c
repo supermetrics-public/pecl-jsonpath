@@ -108,6 +108,86 @@ int main() {
         "[?()]", EXPR_START, "", "()]"
     ) ? successes++: failures++;
 
+    test(
+        "parse a string literal in single quotes",
+        "'here be an expression'==", LITERAL, "here be an expression", "=="
+    ) ? successes++: failures++;
+
+    test(
+        "parse a string literal in single quotes with single quotes inside",
+        "'here be 'an' expression'==", LITERAL, "here be 'an' expression", "=="
+    ) ? successes++: failures++;
+
+    test(
+        "parse a string literal in single quotes with double quotes inside",
+        "'here be \"an\" expression'==", LITERAL, "here be \"an\" expression", "=="
+    ) ? successes++: failures++;
+
+    test(
+        "parse a string literal in double quotes",
+        "\"here be an expression\"==", LITERAL, "here be an expression", "=="
+    ) ? successes++: failures++;
+
+    test(
+        "parse a string literal in double quotes with single quotes inside",
+        "\"here be 'an' expression\"==", LITERAL, "here be 'an' expression", "=="
+    ) ? successes++: failures++;
+
+    test(
+        "parse a string literal in double quotes with double quotes inside",
+        "\"here be \\\"an\\\" expression\"==", LITERAL, "here be \\\"an\\\" expression", "=="
+    ) ? successes++: failures++;
+
+    test(
+        "parse an equals operator",
+        "== .nodename", EQ, "", " .nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse a not equals operator",
+        "!= .nodename", NEQ, "", " .nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse a less-than operator",
+        "< .nodename", LT, "", " .nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse a less-than-or-equals-to operator",
+        "<= .nodename", LTE, "", " .nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse a less-than operator",
+        "> .nodename", GT, "", " .nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse a greater-than-or-equals-to operator",
+        ">= .nodename", GTE, "", " .nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse a regex operator",
+        "=~ .nodename", RGXP, "", " .nodename"
+    ) ? successes++: failures++;
+
+    test(
+        "parse an the filter start operator for array slice or index selection",
+        "[100:200]", FILTER_START, "", "100:200]"
+    ) ? successes++: failures++;
+
+    test(
+        "parse an expression paren open operator",
+        "(.nodename)", PAREN_OPEN, "", ".nodename)"
+    ) ? successes++: failures++;
+
+    test(
+        "parse an expression paren open operator",
+        ") && .nodename", PAREN_CLOSE, "", " && .nodename"
+    ) ? successes++: failures++;
+
 
     printf("\n--------------------\n\n");
     printf("%d test(s) executed\n", successes + failures);

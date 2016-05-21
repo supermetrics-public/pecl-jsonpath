@@ -6,32 +6,27 @@ static void extract_quoted_literal(char *p, char * buffer, size_t bufSize);
 static void extract_unbounded_literal(char *p, char * buffer, size_t bufSize);
 
 const char * visible[] = {
-    "NOT_FOUND,      /* Token not found */",
-    "ROOT,           /* $ */",
-    "CUR_NODE,       /* @ */",
-    "WILD_CARD,      /* * */",
-    "DEEP_SCAN,      /* .. */",
-    "NODE,           /* .child, ['child'] */",
-    "EXPR_END,       /* ] */",
-    "SLICE,          /* : */",
-    "CHILD_SEP,      /* , */",
-    "EXPR_START,     /* ? */",
-    "STR,            /* \"a string\" 'a string' */",
-    "EQ,             /* == */",
-    "NEQ,            /* != */",
-    "LT,             /* < */",
-    "LTE,            /* <= */",
-    "GT,             /* > */",
-    "GTE,            /* >= */",
-    "RGXP,           /* =~ */",
-    "IN,             /* in */",
-    "NIN,            /* nin */",
-    "SIZE,           /*   */",
-    "EMPTY,          /* empty */",
-    "PAREN_OPEN,     /* ( */",
-    "PAREN_CLOSE,    /* ) */",
-    "LITERAL         /* \"some string\" 'some string' */",
-    "FILTER_START    /* [ */"
+    "NOT_FOUND",      /* Token not found */
+    "ROOT",           /* $ */
+    "CUR_NODE",       /* @ */
+    "WILD_CARD",      /* * */
+    "DEEP_SCAN",      /* .. */
+    "NODE",           /* .child, ['child'] */
+    "EXPR_END",       /* ] */
+    "SLICE",          /* : */
+    "CHILD_SEP",      /* , */
+    "EXPR_START",     /* ? */
+    "EQ",             /* == */
+    "NEQ",            /* != */
+    "LT",             /* < */
+    "LTE",            /* <= */
+    "GT",             /* > */
+    "GTE",            /* >= */
+    "RGXP",           /* =~ */
+    "PAREN_OPEN",     /* ( */
+    "PAREN_CLOSE",    /* ) */
+    "LITERAL",        /* \"some string\" 'some string' */
+    "FILTER_START",   /* [ */
 };
 
 token scan(char ** p, char * buffer, size_t bufSize) {
