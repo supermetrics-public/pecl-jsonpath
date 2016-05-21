@@ -30,9 +30,9 @@ const char * visible[] = {
     "FILTER_START",   /* [ */
 };
 
-token scan(char ** p, char * buffer, size_t bufSize) {
+lex_token scan(char ** p, char * buffer, size_t bufSize) {
 
-    token found_token = LEX_NOT_FOUND;
+    lex_token found_token = LEX_NOT_FOUND;
 
     while(**p != '\0' && found_token == LEX_NOT_FOUND) {
 

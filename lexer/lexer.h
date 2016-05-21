@@ -25,10 +25,10 @@ typedef enum {
     LEX_PAREN_CLOSE,    /* ) */
     LEX_LITERAL,        /* "some string" 'some string' */
     LEX_FILTER_START    /* [ */
-} token;
+} lex_token;
 
 extern const char * visible[];
 
-token scan(char ** p, char * buffer, size_t bufSize);
+lex_token scan(char ** p, char * buffer, size_t bufSize);
 
 #endif /* LEXER_H */

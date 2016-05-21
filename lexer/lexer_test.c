@@ -22,10 +22,10 @@ static void print_test_behavior(
 );
 
 static bool evaluate_test(
-    token expected_token,
+    lex_token expected_token,
     char * expected_value,
     char * expected_remaining,
-    token actual_token,
+    lex_token actual_token,
     char * actual_value,
     char * actual_remaining
 );
@@ -33,7 +33,7 @@ static bool evaluate_test(
 static bool test(
     char * description,
     char * input_str,
-    token expected_token,
+    lex_token expected_token,
     char * expected_value,
     char * expected_remaining
 );
@@ -237,10 +237,10 @@ void print_test_behavior(
 }
 
 bool evaluate_test(
-    token expected_token,
+    lex_token expected_token,
     char * expected_value,
     char * expected_remaining,
-    token actual_token,
+    lex_token actual_token,
     char * actual_value,
     char * actual_remaining
 ) {
@@ -279,12 +279,12 @@ bool evaluate_test(
 bool test(
     char * description,
     char * input_str,
-    token expected_token,
+    lex_token expected_token,
     char * expected_value,
     char * expected_remaining
 ) {
 
-    token actual_token;
+    lex_token actual_token;
     char buffer[1000];
     buffer[0] = '\0';
 
