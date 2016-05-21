@@ -45,167 +45,167 @@ int main() {
 
     test(
         "return no results found for empty path",
-        "", NOT_FOUND, "", ""
+        "", LEX_NOT_FOUND, "", ""
     ) ? successes++: failures++;
 
     test(
         "parse root node operator",
-        "$.nodename", ROOT, "", ".nodename"
+        "$.nodename", LEX_ROOT, "", ".nodename"
     ) ? successes++: failures++;
 
     test(
         "parse current node operator",
-        "@.nodename", CUR_NODE, "", ".nodename"
+        "@.nodename", LEX_CUR_NODE, "", ".nodename"
     ) ? successes++: failures++;
 
     test(
         "parse node operator in dot notation and stop at next node operator",
-        ".nodename.nextnode", NODE, "nodename", ".nextnode"
+        ".nodename.nextnode", LEX_NODE, "nodename", ".nextnode"
     ) ? successes++: failures++;
 
     test(
         "parse node operator in dot notation and stop at space",
-        ".nodename ", NODE, "nodename", " "
+        ".nodename ", LEX_NODE, "nodename", " "
     ) ? successes++: failures++;
 
     test(
         "parse node operator in dot notation and stop at bracket",
-        ".nodename[", NODE, "nodename", "["
+        ".nodename[", LEX_NODE, "nodename", "["
     ) ? successes++: failures++;
 
     test(
         "parse root node operator",
-        "$.nodename[?()]", ROOT, "", ".nodename[?()]"
+        "$.nodename[?()]", LEX_ROOT, "", ".nodename[?()]"
     ) ? successes++: failures++;
 
     test(
         "parse node operator in bracket notation and single quotes",
-        "['nodename']['nextnode']", NODE, "nodename", "['nextnode']"
+        "['nodename']['nextnode']", LEX_NODE, "nodename", "['nextnode']"
     ) ? successes++: failures++;
 
     test(
         "parse node operator in bracket notation and single quotes and ignore extra node name operator",
-        ".['nodename']['nextnode']", NODE, "nodename", "['nextnode']"
+        ".['nodename']['nextnode']", LEX_NODE, "nodename", "['nextnode']"
     ) ? successes++: failures++;
 
     test(
         "parse node operator in bracket notation and double quotes",
-        "[\"nodename\"][\"nextnode\"]", NODE, "nodename", "[\"nextnode\"]"
+        "[\"nodename\"][\"nextnode\"]", LEX_NODE, "nodename", "[\"nextnode\"]"
     ) ? successes++: failures++;
 
     test(
         "parse deep scan (recursive) operator in dot notation",
-        "..nodename.nodename", DEEP_SCAN, "", ".nodename.nodename"
+        "..nodename.nodename", LEX_DEEP_SCAN, "", ".nodename.nodename"
     ) ? successes++: failures++;
 
     test(
         "parse deep scan (recursive) operator in bracket notation",
-        "..['nodename']..['nodename']", DEEP_SCAN, "", ".['nodename']..['nodename']"
+        "..['nodename']..['nodename']", LEX_DEEP_SCAN, "", ".['nodename']..['nodename']"
     ) ? successes++: failures++;
 
     test(
         "parse wild card operator",
-        "*.nodeName", WILD_CARD, "", ".nodeName"
+        "*.nodeName", LEX_WILD_CARD, "", ".nodeName"
     ) ? successes++: failures++;
 
     test(
         "parse an expression terminator operator",
-        "].nodename", EXPR_END, "", ".nodename"
+        "].nodename", LEX_EXPR_END, "", ".nodename"
     ) ? successes++: failures++;
 
     test(
         "parse an expression slice operator",
-        ":.nodename", SLICE, "", ".nodename"
+        ":.nodename", LEX_SLICE, "", ".nodename"
     ) ? successes++: failures++;
 
     test(
         "parse an expression child separator operator",
-        ",.nodename", CHILD_SEP, "", ".nodename"
+        ",.nodename", LEX_CHILD_SEP, "", ".nodename"
     ) ? successes++: failures++;
 
     test(
         "parse the start of an expression",
-        "[?()]", EXPR_START, "", "()]"
+        "[?()]", LEX_EXPR_START, "", "()]"
     ) ? successes++: failures++;
 
     test(
         "parse a string literal in single quotes",
-        "'here be an expression'==", LITERAL, "here be an expression", "=="
+        "'here be an expression'==", LEX_LITERAL, "here be an expression", "=="
     ) ? successes++: failures++;
 
     test(
         "parse a string literal in single quotes with single quotes inside",
-        "'here be 'an' expression'==", LITERAL, "here be 'an' expression", "=="
+        "'here be 'an' expression'==", LEX_LITERAL, "here be 'an' expression", "=="
     ) ? successes++: failures++;
 
     test(
         "parse a string literal in single quotes with double quotes inside",
-        "'here be \"an\" expression'==", LITERAL, "here be \"an\" expression", "=="
+        "'here be \"an\" expression'==", LEX_LITERAL, "here be \"an\" expression", "=="
     ) ? successes++: failures++;
 
     test(
         "parse a string literal in double quotes",
-        "\"here be an expression\"==", LITERAL, "here be an expression", "=="
+        "\"here be an expression\"==", LEX_LITERAL, "here be an expression", "=="
     ) ? successes++: failures++;
 
     test(
         "parse a string literal in double quotes with single quotes inside",
-        "\"here be 'an' expression\"==", LITERAL, "here be 'an' expression", "=="
+        "\"here be 'an' expression\"==", LEX_LITERAL, "here be 'an' expression", "=="
     ) ? successes++: failures++;
 
     test(
         "parse a string literal in double quotes with double quotes inside",
-        "\"here be \\\"an\\\" expression\"==", LITERAL, "here be \\\"an\\\" expression", "=="
+        "\"here be \\\"an\\\" expression\"==", LEX_LITERAL, "here be \\\"an\\\" expression", "=="
     ) ? successes++: failures++;
 
     test(
         "parse an equals operator",
-        "== .nodename", EQ, "", " .nodename"
+        "== .nodename", LEX_EQ, "", " .nodename"
     ) ? successes++: failures++;
 
     test(
         "parse a not equals operator",
-        "!= .nodename", NEQ, "", " .nodename"
+        "!= .nodename", LEX_NEQ, "", " .nodename"
     ) ? successes++: failures++;
 
     test(
         "parse a less-than operator",
-        "< .nodename", LT, "", " .nodename"
+        "< .nodename", LEX_LT, "", " .nodename"
     ) ? successes++: failures++;
 
     test(
         "parse a less-than-or-equals-to operator",
-        "<= .nodename", LTE, "", " .nodename"
+        "<= .nodename", LEX_LTE, "", " .nodename"
     ) ? successes++: failures++;
 
     test(
         "parse a less-than operator",
-        "> .nodename", GT, "", " .nodename"
+        "> .nodename", LEX_GT, "", " .nodename"
     ) ? successes++: failures++;
 
     test(
         "parse a greater-than-or-equals-to operator",
-        ">= .nodename", GTE, "", " .nodename"
+        ">= .nodename", LEX_GTE, "", " .nodename"
     ) ? successes++: failures++;
 
     test(
         "parse a regex operator",
-        "=~ .nodename", RGXP, "", " .nodename"
+        "=~ .nodename", LEX_RGXP, "", " .nodename"
     ) ? successes++: failures++;
 
     test(
         "parse an the filter start operator for array slice or index selection",
-        "[100:200]", FILTER_START, "", "100:200]"
+        "[100:200]", LEX_FILTER_START, "", "100:200]"
     ) ? successes++: failures++;
 
     test(
         "parse an expression paren open operator",
-        "(.nodename)", PAREN_OPEN, "", ".nodename)"
+        "(.nodename)", LEX_PAREN_OPEN, "", ".nodename)"
     ) ? successes++: failures++;
 
     test(
         "parse an expression paren open operator",
-        ") && .nodename", PAREN_CLOSE, "", " && .nodename"
+        ") && .nodename", LEX_PAREN_CLOSE, "", " && .nodename"
     ) ? successes++: failures++;
 
 

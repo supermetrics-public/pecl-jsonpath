@@ -32,20 +32,20 @@ const char * visible[] = {
 
 token scan(char ** p, char * buffer, size_t bufSize) {
 
-    token found_token = NOT_FOUND;
+    token found_token = LEX_NOT_FOUND;
 
-    while(**p != '\0' && found_token == NOT_FOUND) {
+    while(**p != '\0' && found_token == LEX_NOT_FOUND) {
 
         switch(**p) {
 
             case '$':
-                found_token = ROOT;
+                found_token = LEX_ROOT;
                 break;
             case '.':
 
                 switch(*(*p+1)) {
                     case '.':
-                        found_token = DEEP_SCAN;
+                        found_token = LEX_DEEP_SCAN;
                         break;
                     case ' ':  /* space is invalid in . ['node'] */
                         /* Throw parsing error */
@@ -53,12 +53,12 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                     case '[':
                         break;  /* dot is superfluous in .['node'] */
                     default:
-                        found_token = NODE;
+                        found_token = LEX_NODE;
                         break;
 
                 }
 
-                if(found_token == NODE) {
+                if(found_token == LEX_NODE) {
                     (*p)++;
 
                     extract_unbounded_literal(*p, buffer, bufSize);
@@ -82,7 +82,7 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                         if(**p != ']') {
                             //Lexing error
                         }
-                        found_token = NODE;
+                        found_token = LEX_NODE;
                         break;
                     case '"':
                         extract_quoted_literal(*p, buffer, bufSize);
@@ -93,37 +93,37 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                         if(**p != ']') {
                             //Lexing error
                         }
-                        found_token = NODE;
+                        found_token = LEX_NODE;
                         break;
                     case '?':
-                        found_token = EXPR_START;
+                        found_token = LEX_EXPR_START;
                         break;
                     default:
                         /* Pick up start in next iteration, maybe simplify */
                         (*p)--;
-                        found_token = FILTER_START;
+                        found_token = LEX_FILTER_START;
                         break;
                 }
                 break;
             case ']':
-                found_token = EXPR_END;
+                found_token = LEX_EXPR_END;
                 break;
             case '@':
-                found_token = CUR_NODE;
+                found_token = LEX_CUR_NODE;
                 break;
             case ':':
-                found_token = SLICE;
+                found_token = LEX_SLICE;
                 break;
             case ',':
-                found_token = CHILD_SEP;
+                found_token = LEX_CHILD_SEP;
                 break;
             case '=':
                 (*p)++;
 
                 if(**p == '=') {
-                    found_token = EQ;
+                    found_token = LEX_EQ;
                 } else if(**p == '~') {
-                    found_token = RGXP;
+                    found_token = LEX_RGXP;
                 } else {
                     //Lexing error
                 }
@@ -136,42 +136,42 @@ token scan(char ** p, char * buffer, size_t bufSize) {
                     //Lexing error
                 }
 
-                found_token = NEQ;
+                found_token = LEX_NEQ;
                 break;
             case '>':
                 if(*(*p+1) == '=') {
-                    found_token = GTE;
+                    found_token = LEX_GTE;
                     (*p)++;
                 } else {
-                    found_token = GT;
+                    found_token = LEX_GT;
                 }
                 break;
             case '<':
                 if(*(*p+1) == '=') {
-                    found_token = LTE;
+                    found_token = LEX_LTE;
                     (*p)++;
                 } else {
-                    found_token = LT;
+                    found_token = LEX_LT;
                 }
                 break;
             case '(':
-                found_token = PAREN_OPEN;
+                found_token = LEX_PAREN_OPEN;
                 break;
             case ')':
-                found_token = PAREN_CLOSE;
+                found_token = LEX_PAREN_CLOSE;
                 break;
             case '\'':
                 extract_quoted_literal(*p, buffer, bufSize);
                 *p += strlen(buffer) + 1;
-                found_token = LITERAL;
+                found_token = LEX_LITERAL;
                 break;
             case '"':
                 extract_quoted_literal(*p, buffer, bufSize);
                 *p += strlen(buffer) + 1;
-                found_token = LITERAL;
+                found_token = LEX_LITERAL;
                 break;
             case '*':
-                found_token = WILD_CARD;
+                found_token = LEX_WILD_CARD;
                 break;
         }
 

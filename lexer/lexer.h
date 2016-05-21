@@ -4,27 +4,27 @@
 #include <stdio.h>
 
 typedef enum {
-    NOT_FOUND,      /* Token not found */
-    ROOT,           /* $ */
-    CUR_NODE,       /* @ */
-    WILD_CARD,      /* * */
-    DEEP_SCAN,      /* .. */
-    NODE,           /* .child, ['child'] */
-    EXPR_END,       /* ] */
-    SLICE,          /* : */
-    CHILD_SEP,      /* , */
-    EXPR_START,     /* ? */
-    EQ,             /* == */
-    NEQ,            /* != */
-    LT,             /* < */
-    LTE,            /* <= */
-    GT,             /* > */
-    GTE,            /* >= */
-    RGXP,           /* =~ */
-    PAREN_OPEN,     /* ( */
-    PAREN_CLOSE,    /* ) */
-    LITERAL,        /* "some string" 'some string' */
-    FILTER_START    /* [ */
+    LEX_NOT_FOUND,      /* Token not found */
+    LEX_ROOT,           /* $ */
+    LEX_CUR_NODE,       /* @ */
+    LEX_WILD_CARD,      /* * */
+    LEX_DEEP_SCAN,      /* .. */
+    LEX_NODE,           /* .child, ['child'] */
+    LEX_EXPR_END,       /* ] */
+    LEX_SLICE,          /* : */
+    LEX_CHILD_SEP,      /* , */
+    LEX_EXPR_START,     /* ? */
+    LEX_EQ,             /* == */
+    LEX_NEQ,            /* != */
+    LEX_LT,             /* < */
+    LEX_LTE,            /* <= */
+    LEX_GT,             /* > */
+    LEX_GTE,            /* >= */
+    LEX_RGXP,           /* =~ */
+    LEX_PAREN_OPEN,     /* ( */
+    LEX_PAREN_CLOSE,    /* ) */
+    LEX_LITERAL,        /* "some string" 'some string' */
+    LEX_FILTER_START    /* [ */
 } token;
 
 extern const char * visible[];
