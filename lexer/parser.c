@@ -4,25 +4,8 @@
 
 bool is_unary(token token_type);
 
-lex_token get_filter_type(lex_token lex_tok[100], int pos) {
-
-    //TODO make this safer in case LEX_EXPR_END doesnt exist
-    while(lex_tok[pos] != LEX_EXPR_END) {
-        if(lex_tok[pos] == LEX_CHILD_SEP
-            || lex_tok[pos] == LEX_SLICE
-            || lex_tok[pos] == LEX_EXPR_END
-            || lex_tok[pos] == LEX_WILD_CARD
-        ) {
-            return lex_tok[pos];
-        }
-        pos++;
-    }
-
-    return LEX_NOT_FOUND;
-}
-
 void tokenize_filter_expression(
-    lex_token lex_tok[100],
+    lex_token * lex_tok,
     int * pos,
     struct token * tok,
     char lex_tok_values[100][100]
@@ -151,54 +134,28 @@ void build_parse_tree(
                     tok[x].prop.type = FILTER;
 
                     tokenize_filter_expression(
-                        lex_tok,
+                        &lex_tok[0],
                         int_ptr,
                         &tok[x],
                         lex_tok_values
                     );
                 } else if(lex_tok[i + 1] == LEX_FILTER_START) {
                     i++;
-
-                    //TODO We can loop here instead of looking ahead
-                    switch(get_filter_type(lex_tok, i)) {
-                        case LEX_CHILD_SEP:
-                            z = 0;
-
-                            tok[x].prop.index_count = 0;
-
-                            while(lex_tok[i] != LEX_EXPR_END) {
-                                if(lex_tok[i] == LEX_LITERAL) {
-                                    tok[x].prop.indexes[z] = atoi(lex_tok_values[i]); //TODO error checking
-                                    tok[x].prop.index_count++;
-                                    z++;
-                                }
-                                i++;
-                            }
+                    z = 0;
+                    //TODO What if only 1 element, make sure type doesn't change
+                    while(lex_tok[i] != LEX_EXPR_END) {
+                        if(lex_tok[i] == LEX_CHILD_SEP) {
                             tok[x].prop.type = INDEX;
-                            break;
-                        case LEX_EXPR_END:
-                        case LEX_SLICE:
-
-                            z = 0;
-
-                            tok[x].prop.index_count = 0;
+                        } else if(lex_tok[i] == LEX_SLICE) {
                             tok[x].prop.type = RANGE;
-
-                            while(lex_tok[i] != LEX_EXPR_END) {
-                                if(lex_tok[i] == LEX_LITERAL) {
-                                    tok[x].prop.indexes[z] = atoi(lex_tok_values[i]); //TODO error checking
-                                    tok[x].prop.index_count++;
-                                    z++;
-                                }
-                                i++;
-                            }
-
-                            break;
-                        case LEX_WILD_CARD:
+                        } else if(lex_tok[i] == LEX_WILD_CARD) {
                             tok[x].prop.type = ANY;
-                            break;
-                        default:
-                            break;
+                        } else if(lex_tok[i] == LEX_LITERAL) {
+                            tok[x].prop.indexes[z] = atoi(lex_tok_values[i]); //TODO error checking
+                            tok[x].prop.index_count++;
+                            z++;
+                        }
+                        i++;
                     }
                 }
                 x++;
