@@ -24,7 +24,9 @@ typedef enum {
     LEX_PAREN_OPEN,     /* ( */
     LEX_PAREN_CLOSE,    /* ) */
     LEX_LITERAL,        /* "some string" 'some string' */
-    LEX_FILTER_START    /* [ */
+    LEX_FILTER_START,    /* [ */
+    LEX_AND,
+    LEX_OR
 } lex_token;
 
 extern const char * visible[];
