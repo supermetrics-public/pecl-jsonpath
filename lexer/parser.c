@@ -4,19 +4,18 @@
 
 bool is_unary(token token_type);
 
-lex_token get_filter_type(lex_token * lex_tok, int count) {
+lex_token get_filter_type(lex_token lex_tok[100], int pos) {
 
-    int i = 0;
-
-    while (i < count) {
-        if(*lex_tok == LEX_CHILD_SEP
-            || *lex_tok == LEX_SLICE
-            || *lex_tok == LEX_EXPR_END
-            || *lex_tok == LEX_WILD_CARD
+    //TODO make this safer in case LEX_EXPR_END doesnt exist
+    while(lex_tok[pos] != LEX_EXPR_END) {
+        if(lex_tok[pos] == LEX_CHILD_SEP
+            || lex_tok[pos] == LEX_SLICE
+            || lex_tok[pos] == LEX_EXPR_END
+            || lex_tok[pos] == LEX_WILD_CARD
         ) {
-            return *lex_tok;
+            return lex_tok[pos];
         }
-        i++;
+        pos++;
     }
 
     return LEX_NOT_FOUND;
@@ -32,7 +31,8 @@ void tokenize_filter_expression(
     expr expr_list[100];
     int i = 0, x = 0;
 
-    while(lex_tok[*pos] != LEX_EXPR_END ) {
+    //TODO make this safer in case LEX_EXPR_END doesnt exist
+    while(lex_tok[*pos] != LEX_EXPR_END) {
 
         switch(lex_tok[*pos]) {
 
@@ -159,19 +159,20 @@ void build_parse_tree(
                 } else if(lex_tok[i + 1] == LEX_FILTER_START) {
                     i++;
 
-                    switch(get_filter_type(&lex_tok[i], lex_tok_count - i)) {
+                    //TODO We can loop here instead of looking ahead
+                    switch(get_filter_type(lex_tok, i)) {
                         case LEX_CHILD_SEP:
-
                             z = 0;
 
                             tok[x].prop.index_count = 0;
 
                             while(lex_tok[i] != LEX_EXPR_END) {
                                 if(lex_tok[i] == LEX_LITERAL) {
-                                    tok[x].prop.indexes[z] = lex_tok_values[i]; //TODO error checking
+                                    tok[x].prop.indexes[z] = atoi(lex_tok_values[i]); //TODO error checking
                                     tok[x].prop.index_count++;
                                     z++;
                                 }
+                                i++;
                             }
                             tok[x].prop.type = INDEX;
                             break;
@@ -189,6 +190,7 @@ void build_parse_tree(
                                     tok[x].prop.index_count++;
                                     z++;
                                 }
+                                i++;
                             }
 
                             break;
