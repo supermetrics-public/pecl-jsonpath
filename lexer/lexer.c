@@ -5,6 +5,7 @@
 #endif
 static void extract_quoted_literal(char *p, char * buffer, size_t bufSize);
 static void extract_unbounded_literal(char *p, char * buffer, size_t bufSize);
+static void extract_unbounded_numeric_literal(char *p, char * buffer, size_t bufSize);
 
 const char * visible[] = {
     "NOT_FOUND",      /* Token not found */
@@ -124,8 +125,6 @@ lex_token scan(char ** p, char * buffer, size_t bufSize) {
                     found_token = LEX_EQ;
                 } else if(**p == '~') {
                     found_token = LEX_RGXP;
-                } else {
-                    //Lexing error
                 }
 
                 break;
@@ -154,6 +153,22 @@ lex_token scan(char ** p, char * buffer, size_t bufSize) {
                     found_token = LEX_LT;
                 }
                 break;
+            case '&':
+                if(*(*p+1) == '&') {
+                    found_token = LEX_AND;
+                    (*p)++;
+                } else {
+                    /* Lexing error */
+                }
+                break;
+            case '|':
+                if(*(*p+1) == '|') {
+                    found_token = LEX_OR;
+                    (*p)++;
+                } else {
+                    /* Lexing error */
+                }
+                break;
             case '(':
                 found_token = LEX_PAREN_OPEN;
                 break;
@@ -172,6 +187,19 @@ lex_token scan(char ** p, char * buffer, size_t bufSize) {
                 break;
             case '*':
                 found_token = LEX_WILD_CARD;
+                break;
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                extract_unbounded_numeric_literal(*p, buffer, bufSize);
+                *p += strlen(buffer) - 1;
+                found_token = LEX_LITERAL;
                 break;
         }
 
@@ -215,6 +243,29 @@ static void extract_unbounded_literal(char *p, char * buffer, size_t bufSize) {
     start = p;
 
     for (; *p != '\0' && !isspace(*p) && !ispunct(*p); p++);
+
+    cpy_len = (size_t) (p - start);
+
+    if(cpy_len > (size_t) bufSize - 1) {
+        printf("Error: Exceeded max node name length of %d\n", (int)bufSize - 1);
+        return;
+    }
+
+    strncpy(buffer, start, cpy_len);
+    buffer[cpy_len] = '\0';
+}
+
+/* Extract literal without clear bounds that ends in non alpha-numeric char */
+static void extract_unbounded_numeric_literal(char *p, char * buffer, size_t bufSize) {
+
+    char * start;
+    size_t cpy_len;
+
+    for (; *p != '\0' && *p == ' '; p++);
+
+    start = p;
+
+    for (; isdigit(*p); p++);
 
     cpy_len = (size_t) (p - start);
 

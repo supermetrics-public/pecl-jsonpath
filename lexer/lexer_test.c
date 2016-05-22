@@ -208,6 +208,21 @@
 //        ") && .nodename", LEX_PAREN_CLOSE, "", " && .nodename"
 //    ) ? successes++: failures++;
 //
+//    test(
+//        "parse a unquoted numeric string literal",
+//        "11425345] @.num", LEX_LITERAL, "11425345", "] @.num"
+//    ) ? successes++: failures++;
+//
+//    test(
+//        "parse an AND operator",
+//        "&& @.num", LEX_AND, "", " @.num"
+//    ) ? successes++: failures++;
+//
+//    test(
+//        "parse an OR operator",
+//        "|| @.num", LEX_OR, "", " @.num"
+//    ) ? successes++: failures++;
+//
 //
 //    printf("\n--------------------\n\n");
 //    printf("%d test(s) executed\n", successes + failures);
