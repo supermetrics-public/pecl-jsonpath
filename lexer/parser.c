@@ -157,6 +157,9 @@ void build_parse_tree(
                         }
                         i++;
                     }
+                    if(lex_tok[i] != LEX_EXPR_END) {
+                        /* Throw parsing error */
+                    }
                 }
                 x++;
                 break;
