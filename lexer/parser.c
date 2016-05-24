@@ -21,6 +21,7 @@ void tokenize_filter_expression(
 
             case LEX_CUR_NODE:
                 x = 0;
+                expr_list[i].label_count = 0;
                 while(lex_tok[(*pos) + 1] == LEX_NODE) {
                     (*pos)++;
                     strcpy(expr_list[i].label[x], lex_tok_values[*pos]);
@@ -123,6 +124,7 @@ void build_parse_tree(
             case LEX_NODE:
                 tok[x].type = CHILD_KEY;
                 tok[x].prop.type = SINGLE_KEY;
+                tok[x].prop.index_count = 0;
                 strcpy(tok[x].prop.val, lex_tok_values[i]);
 
 
