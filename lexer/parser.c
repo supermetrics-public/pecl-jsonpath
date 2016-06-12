@@ -105,6 +105,7 @@ void build_parse_tree(
                 break;
             case LEX_WILD_CARD:
                 tok[x].type = WILD_CARD;
+                x++;
                 break;
             case LEX_DEEP_SCAN:
             case LEX_NODE:

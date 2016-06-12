@@ -53,6 +53,8 @@ lex_token scan(char ** p, char * buffer, size_t bufSize) {
                         break;
                     case '[':
                         break;  /* dot is superfluous in .['node'] */
+                    case '*':
+                        break; /* get in next loop */
                     default:
                         found_token = LEX_NODE;
                         break;
