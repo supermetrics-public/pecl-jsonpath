@@ -107,22 +107,15 @@ void build_parse_tree(
                 tok[x].type = WILD_CARD;
                 break;
             case LEX_DEEP_SCAN:
-                tok[x].type = DEEP_SCAN;
-                tok[x].prop.type = SINGLE_KEY;
-                tok[x].prop.index_count = 0;
+            case LEX_NODE:
 
-                i++;
-
-                if(lex_tok[i] != LEX_NODE) {
-                    /* Throw parsing error */
+                if(lex_tok[i] == LEX_DEEP_SCAN) {
+                    tok[x].type = DEEP_SCAN;
+                    i++;
+                } else {
+                    tok[x].type = CHILD_KEY;
                 }
 
-                strcpy(tok[x].prop.val, lex_tok_values[i]);
-
-                x++;
-                break;
-            case LEX_NODE:
-                tok[x].type = CHILD_KEY;
                 tok[x].prop.type = SINGLE_KEY;
                 tok[x].prop.index_count = 0;
                 strcpy(tok[x].prop.val, lex_tok_values[i]);
