@@ -7,15 +7,20 @@ dnl without editing.
 
 dnl If your extension references something external, use with:
 
-dnl PHP_ARG_WITH(jsonpath, for jsonpath support,
+PHP_ARG_WITH(jsonpath, for jsonpath support,
 dnl Make sure that the comment is aligned:
-dnl [  --with-jsonpath             Include jsonpath support])
+ [  --with-jsonpath             Include jsonpath support])
 
 dnl Otherwise use enable:
 
 dnl PHP_ARG_ENABLE(jsonpath, whether to enable jsonpath support,
 dnl Make sure that the comment is aligned:
 dnl [  --enable-jsonpath           Enable jsonpath support])
+
+JSONPATH_SOURCES="\
+    src/jsonpath/lexer.c \
+    src/jsonpath/parser.c \
+  ";
 
 if test "$PHP_JSONPATH" != "no"; then
   dnl Write more examples of tests here...
@@ -59,5 +64,10 @@ if test "$PHP_JSONPATH" != "no"; then
   dnl
   dnl PHP_SUBST(JSONPATH_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(jsonpath, jsonpath.c, $ext_shared)
+  PHP_NEW_EXTENSION(jsonpath, jsonpath.c $JSONPATH_SOURCES, $ext_shared)
+
+  PHP_ADD_BUILD_DIR($ext_builddir/src/jsonpath)
+
+  AC_CHECK_FUNCS([utimes strndup])
+  PHP_ADD_MAKEFILE_FRAGMENT
 fi

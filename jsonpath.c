@@ -26,8 +26,8 @@
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
-#include "lexer/lexer.h"
-#include "lexer/parser.h"
+#include "src/jsonpath/lexer.h"
+#include "src/jsonpath/parser.h"
 #include "php_jsonpath.h"
 #include "zend_operators.h"
 #include <stdbool.h>
@@ -75,9 +75,9 @@ PHP_FUNCTION(confirm_jsonpath_compiled)
 	RETURN_STRINGL(strg, len, 0);
 }
 /* }}} */
-/* The previous line is meant for vim and emacs, so it can correctly fold and 
-   unfold functions in source code. See the corresponding marks just before 
-   function definition, where the functions purpose is also documented. Please 
+/* The previous line is meant for vim and emacs, so it can correctly fold and
+   unfold functions in source code. See the corresponding marks just before
+   function definition, where the functions purpose is also documented. Please
    follow this convention for the convenience of others editing your code.
 */
 
@@ -561,7 +561,7 @@ static void php_jsonpath_init_globals(zend_jsonpath_globals *jsonpath_globals)
  */
 PHP_MINIT_FUNCTION(jsonpath)
 {
-	/* If you have INI entries, uncomment these lines 
+	/* If you have INI entries, uncomment these lines
 	REGISTER_INI_ENTRIES();
 	*/
 	return SUCCESS;
