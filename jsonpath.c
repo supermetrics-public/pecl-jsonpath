@@ -237,7 +237,7 @@ void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * retu
                                         MAKE_COPY_ZVAL(data2, zv_dest);
                                         add_next_index_zval(return_value, zv_dest);
                                     } else {
-                                        iterate(*data2, tok, tok_last, return_value);
+                                        iterate(*data2, (tok + 1), tok_last, return_value);
                                     }
                                 }
                             }
@@ -254,7 +254,7 @@ void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * retu
                                         MAKE_COPY_ZVAL(data2, zv_dest);
                                         add_next_index_zval(return_value, zv_dest);
                                     } else {
-                                        iterate(*data2, tok, tok_last, return_value);
+                                        iterate(*data2, (tok + 1), tok_last, return_value);
                                     }
                                 }
                             }
@@ -273,7 +273,7 @@ void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * retu
                                     MAKE_COPY_ZVAL(data2, zv_dest);
                                     add_next_index_zval(return_value, zv_dest);
                                 } else {
-                                    iterate(*data2, tok, tok_last, return_value);
+                                    iterate(*data2, (tok + 1), tok_last, return_value);
                                 }
                             }
                         }
@@ -371,7 +371,7 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
                                 MAKE_COPY_ZVAL(data3, zv_dest);
                                 add_next_index_zval(return_value, zv_dest);
                             } else {
-                                iterate(*data3, tok, tok_last, return_value);
+                                iterate(*data3, (tok + 1), tok_last, return_value);
                             }
                         }
                     }
@@ -388,7 +388,7 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
                                 MAKE_COPY_ZVAL(data3, zv_dest);
                                 add_next_index_zval(return_value, zv_dest);
                             } else {
-                                iterate(*data3, tok, tok_last, return_value);
+                                iterate(*data3, (tok + 1), tok_last, return_value);
                             }
                         }
                     }
@@ -407,7 +407,7 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
                             MAKE_COPY_ZVAL(data3, zv_dest);
                             add_next_index_zval(return_value, zv_dest);
                         } else {
-                            iterate(*data3, tok, tok_last, return_value);
+                            iterate(*data3, (tok + 1), tok_last, return_value);
                         }
                     }
                 }
@@ -421,7 +421,7 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
                         MAKE_COPY_ZVAL(data2, zv_dest);
                         add_next_index_zval(return_value, zv_dest);
                     } else {
-                        iterate(*data2, tok, tok_last, return_value);
+                        iterate(*data2, (tok + 1), tok_last, return_value);
                     }
                 }
 
