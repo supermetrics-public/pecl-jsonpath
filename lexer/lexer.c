@@ -188,6 +188,7 @@ lex_token scan(char ** p, char * buffer, size_t bufSize) {
             case '*':
                 found_token = LEX_WILD_CARD;
                 break;
+            case '0':
             case '1':
             case '2':
             case '3':
