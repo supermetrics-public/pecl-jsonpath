@@ -43,6 +43,7 @@ void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * retu
 void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * return_value);
 bool findByValue(zval *arr, expr * node);
 bool checkIfKeyExists(zval *arr, expr * node);
+void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zval * return_value);
 
 /* {{{ PHP_INI
  */
@@ -187,25 +188,130 @@ const char * const visible[] = {
     }
 }
 
-void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * return_value)
+void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zval * return_value)
 {
     zval **data, **data2;
-    zval *tmp;
 
-    zval *newarr;
-    MAKE_STD_ZVAL(newarr);
-    array_init(newarr);
-
-    zval *tmpz;
-    MAKE_STD_ZVAL(tmp);
     int x;
     HashPosition pos;
 
     zval *zv_dest;
 
-    MAKE_STD_ZVAL(tmpz);
-
     int i;
+
+    switch(tok->prop.type) {
+        case RANGE:
+
+            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
+                for(x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
+                    if(zend_hash_index_find(HASH_OF(*data), x, (void**)&data2) == SUCCESS) {
+                        if(tok == tok_last) {
+                            ALLOC_ZVAL(zv_dest);
+                            MAKE_COPY_ZVAL(data2, zv_dest);
+                            add_next_index_zval(return_value, zv_dest);
+                        } else {
+                            iterate(*data2, (tok + 1), tok_last, return_value);
+                        }
+                    }
+                }
+            }
+
+            return;
+        case INDEX:
+
+            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
+                for(x = 0; x < tok->prop.index_count; x++) {
+                    if(zend_hash_index_find(HASH_OF(*data), tok->prop.indexes[x], (void**)&data2) == SUCCESS) {
+                        if(tok == tok_last) {
+                            ALLOC_ZVAL(zv_dest);
+                            MAKE_COPY_ZVAL(data2, zv_dest);
+                            add_next_index_zval(return_value, zv_dest);
+                        } else {
+                            iterate(*data2, (tok + 1), tok_last, return_value);
+                        }
+                    }
+                }
+            }
+            return;
+        case ANY:
+
+            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
+                for(
+                    zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
+                    zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
+                    zend_hash_move_forward_ex(HASH_OF(*data), &pos)
+                ) {
+                    if(tok == tok_last) {
+                        ALLOC_ZVAL(zv_dest);
+                        MAKE_COPY_ZVAL(data2, zv_dest);
+                        add_next_index_zval(return_value, zv_dest);
+                    } else {
+                        iterate(*data2, (tok + 1), tok_last, return_value);
+                    }
+                }
+            }
+
+            return;
+        case SINGLE_KEY:
+            if(arr == NULL) {
+                return;
+            }
+            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) != SUCCESS) {
+                return;
+            }
+
+            if(tok == tok_last) {
+                ALLOC_ZVAL(zv_dest);
+                MAKE_COPY_ZVAL(data, zv_dest);
+                add_next_index_zval(return_value, zv_dest);
+            } else {
+                iterate(*data, (tok + 1), tok_last, return_value);
+            }
+
+            return;
+        case FILTER:
+
+            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
+                for(
+                    zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
+                    zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
+                    zend_hash_move_forward_ex(HASH_OF(*data), &pos)
+                ) {
+
+                    // For each array entry, find the node names and populate their values
+                    // Fill up expression NODE_NAME VALS
+                    for(i = 0; i < tok->prop.expr_count; i++) {
+
+                        if(tok->prop.expr_list[i+1].type == ISSET) {
+                            if(!checkIfKeyExists(*data2, &tok->prop.expr_list[i])) {
+                                continue;
+                            }
+                        } else if(tok->prop.expr_list[i].type == NODE_NAME) {
+                            if(!findByValue(*data2, &tok->prop.expr_list[i])) {
+                                continue;
+                            }
+                        }
+                    }
+
+                    if(evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
+                        ALLOC_ZVAL(zv_dest);
+                        MAKE_COPY_ZVAL(data2, zv_dest);
+                        add_next_index_zval(return_value, zv_dest);
+                    }
+                }
+            }
+            break;
+    }
+}
+
+void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * return_value)
+{
+    zval **data, **data2;
+
+    HashPosition pos;
+
+    zval *zv_dest;
+
 
     while(tok <= tok_last) {
         switch(tok->type) {
@@ -226,122 +332,13 @@ void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * retu
                 deepJump(arr, tok, tok_last, return_value);
                 return;
             case CHILD_KEY:
-                switch(tok->prop.type) {
-                    case RANGE:
-
-                        if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
-                            for(x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
-                                if(zend_hash_index_find(HASH_OF(*data), x, (void**)&data2) == SUCCESS) {
-                                    if(tok == tok_last) {
-                                        ALLOC_ZVAL(zv_dest);
-                                        MAKE_COPY_ZVAL(data2, zv_dest);
-                                        add_next_index_zval(return_value, zv_dest);
-                                    } else {
-                                        iterate(*data2, (tok + 1), tok_last, return_value);
-                                    }
-                                }
-                            }
-                        }
-
-                        return;
-                    case INDEX:
-
-                        if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
-                            for(x = 0; x < tok->prop.index_count; x++) {
-                                if(zend_hash_index_find(HASH_OF(*data), tok->prop.indexes[x], (void**)&data2) == SUCCESS) {
-                                    if(tok == tok_last) {
-                                        ALLOC_ZVAL(zv_dest);
-                                        MAKE_COPY_ZVAL(data2, zv_dest);
-                                        add_next_index_zval(return_value, zv_dest);
-                                    } else {
-                                        iterate(*data2, (tok + 1), tok_last, return_value);
-                                    }
-                                }
-                            }
-                        }
-                        return;
-                    case ANY:
-
-                        if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
-                            for(
-                                zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
-                                zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
-                                zend_hash_move_forward_ex(HASH_OF(*data), &pos)
-                            ) {
-                                if(tok == tok_last) {
-                                    ALLOC_ZVAL(zv_dest);
-                                    MAKE_COPY_ZVAL(data2, zv_dest);
-                                    add_next_index_zval(return_value, zv_dest);
-                                } else {
-                                    iterate(*data2, (tok + 1), tok_last, return_value);
-                                }
-                            }
-                        }
-
-                        return;
-                    case SINGLE_KEY:
-                        if(arr == NULL) {
-                            return;
-                        }
-                        if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) != SUCCESS) {
-                            return;
-                        }
-                        arr = *data;
-                        break;
-                    case FILTER:
-
-                        if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
-                            for(
-                                zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
-                                zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
-                                zend_hash_move_forward_ex(HASH_OF(*data), &pos)
-                            ) {
-
-                                // For each array entry, find the node names and populate their values
-                                // Fill up expression NODE_NAME VALS
-                                for(i = 0; i < tok->prop.expr_count; i++) {
-
-                                    if(tok->prop.expr_list[i+1].type == ISSET) {
-                                        if(!checkIfKeyExists(*data2, &tok->prop.expr_list[i])) {
-                                            continue;
-                                        }
-                                    } else if(tok->prop.expr_list[i].type == NODE_NAME) {
-                                        if(!findByValue(*data2, &tok->prop.expr_list[i])) {
-                                            continue;
-                                        }
-                                    }
-                                }
-
-                                if(evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
-                                    ALLOC_ZVAL(zv_dest);
-                                    MAKE_COPY_ZVAL(data2, zv_dest);
-                                    add_next_index_zval(return_value, zv_dest);
-                                }
-                            }
-                        }
-
-                        data = NULL;
-
-                        break;
-                }
-                break;
+                processChildKey(arr, tok, tok_last, return_value);
+                return;
         }
-
         if(tok == tok_last) {
             break;
         }
         tok++;
-    }
-
-    if(tok == tok_last && data != NULL) {
-
-        zval *newarr;
-        MAKE_STD_ZVAL(newarr);
-        array_init(newarr);
-
-        MAKE_COPY_ZVAL(data, newarr);
-
-        add_next_index_zval(return_value, newarr);
     }
 }
 
@@ -447,15 +444,11 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
 bool findByValue(zval *arr, expr * node)
 {
 	zval *entry,				/* pointer to array entry */
-        * res,					/* comparison result */
         ** data;
 
     zval *zv_dest;
 
 	HashPosition pos;			/* hash iterator */
-
-    MAKE_STD_ZVAL(res);
-    MAKE_STD_ZVAL(entry);
 
     int i;
 
@@ -539,7 +532,13 @@ bool compare_eq(expr * lh, expr * rh) {
 
     compare_function(result, a, b TSRMLS_CC);
 
-    return Z_LVAL_P(result) == 0;
+    bool res = (Z_LVAL_P(result) == 0);
+
+    FREE_ZVAL(a);
+    FREE_ZVAL(b);
+    FREE_ZVAL(result);
+
+    return res;
 }
 
 bool isset2(expr * lh, expr * rh) {
