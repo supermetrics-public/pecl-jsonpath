@@ -197,8 +197,6 @@ void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zva
 
     zval *zv_dest;
 
-    int i;
-
     switch(tok->prop.type) {
         case RANGE:
 
@@ -280,14 +278,14 @@ void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zva
 
                     // For each array entry, find the node names and populate their values
                     // Fill up expression NODE_NAME VALS
-                    for(i = 0; i < tok->prop.expr_count; i++) {
+                    for(x = 0; x < tok->prop.expr_count; x++) {
 
-                        if(tok->prop.expr_list[i+1].type == ISSET) {
-                            if(!checkIfKeyExists(*data2, &tok->prop.expr_list[i])) {
+                        if(tok->prop.expr_list[x+1].type == ISSET) {
+                            if(!checkIfKeyExists(*data2, &tok->prop.expr_list[x])) {
                                 continue;
                             }
-                        } else if(tok->prop.expr_list[i].type == NODE_NAME) {
-                            if(!findByValue(*data2, &tok->prop.expr_list[i])) {
+                        } else if(tok->prop.expr_list[x].type == NODE_NAME) {
+                            if(!findByValue(*data2, &tok->prop.expr_list[x])) {
                                 continue;
                             }
                         }
@@ -306,12 +304,11 @@ void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zva
 
 void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * return_value)
 {
-    zval **data, **data2;
+    zval **data;
 
     HashPosition pos;
 
     zval *zv_dest;
-
 
     while(tok <= tok_last) {
         switch(tok->type) {
@@ -348,85 +345,11 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
         return;
     }
 
-    zval *z_array, **data1, **data2, **data3;
-    int x;
-
-    HashPosition pos;
-
-    zval *zv_dest;
-
-    if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val)+1, (void**)&data1) == SUCCESS) {
-
-        switch(tok->prop.type) {
-            case RANGE:
-
-                if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data2) == SUCCESS) {
-                    for(x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
-                        if(zend_hash_index_find(HASH_OF(*data2), x, (void**)&data3) == SUCCESS) {
-                            if(tok == tok_last) {
-                                ALLOC_ZVAL(zv_dest);
-                                MAKE_COPY_ZVAL(data3, zv_dest);
-                                add_next_index_zval(return_value, zv_dest);
-                            } else {
-                                iterate(*data3, (tok + 1), tok_last, return_value);
-                            }
-                        }
-                    }
-                }
-
-                break;
-            case INDEX:
-
-                if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data2) == SUCCESS) {
-                    for(x = 0; x < tok->prop.index_count; x++) {
-                        if(zend_hash_index_find(HASH_OF(*data2), tok->prop.indexes[x], (void**)&data3) == SUCCESS) {
-                            if(tok == tok_last) {
-                                ALLOC_ZVAL(zv_dest);
-                                MAKE_COPY_ZVAL(data3, zv_dest);
-                                add_next_index_zval(return_value, zv_dest);
-                            } else {
-                                iterate(*data3, (tok + 1), tok_last, return_value);
-                            }
-                        }
-                    }
-                }
-                break;
-            case ANY:
-
-                if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data2) == SUCCESS) {
-                    for(
-                        zend_hash_internal_pointer_reset_ex(HASH_OF(*data2), &pos);
-                        zend_hash_get_current_data_ex(HASH_OF(*data2), (void**) &data3, &pos) == SUCCESS;
-                        zend_hash_move_forward_ex(HASH_OF(*data2), &pos)
-                    ) {
-                        if(tok == tok_last) {
-                            ALLOC_ZVAL(zv_dest);
-                            MAKE_COPY_ZVAL(data3, zv_dest);
-                            add_next_index_zval(return_value, zv_dest);
-                        } else {
-                            iterate(*data3, (tok + 1), tok_last, return_value);
-                        }
-                    }
-                }
-
-                break;
-            case SINGLE_KEY:
-            default:
-                if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data2) == SUCCESS) {
-                    if(tok == tok_last) {
-                        ALLOC_ZVAL(zv_dest);
-                        MAKE_COPY_ZVAL(data2, zv_dest);
-                        add_next_index_zval(return_value, zv_dest);
-                    } else {
-                        iterate(*data2, (tok + 1), tok_last, return_value);
-                    }
-                }
-
-                break;
-        }
-    }
+    processChildKey(arr, tok, tok_last, return_value);
 
     zval **tmp;
+    HashPosition pos;
+
     for(
         zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
         zend_hash_get_current_data_ex(HASH_OF(arr), (void**) &tmp, &pos) == SUCCESS;
@@ -443,12 +366,7 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
  */
 bool findByValue(zval *arr, expr * node)
 {
-	zval *entry,				/* pointer to array entry */
-        ** data;
-
-    zval *zv_dest;
-
-	HashPosition pos;			/* hash iterator */
+	zval ** data;
 
     int i;
 
@@ -477,11 +395,7 @@ bool findByValue(zval *arr, expr * node)
  */
 bool checkIfKeyExists(zval *arr, expr * node) {
 
-	zval *entry,				/* pointer to array entry */
-        * res,					/* comparison result */
-        ** data;
-
-    zval *zv_dest;
+	zval ** data;
 
 	HashPosition pos;			/* hash iterator */
 
