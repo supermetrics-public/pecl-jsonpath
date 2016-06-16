@@ -16,12 +16,9 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
 
 #include "php.h"
 #include "php_ini.h"
@@ -32,10 +29,6 @@
 #include "zend_operators.h"
 #include <stdbool.h>
 
-/* If you declare any globals in php_jsonpath.h uncomment this:
-ZEND_DECLARE_MODULE_GLOBALS(jsonpath)
-*/
-
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
 
@@ -44,47 +37,10 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
 bool findByValue(zval *arr, expr * node);
 bool checkIfKeyExists(zval *arr, expr * node);
 void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zval * return_value);
-
-/* {{{ PHP_INI
- */
-/* Remove comments and fill if you need to have entries in php.ini
-PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("jsonpath.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_jsonpath_globals, jsonpath_globals)
-    STD_PHP_INI_ENTRY("jsonpath.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_jsonpath_globals, jsonpath_globals)
-PHP_INI_END()
-*/
-/* }}} */
-
-/* Remove the following function when you have successfully modified config.m4
-   so that your module can be compiled into PHP, it exists only for testing
-   purposes. */
-
-/* Every user-visible function in PHP should document itself in the source */
-/* {{{ proto string confirm_jsonpath_compiled(string arg)
-   Return a string to confirm that the module is compiled in */
-PHP_FUNCTION(confirm_jsonpath_compiled)
-{
-	char *arg = NULL;
-	int arg_len, len;
-	char *strg;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len) == FAILURE) {
-		return;
-	}
-
-	len = spprintf(&strg, 0, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "jsonpath", arg);
-	RETURN_STRINGL(strg, len, 0);
-}
-/* }}} */
-/* The previous line is meant for vim and emacs, so it can correctly fold and
-   unfold functions in source code. See the corresponding marks just before
-   function definition, where the functions purpose is also documented. Please
-   follow this convention for the convenience of others editing your code.
-*/
+void iterateWildCard(zval * arr, struct token * tok, struct token * tok_last, zval * return_value);
 
 PHP_FUNCTION(path_lookup)
 {
-
     char * path;
     int path_len;
     zval *z_array;
@@ -93,8 +49,6 @@ PHP_FUNCTION(path_lookup)
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "as", &z_array, &path, &path_len) == FAILURE) {
         return;
     }
-
-//    zend_hash_internal_pointer_reset(arr);
 
     array_init(return_value);
 
@@ -138,8 +92,6 @@ PHP_FUNCTION(path_lookup)
     struct token * tok_ptr_start;
     struct token * tok_ptr_end;
 
-
-
     tok_ptr_start = &tok[0];
     tok_ptr_end = &tok[tok_count-1];
 
@@ -147,195 +99,134 @@ PHP_FUNCTION(path_lookup)
     iterate(z_array, tok_ptr_start, tok_ptr_end, return_value);
 
     return;
-//    RETVAL_ZVAL_FAST(*data);
-//    RETURN_STRING(curBuffer, strlen(curBuffer));
-
-//    RETURN_NULL();
-//End
 }
 
-void output_postifx_expr(expr * expr, int count) {
-
-    printf("Expression output:\n");
-    int i;
-
-const char * const visible[] = {
-    "==\0",
-    "!=\0",
-    "<\0",
-    "<=\0",
-    ">\0",
-    ">=\0",
-    "ISSET\0",
-    "||\0",
-    "&&\0",
-    "(\0",
-    ")\0",
-    "<\0"
-};
-
-
-    for(i = 0; i < count; i++) {
-        switch(get_token_type(expr[i].type)) {
-            case TYPE_OPERATOR:
-                printf("%d %s \n", i, visible[expr[i].type]);
-                break;
-            case TYPE_OPERAND:
-            case TYPE_PAREN:
-                printf("%d %s (%s) \n", i, expr[i].value, expr[i].label[1]);
-                break;
-        }
+void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * return_value)
+{
+    if(tok > tok_last) {
+        return;
     }
+
+    switch(tok->type) {
+        case ROOT:
+            iterate(arr, (tok + 1), tok_last, return_value);
+            break;
+        case WILD_CARD:
+            iterateWildCard(arr, (tok + 1), tok_last, return_value);
+            return;
+        case DEEP_SCAN:
+            deepJump(arr, tok, tok_last, return_value);
+            return;
+        case CHILD_KEY:
+            processChildKey(arr, tok, tok_last, return_value);
+            return;
+    }
+}
+
+void copyToReturnResult(zval **arr, zval * return_value)
+{
+    zval *zv_dest;
+    ALLOC_ZVAL(zv_dest);
+    MAKE_COPY_ZVAL(arr, zv_dest);
+    add_next_index_zval(return_value, zv_dest);
 }
 
 void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zval * return_value)
 {
     zval **data, **data2;
 
+    if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) != SUCCESS) {
+        return;
+    }
+
     int x;
     HashPosition pos;
 
-    zval *zv_dest;
-
     switch(tok->prop.type) {
         case RANGE:
-
-            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
-                for(x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
-                    if(zend_hash_index_find(HASH_OF(*data), x, (void**)&data2) == SUCCESS) {
-                        if(tok == tok_last) {
-                            ALLOC_ZVAL(zv_dest);
-                            MAKE_COPY_ZVAL(data2, zv_dest);
-                            add_next_index_zval(return_value, zv_dest);
-                        } else {
-                            iterate(*data2, (tok + 1), tok_last, return_value);
-                        }
-                    }
-                }
-            }
-
-            return;
-        case INDEX:
-
-            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
-                for(x = 0; x < tok->prop.index_count; x++) {
-                    if(zend_hash_index_find(HASH_OF(*data), tok->prop.indexes[x], (void**)&data2) == SUCCESS) {
-                        if(tok == tok_last) {
-                            ALLOC_ZVAL(zv_dest);
-                            MAKE_COPY_ZVAL(data2, zv_dest);
-                            add_next_index_zval(return_value, zv_dest);
-                        } else {
-                            iterate(*data2, (tok + 1), tok_last, return_value);
-                        }
-                    }
-                }
-            }
-            return;
-        case ANY:
-
-            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
-                for(
-                    zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
-                    zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
-                    zend_hash_move_forward_ex(HASH_OF(*data), &pos)
-                ) {
+            for(x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
+                if(zend_hash_index_find(HASH_OF(*data), x, (void**)&data2) == SUCCESS) {
                     if(tok == tok_last) {
-                        ALLOC_ZVAL(zv_dest);
-                        MAKE_COPY_ZVAL(data2, zv_dest);
-                        add_next_index_zval(return_value, zv_dest);
+                        copyToReturnResult(data2, return_value);
                     } else {
                         iterate(*data2, (tok + 1), tok_last, return_value);
                     }
                 }
             }
-
+            return;
+        case INDEX:
+            for(x = 0; x < tok->prop.index_count; x++) {
+                if(zend_hash_index_find(HASH_OF(*data), tok->prop.indexes[x], (void**)&data2) == SUCCESS) {
+                    if(tok == tok_last) {
+                        copyToReturnResult(data2, return_value);
+                    } else {
+                        iterate(*data2, (tok + 1), tok_last, return_value);
+                    }
+                }
+            }
+            return;
+        case ANY:
+            for(
+                zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
+                zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
+                zend_hash_move_forward_ex(HASH_OF(*data), &pos)
+            ) {
+                if(tok == tok_last) {
+                    copyToReturnResult(data2, return_value);
+                } else {
+                    iterate(*data2, (tok + 1), tok_last, return_value);
+                }
+            }
             return;
         case SINGLE_KEY:
-            if(arr == NULL) {
-                return;
-            }
-            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) != SUCCESS) {
-                return;
-            }
-
             if(tok == tok_last) {
-                ALLOC_ZVAL(zv_dest);
-                MAKE_COPY_ZVAL(data, zv_dest);
-                add_next_index_zval(return_value, zv_dest);
+                copyToReturnResult(data, return_value);
             } else {
                 iterate(*data, (tok + 1), tok_last, return_value);
             }
-
             return;
         case FILTER:
-
-            if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) == SUCCESS) {
-                for(
-                    zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
-                    zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
-                    zend_hash_move_forward_ex(HASH_OF(*data), &pos)
-                ) {
-
-                    // For each array entry, find the node names and populate their values
-                    // Fill up expression NODE_NAME VALS
-                    for(x = 0; x < tok->prop.expr_count; x++) {
-
-                        if(tok->prop.expr_list[x+1].type == ISSET) {
-                            if(!checkIfKeyExists(*data2, &tok->prop.expr_list[x])) {
-                                continue;
-                            }
-                        } else if(tok->prop.expr_list[x].type == NODE_NAME) {
-                            if(!findByValue(*data2, &tok->prop.expr_list[x])) {
-                                continue;
-                            }
+            for(
+                zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
+                zend_hash_get_current_data_ex(HASH_OF(*data), (void**) &data2, &pos) == SUCCESS;
+                zend_hash_move_forward_ex(HASH_OF(*data), &pos)
+            ) {
+                // For each array entry, find the node names and populate their values
+                // Fill up expression NODE_NAME VALS
+                for(x = 0; x < tok->prop.expr_count; x++) {
+                    if(tok->prop.expr_list[x+1].type == ISSET) {
+                        if(!checkIfKeyExists(*data2, &tok->prop.expr_list[x])) {
+                            continue;
+                        }
+                    } else if(tok->prop.expr_list[x].type == NODE_NAME) {
+                        if(!findByValue(*data2, &tok->prop.expr_list[x])) {
+                            continue;
                         }
                     }
+                }
 
-                    if(evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
-                        ALLOC_ZVAL(zv_dest);
-                        MAKE_COPY_ZVAL(data2, zv_dest);
-                        add_next_index_zval(return_value, zv_dest);
-                    }
+                if(evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
+                    copyToReturnResult(data2, return_value);
                 }
             }
             break;
     }
 }
 
-void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * return_value)
+void iterateWildCard(zval * arr, struct token * tok, struct token * tok_last, zval * return_value)
 {
     zval **data;
-
     HashPosition pos;
-
     zval *zv_dest;
 
-    while(tok <= tok_last) {
-        switch(tok->type) {
-            case ROOT:
-                break;
-            case WILD_CARD:
-                for(
-                    zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
-                    zend_hash_get_current_data_ex(HASH_OF(arr), (void**) &data, &pos) == SUCCESS;
-                    zend_hash_move_forward_ex(HASH_OF(arr), &pos)
-                ) {
-                    ALLOC_ZVAL(zv_dest);
-                    MAKE_COPY_ZVAL(data, zv_dest);
-                    add_next_index_zval(return_value, zv_dest);
-                }
-                return;
-            case DEEP_SCAN:
-                deepJump(arr, tok, tok_last, return_value);
-                return;
-            case CHILD_KEY:
-                processChildKey(arr, tok, tok_last, return_value);
-                return;
-        }
-        if(tok == tok_last) {
-            break;
-        }
-        tok++;
+    for(
+        zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
+        zend_hash_get_current_data_ex(HASH_OF(arr), (void**) &data, &pos) == SUCCESS;
+        zend_hash_move_forward_ex(HASH_OF(arr), &pos)
+    ) {
+        ALLOC_ZVAL(zv_dest);
+        MAKE_COPY_ZVAL(data, zv_dest);
+        add_next_index_zval(return_value, zv_dest);
     }
 }
 
@@ -393,8 +284,8 @@ bool findByValue(zval *arr, expr * node)
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool checkIfKeyExists(zval *arr, expr * node) {
-
+bool checkIfKeyExists(zval *arr, expr * node)
+{
 	zval ** data;
 
 	HashPosition pos;			/* hash iterator */
@@ -459,17 +350,6 @@ bool isset2(expr * lh, expr * rh) {
     return (*lh).value_bool && (*rh).value_bool;
 }
 
-/* {{{ php_jsonpath_init_globals
- */
-/* Uncomment this function if you have INI entries
-static void php_jsonpath_init_globals(zend_jsonpath_globals *jsonpath_globals)
-{
-	jsonpath_globals->global_value = 0;
-	jsonpath_globals->global_string = NULL;
-}
-*/
-/* }}} */
-
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(jsonpath)
@@ -529,7 +409,6 @@ PHP_MINFO_FUNCTION(jsonpath)
  * Every user visible function must have an entry in jsonpath_functions[].
  */
 const zend_function_entry jsonpath_functions[] = {
-	PHP_FE(confirm_jsonpath_compiled,	NULL)		/* For testing, remove later. */
 	PHP_FE(path_lookup, NULL)
 	PHP_FE_END	/* Must be the last line in jsonpath_functions[] */
 };

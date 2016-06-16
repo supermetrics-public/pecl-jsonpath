@@ -1,11 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H 1
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "lexer.h"
 #define MAX_NODE_DEPTH 5
 #define MAX_NODE_NAME_LEN 25 /* Includes null-terminator */
 
@@ -27,19 +25,6 @@ typedef enum {
     SINGLE_KEY,
     FILTER
 } child_type;
-
-typedef enum {
-    CUR_NODE,
-    JSON_PATH,
-    CONST_VAL
-} operand_type;
-
-
-typedef enum {
-    NODE_VAL,
-    STR_VAL,
-    NUM_VAL
-} expr_type;
 
 typedef enum {
     EQ,             //0
