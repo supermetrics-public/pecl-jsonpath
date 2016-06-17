@@ -116,7 +116,7 @@ void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * retu
             iterate(arr, (tok + 1), tok_last, return_value);
             break;
         case WILD_CARD:
-            iterateWildCard(arr, (tok + 1), tok_last, return_value);
+            iterateWildCard(arr, tok, tok_last, return_value);
             return;
         case DEEP_SCAN:
             deepJump(arr, tok, tok_last, return_value);
@@ -328,7 +328,11 @@ void iterateWildCard(zval * arr, struct token * tok, struct token * tok_last, zv
     ulong num_key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-        copyToReturnResult(data, return_value);
+	if(tok == tok_last) {
+		copyToReturnResult(data, return_value);
+	} else if(Z_TYPE_P(data) == IS_ARRAY){
+		iterate(data, (tok + 1), tok_last, return_value);
+	}
     } ZEND_HASH_FOREACH_END();
 #endif
 }
