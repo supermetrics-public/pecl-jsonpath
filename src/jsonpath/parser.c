@@ -139,6 +139,7 @@ void build_parse_tree(
                     i++;
                     z = 0;
                     //TODO What if only 1 element, make sure type doesn't change
+                    tok[x].prop.type = INDEX;
                     while(lex_tok[i] != LEX_EXPR_END) {
                         if(lex_tok[i] == LEX_CHILD_SEP) {
                             tok[x].prop.type = INDEX;
