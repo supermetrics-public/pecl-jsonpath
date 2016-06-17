@@ -42,7 +42,11 @@ void iterateWildCard(zval * arr, struct token * tok, struct token * tok_last, zv
 PHP_FUNCTION(path_lookup)
 {
     char * path;
+#if PHP_MAJOR_VERSION < 7
     int path_len;
+#else
+    size_t path_len;
+#endif
     zval *z_array;
     HashTable *arr;
 
@@ -123,6 +127,7 @@ void iterate(zval *arr, struct token * tok, struct token * tok_last, zval * retu
     }
 }
 
+#if PHP_MAJOR_VERSION < 7
 void copyToReturnResult(zval **arr, zval * return_value)
 {
     zval *zv_dest;
@@ -130,9 +135,19 @@ void copyToReturnResult(zval **arr, zval * return_value)
     MAKE_COPY_ZVAL(arr, zv_dest);
     add_next_index_zval(return_value, zv_dest);
 }
+#else
+void copyToReturnResult(zval *arr, zval * return_value)
+{
+    zval tmp;
+    ZVAL_COPY_VALUE(&tmp, arr);
+    Z_ADDREF_P(&tmp);
+    add_next_index_zval(return_value, &tmp);
+}
+#endif
 
 void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zval * return_value)
 {
+#if PHP_MAJOR_VERSION < 7
     zval **data, **data2;
 
     if(zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void**)&data) != SUCCESS) {
@@ -211,10 +226,88 @@ void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zva
             }
             break;
     }
+#else
+    zval *data, *data2;
+
+    if ((data = zend_hash_str_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val))) == NULL) {
+        return;
+    }
+
+    int x;
+    zend_string *key;
+    ulong num_key;
+
+    switch(tok->prop.type) {
+        case RANGE:
+            for(x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
+                if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
+                    if(tok == tok_last) {
+                        copyToReturnResult(data2, return_value);
+                    } else {
+                        iterate(data2, (tok + 1), tok_last, return_value);
+                    }
+                }
+            }
+            return;
+        case INDEX:
+            for(x = 0; x < tok->prop.index_count; x++) {
+                if ((data2 = zend_hash_index_find(HASH_OF(data), tok->prop.indexes[x])) != NULL) {
+                    if(tok == tok_last) {
+                        copyToReturnResult(data2, return_value);
+                    } else {
+                        iterate(data2, (tok + 1), tok_last, return_value);
+                    }
+                }
+            }
+            return;
+        case ANY:
+
+            ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
+                if(tok == tok_last) {
+                    copyToReturnResult(data2, return_value);
+                } else {
+                    iterate(data2, (tok + 1), tok_last, return_value);
+                }
+            } ZEND_HASH_FOREACH_END();
+
+            return;
+        case SINGLE_KEY:
+            if(tok == tok_last) {
+                copyToReturnResult(data, return_value);
+            } else {
+                iterate(data, (tok + 1), tok_last, return_value);
+            }
+            return;
+        case FILTER:
+
+            ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
+                // For each array entry, find the node names and populate their values
+                // Fill up expression NODE_NAME VALS
+                for(x = 0; x < tok->prop.expr_count; x++) {
+                    if(tok->prop.expr_list[x+1].type == ISSET) {
+                        if(!checkIfKeyExists(data2, &tok->prop.expr_list[x])) {
+                            continue;
+                        }
+                    } else if(tok->prop.expr_list[x].type == NODE_NAME) {
+                        if(!findByValue(data2, &tok->prop.expr_list[x])) {
+                            continue;
+                        }
+                    }
+                }
+
+                if(evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
+                    copyToReturnResult(data2, return_value);
+                }
+            } ZEND_HASH_FOREACH_END();
+
+            break;
+    }
+#endif
 }
 
 void iterateWildCard(zval * arr, struct token * tok, struct token * tok_last, zval * return_value)
 {
+#if PHP_MAJOR_VERSION < 7
     zval **data;
     HashPosition pos;
     zval *zv_dest;
@@ -228,6 +321,16 @@ void iterateWildCard(zval * arr, struct token * tok, struct token * tok_last, zv
         MAKE_COPY_ZVAL(data, zv_dest);
         add_next_index_zval(return_value, zv_dest);
     }
+#else
+    zval *data;
+    zval *zv_dest;
+    zend_string *key;
+    ulong num_key;
+
+    ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
+        copyToReturnResult(data, return_value);
+    } ZEND_HASH_FOREACH_END();
+#endif
 }
 
 void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * return_value)
@@ -238,6 +341,7 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
 
     processChildKey(arr, tok, tok_last, return_value);
 
+#if PHP_MAJOR_VERSION < 7
     zval **tmp;
     HashPosition pos;
 
@@ -248,6 +352,16 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
     ) {
         deepJump(*tmp, tok, tok_last, return_value);
     }
+#else
+    zval *data;
+    zval *zv_dest;
+    zend_string *key;
+    ulong num_key;
+
+    ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
+        deepJump(data, tok, tok_last, return_value);
+    } ZEND_HASH_FOREACH_END();
+#endif
 }
 
 /**
@@ -257,6 +371,7 @@ void deepJump(zval * arr, struct token * tok, struct token * tok_last, zval * re
  */
 bool findByValue(zval *arr, expr * node)
 {
+#if PHP_MAJOR_VERSION < 7
 	zval ** data;
 
     int i;
@@ -276,6 +391,27 @@ bool findByValue(zval *arr, expr * node)
 
     strcpy(node->value, Z_STRVAL_P(*data));
 
+#else
+    zval * data;
+
+    int i;
+
+    for(i = 0; i < node->label_count; i++) {
+
+        if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) != NULL) {
+            arr = data;
+        } else {
+            node->value[0] = '\0';
+            return false;
+        }
+    }
+
+    if (Z_TYPE_P(Z_REFVAL_P(data)) != IS_STRING) {
+        convert_to_string(data);
+    }
+
+    strcpy(node->value, Z_STRVAL_P(data));
+#endif
     return true;
 }
 
@@ -286,6 +422,7 @@ bool findByValue(zval *arr, expr * node)
  */
 bool checkIfKeyExists(zval *arr, expr * node)
 {
+#if PHP_MAJOR_VERSION < 7
 	zval ** data;
 
 	HashPosition pos;			/* hash iterator */
@@ -305,7 +442,26 @@ bool checkIfKeyExists(zval *arr, expr * node)
             arr = *data;
         }
     }
+#else
+    zval * data;
 
+    int i;
+
+    node->value_bool = false;
+
+    //TODO clean this up?
+
+    for(i = 0; i < node->label_count; i++) {
+
+        if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) == NULL) {
+            node->value_bool = false;
+            return false;
+        } else {
+            node->value_bool = true;
+            arr = data;
+        }
+    }
+#endif
     return true;
 }
 
@@ -326,7 +482,7 @@ bool compare_or(expr * lh, expr * rh) {
 }
 
 bool compare_eq(expr * lh, expr * rh) {
-
+#if PHP_MAJOR_VERSION < 7
     zval *a, *b, *result;
     MAKE_STD_ZVAL(a);
     MAKE_STD_ZVAL(b);
@@ -342,7 +498,19 @@ bool compare_eq(expr * lh, expr * rh) {
     FREE_ZVAL(a);
     FREE_ZVAL(b);
     FREE_ZVAL(result);
+#else
+    zval a, b, result;
 
+    ZVAL_STRING(&a, (*lh).value);
+    ZVAL_STRING(&b, (*rh).value);
+
+    zval_ptr_dtor(&a);
+    zval_ptr_dtor(&b);
+    compare_function(&result, &a, &b TSRMLS_CC);
+
+    bool res = (Z_LVAL(result) == 0);
+
+#endif
     return res;
 }
 
