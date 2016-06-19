@@ -227,6 +227,11 @@ int main() {
         "parse a WILDCARD operator",
         ".*||", LEX_WILD_CARD, "", "||"
     ) ? successes++: failures++;
+    
+    test(
+        "parse an underscore nodename",
+        ".node_name ||", LEX_NODE, "node_name", " ||"
+    ) ? successes++: failures++;
 
 
     printf("\n--------------------\n\n");
