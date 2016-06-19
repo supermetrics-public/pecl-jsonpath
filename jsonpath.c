@@ -102,6 +102,15 @@ PHP_FUNCTION(path_lookup)
 
     iterate(z_array, tok_ptr_start, tok_ptr_end, return_value);
 
+    if(zend_hash_num_elements(HASH_OF(return_value)) == 0) {
+#if PHP_MAJOR_VERSION < 7
+	FREE_ZVAL(return_value);
+#else
+	zval_ptr_dtor(&return_value);
+#endif
+	RETURN_FALSE;
+    }
+
     return;
 }
 
@@ -317,9 +326,11 @@ void iterateWildCard(zval * arr, struct token * tok, struct token * tok_last, zv
         zend_hash_get_current_data_ex(HASH_OF(arr), (void**) &data, &pos) == SUCCESS;
         zend_hash_move_forward_ex(HASH_OF(arr), &pos)
     ) {
-        ALLOC_ZVAL(zv_dest);
-        MAKE_COPY_ZVAL(data, zv_dest);
-        add_next_index_zval(return_value, zv_dest);
+	if(tok == tok_last) {
+		copyToReturnResult(data, return_value);
+	} else if(Z_TYPE_P(*data) == IS_ARRAY){
+		iterate(*data, (tok + 1), tok_last, return_value);
+	}
     }
 #else
     zval *data;
