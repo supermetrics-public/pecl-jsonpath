@@ -305,7 +305,11 @@ void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zva
                 }
 
                 if(evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
-                    copyToReturnResult(data2, return_value);
+		    if(tok == tok_last) {
+			copyToReturnResult(data2, return_value);
+		    } else {
+			iterate(data2, (tok + 1), tok_last, return_value);
+		    }
                 }
             } ZEND_HASH_FOREACH_END();
 

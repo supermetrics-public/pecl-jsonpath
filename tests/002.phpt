@@ -32,6 +32,34 @@ print_r(path_lookup($data, '$.level1.*.level3.level4[0]'));
 
 echo "Assertion 2\n";
 var_dump(path_lookup($data, '$.level1.*.level3.level10[10]'));
+
+$data = [
+  "level1"=> [
+    "level2"=> [
+      "level3"=> [
+        [
+          "name"=> "val1",
+          "level4"=> [
+            [
+              "level5"=> [
+                [
+                  "level6"=> [
+                    [
+                      "id"=> "val2"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  ]
+];
+
+echo "Assertion 3\n";
+var_dump(path_lookup($data, "$.level1.level2.level3[?(@['name'] == 'val1')].level4[*].level5[*]"));
 ?>
 --EXPECT--
 Assertion 1
@@ -42,3 +70,17 @@ Array
 )
 Assertion 2
 bool(false)
+Assertion 3
+array(1) {
+  [0]=>
+  array(1) {
+    ["level6"]=>
+    array(1) {
+      [0]=>
+      array(1) {
+        ["id"]=>
+        string(4) "val2"
+      }
+    }
+  }
+}
