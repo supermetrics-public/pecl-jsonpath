@@ -149,7 +149,7 @@ void copyToReturnResult(zval *arr, zval * return_value)
 {
     zval tmp;
     ZVAL_COPY_VALUE(&tmp, arr);
-    Z_ADDREF_P(&tmp);
+    zval_copy_ctor(&tmp);
     add_next_index_zval(return_value, &tmp);
 }
 #endif
