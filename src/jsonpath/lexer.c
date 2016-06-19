@@ -245,7 +245,7 @@ static void extract_unbounded_literal(char *p, char * buffer, size_t bufSize) {
 
     start = p;
 
-    for (; *p != '\0' && !isspace(*p) && (*p == '_' || !ispunct(*p)); p++);
+    for (; *p != '\0' && !isspace(*p) && (*p == '_' || *p == '-' || !ispunct(*p)); p++);
 
     cpy_len = (size_t) (p - start);
 

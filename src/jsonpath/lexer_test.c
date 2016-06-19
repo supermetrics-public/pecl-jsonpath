@@ -233,6 +233,10 @@ int main() {
         ".node_name ||", LEX_NODE, "node_name", " ||"
     ) ? successes++: failures++;
 
+    test(
+        "parse a dash nodename",
+        ".node-name ||", LEX_NODE, "node-name", " ||"
+    ) ? successes++: failures++;
 
     printf("\n--------------------\n\n");
     printf("%d test(s) executed\n", successes + failures);
