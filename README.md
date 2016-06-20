@@ -22,6 +22,7 @@ $ phpize
 $ ./configure --with-jsonpath
 $ make
 $ TEST_PHP_ARGS="-q" make test
+$ sudo make install
 ```
 
 Make sure PHP knows about the extension.
