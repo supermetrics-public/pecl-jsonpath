@@ -1,5 +1,7 @@
 # JsonPath-PHP - extension for PHP 5.x/7.x
 
+![wrk Benchmark Results](https://cloud.githubusercontent.com/assets/2894330/16245444/e95992be-37ce-11e6-82f9-ad59495fc510.png)
+
 JsonPath is a language for querying and extracting data from JSON, similar to 
 XPath. This implementation is inspired by [Stefan Goessner's original implementation](http://goessner.net/articles/JsonPath/) 
 and intended to be a fast(er) replacement for [Peekmo's PHP implementation](https://github.com/Peekmo/JsonPath).
