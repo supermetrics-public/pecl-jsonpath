@@ -191,3 +191,6 @@ echo "\n\n";
 ]
 */
 ```
+## License
+
+JsonPath-PHP is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
