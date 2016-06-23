@@ -103,11 +103,7 @@ PHP_FUNCTION(path_lookup)
     iterate(z_array, tok_ptr_start, tok_ptr_end, return_value);
 
     if(zend_hash_num_elements(HASH_OF(return_value)) == 0) {
-#if PHP_MAJOR_VERSION < 7
-	convert_to_boolean(&return_value);
-#else
 	convert_to_boolean(return_value);
-#endif
 	RETURN_FALSE;
     }
 
@@ -230,7 +226,11 @@ void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zva
                 }
 
                 if(evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
-                    copyToReturnResult(data2, return_value);
+		    if(tok == tok_last) {
+			copyToReturnResult(data2, return_value);
+		    } else {
+			iterate(*data2, (tok + 1), tok_last, return_value);
+		    }
                 }
             }
             break;
