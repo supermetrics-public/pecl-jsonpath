@@ -104,9 +104,9 @@ PHP_FUNCTION(path_lookup)
 
     if(zend_hash_num_elements(HASH_OF(return_value)) == 0) {
 #if PHP_MAJOR_VERSION < 7
-	FREE_ZVAL(return_value);
+	convert_to_boolean(&return_value);
 #else
-	zval_ptr_dtor(&return_value);
+	convert_to_boolean(return_value);
 #endif
 	RETURN_FALSE;
     }
