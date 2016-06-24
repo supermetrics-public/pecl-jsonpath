@@ -89,109 +89,111 @@ $obj = array (
          ),
        );
 
+$jsonPath = new JsonPath();
+
 echo "Assertion 1\n";
-print_r(path_lookup($obj, '$.store.book'));
+print_r($jsonPath->find($obj, '$.store.book'));
 
 echo "Assertion 2\n";
-print_r(path_lookup($obj, "$['store']['book']"));
+print_r($jsonPath->find($obj, "$['store']['book']"));
 
 echo "Assertion 3\n";
-print_r(path_lookup($obj, '$.title'));
+print_r($jsonPath->find($obj, '$.title'));
 
 echo "Assertion 4\n";
-print_r(path_lookup($obj, "$['title']"));
+print_r($jsonPath->find($obj, "$['title']"));
 
 echo "Assertion 5\n";
-print_r(path_lookup($obj, '$..store..title'));
+print_r($jsonPath->find($obj, '$..store..title'));
 
 echo "Assertion 6\n";
-print_r(path_lookup($obj, "$..['store']..['title']"));
+print_r($jsonPath->find($obj, "$..['store']..['title']"));
 
 echo "Assertion 7\n";
-print_r(path_lookup($obj, '$..title'));
+print_r($jsonPath->find($obj, '$..title'));
 
 echo "Assertion 8\n";
-print_r(path_lookup($obj, "$..['title']"));
+print_r($jsonPath->find($obj, "$..['title']"));
 
 echo "Assertion 9\n";
-print_r(path_lookup($obj, '$.book[0,3]'));
+print_r($jsonPath->find($obj, '$.book[0,3]'));
 
 echo "Assertion 10\n";
-print_r(path_lookup($obj, "$['book'][0,3]"));
+print_r($jsonPath->find($obj, "$['book'][0,3]"));
 
 echo "Assertion 11\n";
-print_r(path_lookup($obj, '$.book[0,1,2].category'));
+print_r($jsonPath->find($obj, '$.book[0,1,2].category'));
 
 echo "Assertion 12\n";
-print_r(path_lookup($obj, '$.book[0:2]'));
+print_r($jsonPath->find($obj, '$.book[0:2]'));
 
 echo "Assertion 13\n";
-print_r(path_lookup($obj, '$.book[0:2].category'));
+print_r($jsonPath->find($obj, '$.book[0:2].category'));
 
 echo "Assertion 14\n";
-print_r(path_lookup($obj, '$.book[*]'));
+print_r($jsonPath->find($obj, '$.book[*]'));
 
 echo "Assertion 15\n";
-print_r(path_lookup($obj, '$.book[*].category'));
+print_r($jsonPath->find($obj, '$.book[*].category'));
 
 echo "Assertion 16\n";
-print_r(path_lookup($obj, '$.store.*'));
+print_r($jsonPath->find($obj, '$.store.*'));
 
 echo "Assertion 17\n";
-print_r(path_lookup($obj, '$..book[1:3].title'));
+print_r($jsonPath->find($obj, '$..book[1:3].title'));
 
 echo "Assertion 18\n";
-print_r(path_lookup($obj, '$..book[1,3].title'));
+print_r($jsonPath->find($obj, '$..book[1,3].title'));
 
 echo "Assertion 19\n";
-print_r(path_lookup($obj, '$..book[*].title'));
+print_r($jsonPath->find($obj, '$..book[*].title'));
 
 echo "Assertion 20\n";
-print_r(path_lookup($obj, '$.store.book[?(@.author == "Evelyn Waugh")]'));
+print_r($jsonPath->find($obj, '$.store.book[?(@.author == "Evelyn Waugh")]'));
 
 echo "Assertion 21\n";
-print_r(path_lookup($obj, '$.store.book[?(@.author == "Evelyn Waugh" || @.author == "Nigel Rees")]'));
+print_r($jsonPath->find($obj, '$.store.book[?(@.author == "Evelyn Waugh" || @.author == "Nigel Rees")]'));
 
 echo "Assertion 22\n";
-print_r(path_lookup($obj, '$.store.book[?(@.author == "Nigel Rees" || @.title == "Moby Dick")]'));
+print_r($jsonPath->find($obj, '$.store.book[?(@.author == "Nigel Rees" || @.title == "Moby Dick")]'));
 
 echo "Assertion 23\n";
-print_r(path_lookup($obj, '$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick")]'));
+print_r($jsonPath->find($obj, '$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick")]'));
 
 echo "Assertion 24\n";
-print_r(path_lookup($obj, '$.store.book[?(@.category == "fiction")]')); //Returns 3 of a kind
+print_r($jsonPath->find($obj, '$.store.book[?(@.category == "fiction")]')); //Returns 3 of a kind
 
 echo "Assertion 25\n";
-print_r(path_lookup($obj, 
+print_r($jsonPath->find($obj, 
     '$.store.book[?(@.author == "Herman Melville" && @.title == "Moby Dick" || @.author == "Evelyn Waugh")]'
     ));
 
 echo "Assertion 26\n";
-print_r(path_lookup($obj, '$.book[?(@.id.isbn == "684832674")]'));
+print_r($jsonPath->find($obj, '$.book[?(@.id.isbn == "684832674")]'));
 
 echo "Assertion 27\n";
-print_r(path_lookup($obj, '$.book[?(@.id.isbn == "684832674" && @.author == "Nigel Rees")]'));
+print_r($jsonPath->find($obj, '$.book[?(@.id.isbn == "684832674" && @.author == "Nigel Rees")]'));
 
 echo "Assertion 28\n";
-print_r(path_lookup($obj, '$.book[?(@.id.isbn == "684832674" || @.author == "Herman Melville")]'));
+print_r($jsonPath->find($obj, '$.book[?(@.id.isbn == "684832674" || @.author == "Herman Melville")]'));
 
 echo "Assertion 29\n";
-print_r(path_lookup($obj, '$.store.book[?(@["author"] == "Evelyn Waugh")]'));
+print_r($jsonPath->find($obj, '$.store.book[?(@["author"] == "Evelyn Waugh")]'));
 
 echo "Assertion 30\n";
-print_r(path_lookup($obj, "$.store.book[?(@['author'] == 'Evelyn Waugh')]"));
+print_r($jsonPath->find($obj, "$.store.book[?(@['author'] == 'Evelyn Waugh')]"));
 
 echo "Assertion 31\n";
-print_r(path_lookup($obj, '$.book[?(@["id"]["isbn"] == "684832674")]'));
+print_r($jsonPath->find($obj, '$.book[?(@["id"]["isbn"] == "684832674")]'));
 
 echo "Assertion 32\n";
-print_r(path_lookup($obj, "$.book[?(@['id']['isbn'] == '684832674')]"));
+print_r($jsonPath->find($obj, "$.book[?(@['id']['isbn'] == '684832674')]"));
 
 echo "Assertion 33\n";
-print_r(path_lookup($obj, '$.book[?(@["id"]["isbn"] == "684832674" || @.author == "Herman Melville")]'));
+print_r($jsonPath->find($obj, '$.book[?(@["id"]["isbn"] == "684832674" || @.author == "Herman Melville")]'));
 
 echo "Assertion 34\n";
-print_r(path_lookup($obj, '$.book[?(@["id"]["isbn"] && @.author == "Nigel Rees")]'));
+print_r($jsonPath->find($obj, '$.book[?(@["id"]["isbn"] && @.author == "Nigel Rees")]'));
 
 ?>
 --EXPECT--

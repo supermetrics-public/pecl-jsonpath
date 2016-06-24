@@ -39,7 +39,9 @@ bool checkIfKeyExists(zval *arr, expr * node);
 void processChildKey(zval *arr, struct token * tok, struct token * tok_last, zval * return_value);
 void iterateWildCard(zval * arr, struct token * tok, struct token * tok_last, zval * return_value);
 
-PHP_FUNCTION(path_lookup)
+zend_class_entry *test_ce;
+
+PHP_METHOD(JsonPath, find)
 {
     char * path;
 #if PHP_MAJOR_VERSION < 7
@@ -537,13 +539,25 @@ bool isset2(expr * lh, expr * rh) {
     return (*lh).value_bool && (*rh).value_bool;
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_find, 0, 0, 2)
+	ZEND_ARG_ARRAY_INFO(0, haystack, 0)
+	ZEND_ARG_INFO(0, needle)
+ZEND_END_ARG_INFO()
+
+const zend_function_entry jsonpath_methods[] = {
+    PHP_ME(JsonPath, find, arginfo_find, ZEND_ACC_PUBLIC)
+    PHP_FE_END
+};
+
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(jsonpath)
 {
-	/* If you have INI entries, uncomment these lines
-	REGISTER_INI_ENTRIES();
-	*/
+    zend_class_entry tmp_ce;
+    INIT_CLASS_ENTRY(tmp_ce, "JsonPath", jsonpath_methods);
+
+    test_ce = zend_register_internal_class(&tmp_ce TSRMLS_CC);
+
 	return SUCCESS;
 }
 /* }}} */
@@ -596,7 +610,6 @@ PHP_MINFO_FUNCTION(jsonpath)
  * Every user visible function must have an entry in jsonpath_functions[].
  */
 const zend_function_entry jsonpath_functions[] = {
-	PHP_FE(path_lookup, NULL)
 	PHP_FE_END	/* Must be the last line in jsonpath_functions[] */
 };
 /* }}} */

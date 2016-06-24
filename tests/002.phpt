@@ -5,6 +5,8 @@ Test typical use cases
 --FILE--
 <?php
 
+$jsonPath = new JsonPath();
+
 $data = [
     'level1' =>
         [
@@ -28,10 +30,10 @@ $data = [
 ];
 
 echo "Assertion 1\n";
-print_r(path_lookup($data, '$.level1.*.level3.level4[0]'));
+print_r($jsonPath->find($data, '$.level1.*.level3.level4[0]'));
 
 echo "Assertion 2\n";
-var_dump(path_lookup($data, '$.level1.*.level3.level10[10]'));
+var_dump($jsonPath->find($data, '$.level1.*.level3.level10[10]'));
 
 $data = [
   "level1"=> [
@@ -59,7 +61,7 @@ $data = [
 ];
 
 echo "Assertion 3\n";
-var_dump(path_lookup($data, "$.level1.level2.level3[?(@['name'] == 'val1')].level4[*].level5[*]"));
+var_dump($jsonPath->find($data, "$.level1.level2.level3[?(@['name'] == 'val1')].level4[*].level5[*]"));
 ?>
 --EXPECT--
 Assertion 1
