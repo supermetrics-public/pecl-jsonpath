@@ -17,47 +17,42 @@
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 
-int main() {
+int main()
+{
 
     lex_token lex_tok[100];
     char lex_tok_values[100][100];
     int lex_tok_count = 0;
 
-    char * input_str = "$.prop2[*]";
-    char * p = input_str;
+    char *input_str = "$.prop2[*]";
+    char *p = input_str;
 
     char buffer[100];
 
-    lex_token * ptr = lex_tok;
+    lex_token *ptr = lex_tok;
 
-    while((*ptr = scan(&p, buffer, sizeof(buffer))) != LEX_NOT_FOUND) {
+    while ((*ptr = scan(&p, buffer, sizeof(buffer))) != LEX_NOT_FOUND) {
 
-        switch(*ptr) {
-            case LEX_NODE:
-            case LEX_LITERAL:
-                strcpy(lex_tok_values[lex_tok_count], buffer);
-                break;
-            default:
-                lex_tok_values[lex_tok_count][0] = '\0';
-                break;
-        }
+	switch (*ptr) {
+	case LEX_NODE:
+	case LEX_LITERAL:
+	    strcpy(lex_tok_values[lex_tok_count], buffer);
+	    break;
+	default:
+	    lex_tok_values[lex_tok_count][0] = '\0';
+	    break;
+	}
 
-        ptr++;
+	ptr++;
 
-        lex_tok_count++;
+	lex_tok_count++;
     }
 
 
     struct token tok[100];
     int tok_count = 0;
-    int * int_ptr = &tok_count;
-    build_parse_tree(
-        lex_tok,
-        lex_tok_values,
-        lex_tok_count,
-        tok,
-        int_ptr
-    );
+    int *int_ptr = &tok_count;
+    build_parse_tree(lex_tok, lex_tok_values, lex_tok_count, tok, int_ptr);
 
 
     printf("Total tokens\t %d\n\n", *int_ptr);
@@ -77,26 +72,32 @@ int main() {
     return 0;
 }
 
-bool compare_lt(expr * lh, expr * rh) {
+bool compare_lt(expr * lh, expr * rh)
+{
     return atoi((*lh).value) < atoi((*rh).value);
 }
 
-bool compare_gt(expr * lh, expr * rh) {
+bool compare_gt(expr * lh, expr * rh)
+{
     return atoi((*lh).value) > atoi((*rh).value);
 }
 
-bool compare_and(expr * lh, expr * rh) {
+bool compare_and(expr * lh, expr * rh)
+{
     return (*lh).value_bool && (*rh).value_bool;
 }
 
-bool compare_or(expr * lh, expr * rh) {
+bool compare_or(expr * lh, expr * rh)
+{
     return (*lh).value_bool || (*rh).value_bool;
 }
 
-bool compare_eq(expr * lh, expr * rh) {
+bool compare_eq(expr * lh, expr * rh)
+{
     return atoi((*lh).value) == atoi((*rh).value);
 }
 
-bool isset2(expr * lh, expr * rh) {
+bool isset2(expr * lh, expr * rh)
+{
     return (*rh).value_bool;
 }
