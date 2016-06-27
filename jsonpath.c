@@ -134,16 +134,16 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 #if PHP_MAJOR_VERSION < 7
     zval **data, **data2;
 
-    if (zend_hash_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val) + 1, (void **) &data) != SUCCESS) {
+    if (zend_hash_find(HASH_OF(arr), tok->node_value, strlen(tok->node_value) + 1, (void **) &data) != SUCCESS) {
 	return;
     }
 
     int x;
     HashPosition pos;
 
-    switch (tok->prop.type) {
+    switch (tok->filter_type) {
     case FLTR_RANGE:
-	for (x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
+	for (x = tok->indexes[0]; x < tok->indexes[1]; x++) {
 	    if (zend_hash_index_find(HASH_OF(*data), x, (void **) &data2) == SUCCESS) {
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
@@ -154,8 +154,8 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	}
 	return;
     case FLTR_INDEX:
-	for (x = 0; x < tok->prop.index_count; x++) {
-	    if (zend_hash_index_find(HASH_OF(*data), tok->prop.indexes[x], (void **) &data2) == SUCCESS) {
+	for (x = 0; x < tok->index_count; x++) {
+	    if (zend_hash_index_find(HASH_OF(*data), tok->indexes[x], (void **) &data2) == SUCCESS) {
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
@@ -190,19 +190,19 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	    ) {
 	    // For each array entry, find the node names and populate their values
 	    // Fill up expression NODE_NAME VALS
-	    for (x = 0; x < tok->prop.expr_count; x++) {
-		if (tok->prop.expr_list[x + 1].type == ISSET) {
-		    if (!checkIfKeyExists(*data2, &tok->prop.expr_list[x])) {
+	    for (x = 0; x < tok->expression_count; x++) {
+		if (tok->expressions[x + 1].type == ISSET) {
+		    if (!checkIfKeyExists(*data2, &tok->expressions[x])) {
 			continue;
 		    }
-		} else if (tok->prop.expr_list[x].type == NODE_NAME) {
-		    if (!findByValue(*data2, &tok->prop.expr_list[x])) {
+		} else if (tok->expressions[x].type == NODE_NAME) {
+		    if (!findByValue(*data2, &tok->expressions[x])) {
 			continue;
 		    }
 		}
 	    }
 
-	    if (evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
+	    if (evaluate_postfix_expression(tok->expressions, tok->expression_count)) {
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
@@ -215,7 +215,7 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 #else
     zval *data, *data2;
 
-    if ((data = zend_hash_str_find(HASH_OF(arr), tok->prop.val, strlen(tok->prop.val))) == NULL) {
+    if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, strlen(tok->node_value))) == NULL) {
 	return;
     }
 
@@ -223,9 +223,9 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
     zend_string *key;
     ulong num_key;
 
-    switch (tok->prop.type) {
+    switch (tok->filter_type) {
     case FLTR_RANGE:
-	for (x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
+	for (x = tok->indexes[0]; x < tok->indexes[1]; x++) {
 	    if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
@@ -236,8 +236,8 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	}
 	return;
     case FLTR_INDEX:
-	for (x = 0; x < tok->prop.index_count; x++) {
-	    if ((data2 = zend_hash_index_find(HASH_OF(data), tok->prop.indexes[x])) != NULL) {
+	for (x = 0; x < tok->index_count; x++) {
+	    if ((data2 = zend_hash_index_find(HASH_OF(data), tok->indexes[x])) != NULL) {
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
@@ -270,19 +270,19 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
 	    // For each array entry, find the node names and populate their values
 	    // Fill up expression NODE_NAME VALS
-	    for (x = 0; x < tok->prop.expr_count; x++) {
-		if (tok->prop.expr_list[x + 1].type == ISSET) {
-		    if (!checkIfKeyExists(data2, &tok->prop.expr_list[x])) {
+	    for (x = 0; x < tok->expression_count; x++) {
+		if (tok->expressions[x + 1].type == ISSET) {
+		    if (!checkIfKeyExists(data2, &tok->expressions[x])) {
 			continue;
 		    }
-		} else if (tok->prop.expr_list[x].type == NODE_NAME) {
-		    if (!findByValue(data2, &tok->prop.expr_list[x])) {
+		} else if (tok->expressions[x].type == NODE_NAME) {
+		    if (!findByValue(data2, &tok->expressions[x])) {
 			continue;
 		    }
 		}
 	    }
 
-	    if (evaluate_postfix_expression(tok->prop.expr_list, tok->prop.expr_count)) {
+	    if (evaluate_postfix_expression(tok->expressions, tok->expression_count)) {
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {

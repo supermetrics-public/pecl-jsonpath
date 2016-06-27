@@ -24,7 +24,7 @@ typedef enum {
     FLTR_WILD_CARD,
     FLTR_NODE,
     FLTR_EXPR
-} child_type;
+} enum_filter_type;
 
 typedef enum {
     EQ,				//0
@@ -53,14 +53,12 @@ typedef struct {
 
 struct token {
     token_type type;
-    struct {
-	char val[100];
-	child_type type;
-	int index_count;
-	int indexes[100];
-	expr expr_list[100];
-	int expr_count;
-    } prop;
+    char node_value[100];
+    enum_filter_type filter_type;
+    int index_count;
+    int indexes[100];
+    expr expressions[100];
+    int expression_count;
 };
 
 bool tokenize(char **input, struct token *tok);

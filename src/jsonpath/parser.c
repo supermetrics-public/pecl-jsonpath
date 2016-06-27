@@ -78,7 +78,7 @@ void tokenize_filter_expression(lex_token * lex_tok, int *pos, struct token *tok
 	(*pos)++;
     }
 
-    convert_to_postfix(expr_list, i, tok->prop.expr_list, &tok->prop.expr_count);
+    convert_to_postfix(expr_list, i, tok->expressions, &tok->expression_count);
 }
 
 void build_parse_tree(lex_token lex_tok[100],
@@ -110,34 +110,33 @@ void build_parse_tree(lex_token lex_tok[100],
 		tok[x].type = CHILD_KEY;
 	    }
 
-	    tok[x].prop.type = FLTR_NODE;
-	    tok[x].prop.index_count = 0;
-	    strcpy(tok[x].prop.val, lex_tok_values[i]);
-
+	    tok[x].filter_type = FLTR_NODE;
+	    tok[x].index_count = 0;
+	    strcpy(tok[x].node_value, lex_tok_values[i]);
 
 	    int_ptr = &i;
 
 	    if (lex_tok[i + 1] == LEX_EXPR_START) {
 
 		i++;
-		tok[x].prop.type = FLTR_EXPR;
+		tok[x].filter_type = FLTR_EXPR;
 
 		tokenize_filter_expression(&lex_tok[0], int_ptr, &tok[x], lex_tok_values);
 	    } else if (lex_tok[i + 1] == LEX_FILTER_START) {
 		i++;
 		z = 0;
 		//TODO What if only 1 element, make sure type doesn't change
-		tok[x].prop.type = FLTR_INDEX;
+		tok[x].filter_type = FLTR_INDEX;
 		while (lex_tok[i] != LEX_EXPR_END) {
 		    if (lex_tok[i] == LEX_CHILD_SEP) {
-			tok[x].prop.type = FLTR_INDEX;
+			tok[x].filter_type = FLTR_INDEX;
 		    } else if (lex_tok[i] == LEX_SLICE) {
-			tok[x].prop.type = FLTR_RANGE;
+			tok[x].filter_type = FLTR_RANGE;
 		    } else if (lex_tok[i] == LEX_WILD_CARD) {
-			tok[x].prop.type = FLTR_WILD_CARD;
+			tok[x].filter_type = FLTR_WILD_CARD;
 		    } else if (lex_tok[i] == LEX_LITERAL) {
-			tok[x].prop.indexes[z] = atoi(lex_tok_values[i]);	//TODO error checking
-			tok[x].prop.index_count++;
+			tok[x].indexes[z] = atoi(lex_tok_values[i]);	//TODO error checking
+			tok[x].index_count++;
 			z++;
 		    }
 		    i++;
