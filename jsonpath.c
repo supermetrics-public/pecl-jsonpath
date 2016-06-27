@@ -15,12 +15,12 @@
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
 
-void iterate(zval * arr, struct token *tok, struct token *tok_last, zval * return_value);
-void deepJump(zval * arr, struct token *tok, struct token *tok_last, zval * return_value);
+void iterate(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value);
+void deepJump(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value);
 bool findByValue(zval * arr, expr * node);
 bool checkIfKeyExists(zval * arr, expr * node);
-void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval * return_value);
-void iterateWildCard(zval * arr, struct token *tok, struct token *tok_last, zval * return_value);
+void processChildKey(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value);
+void iterateWildCard(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value);
 
 zend_class_entry *test_ce;
 
@@ -67,13 +67,13 @@ PHP_METHOD(JsonPath, find)
 	lex_tok_count++;
     }
 
-    struct token tok[100];
+    parse_token tok[100];
     int tok_count = 0;
     int *int_ptr = &tok_count;
     build_parse_tree(lex_tok, lex_tok_values, lex_tok_count, tok, int_ptr);
 
-    struct token *tok_ptr_start;
-    struct token *tok_ptr_end;
+    parse_token *tok_ptr_start;
+    parse_token *tok_ptr_end;
 
     tok_ptr_start = &tok[0];
     tok_ptr_end = &tok[tok_count - 1];
@@ -89,7 +89,7 @@ PHP_METHOD(JsonPath, find)
     return;
 }
 
-void iterate(zval * arr, struct token *tok, struct token *tok_last, zval * return_value)
+void iterate(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value)
 {
     if (tok > tok_last) {
 	return;
@@ -129,7 +129,7 @@ void copyToReturnResult(zval * arr, zval * return_value)
 }
 #endif
 
-void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval * return_value)
+void processChildKey(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data, **data2;
@@ -297,7 +297,7 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 #endif
 }
 
-void iterateWildCard(zval * arr, struct token *tok, struct token *tok_last, zval * return_value)
+void iterateWildCard(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data;
@@ -331,7 +331,7 @@ void iterateWildCard(zval * arr, struct token *tok, struct token *tok_last, zval
 #endif
 }
 
-void deepJump(zval * arr, struct token *tok, struct token *tok_last, zval * return_value)
+void deepJump(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value)
 {
     if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
 	return;

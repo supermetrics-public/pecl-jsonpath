@@ -51,7 +51,7 @@ typedef struct {
     int label_count;
 } expr;
 
-struct token {
+typedef struct {
     token_type type;
     char node_value[100];
     enum_filter_type filter_type;
@@ -59,9 +59,9 @@ struct token {
     int indexes[100];
     expr expressions[100];
     int expression_count;
-};
+} parse_token;
 
-bool tokenize(char **input, struct token *tok);
+bool tokenize(char **input, parse_token * tok);
 
 typedef bool(*compare_cb) (expr *, expr *);
 
@@ -91,6 +91,6 @@ void Stack_Push(Stack * S, expr * expr);
 void Stack_Pop(Stack * S);
 
 void build_parse_tree(lex_token lex_tok[100],
-		      char lex_tok_values[100][100], int lex_tok_count, struct token *tok, int *tok_count);
+		      char lex_tok_values[100][100], int lex_tok_count, parse_token * tok, int *tok_count);
 
 #endif				/* PARSER_H */

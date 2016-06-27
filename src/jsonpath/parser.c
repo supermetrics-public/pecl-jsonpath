@@ -4,7 +4,7 @@
 
 bool is_unary(token token_type);
 
-void tokenize_filter_expression(lex_token * lex_tok, int *pos, struct token *tok, char lex_tok_values[100][100]
+void tokenize_filter_expression(lex_token * lex_tok, int *pos, parse_token * tok, char lex_tok_values[100][100]
     )
 {
 
@@ -82,7 +82,7 @@ void tokenize_filter_expression(lex_token * lex_tok, int *pos, struct token *tok
 }
 
 void build_parse_tree(lex_token lex_tok[100],
-		      char lex_tok_values[100][100], int lex_tok_count, struct token *tok, int *tok_count)
+		      char lex_tok_values[100][100], int lex_tok_count, parse_token * tok, int *tok_count)
 {
 
     int i = 0, x = 0, z = 0;
