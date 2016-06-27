@@ -110,7 +110,7 @@ void build_parse_tree(lex_token lex_tok[100],
 		tok[x].type = CHILD_KEY;
 	    }
 
-	    tok[x].prop.type = SINGLE_KEY;
+	    tok[x].prop.type = FLTR_NODE;
 	    tok[x].prop.index_count = 0;
 	    strcpy(tok[x].prop.val, lex_tok_values[i]);
 
@@ -120,21 +120,21 @@ void build_parse_tree(lex_token lex_tok[100],
 	    if (lex_tok[i + 1] == LEX_EXPR_START) {
 
 		i++;
-		tok[x].prop.type = FILTER;
+		tok[x].prop.type = FLTR_EXPR;
 
 		tokenize_filter_expression(&lex_tok[0], int_ptr, &tok[x], lex_tok_values);
 	    } else if (lex_tok[i + 1] == LEX_FILTER_START) {
 		i++;
 		z = 0;
 		//TODO What if only 1 element, make sure type doesn't change
-		tok[x].prop.type = INDEX;
+		tok[x].prop.type = FLTR_INDEX;
 		while (lex_tok[i] != LEX_EXPR_END) {
 		    if (lex_tok[i] == LEX_CHILD_SEP) {
-			tok[x].prop.type = INDEX;
+			tok[x].prop.type = FLTR_INDEX;
 		    } else if (lex_tok[i] == LEX_SLICE) {
-			tok[x].prop.type = RANGE;
+			tok[x].prop.type = FLTR_RANGE;
 		    } else if (lex_tok[i] == LEX_WILD_CARD) {
-			tok[x].prop.type = ANY;
+			tok[x].prop.type = FLTR_WILD_CARD;
 		    } else if (lex_tok[i] == LEX_LITERAL) {
 			tok[x].prop.indexes[z] = atoi(lex_tok_values[i]);	//TODO error checking
 			tok[x].prop.index_count++;

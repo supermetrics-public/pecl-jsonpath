@@ -19,11 +19,11 @@ typedef enum {
 } token_type;
 
 typedef enum {
-    RANGE,
-    INDEX,
-    ANY,
-    SINGLE_KEY,
-    FILTER
+    FLTR_RANGE,
+    FLTR_INDEX,
+    FLTR_WILD_CARD,
+    FLTR_NODE,
+    FLTR_EXPR
 } child_type;
 
 typedef enum {

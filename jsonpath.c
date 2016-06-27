@@ -142,7 +142,7 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
     HashPosition pos;
 
     switch (tok->prop.type) {
-    case RANGE:
+    case FLTR_RANGE:
 	for (x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
 	    if (zend_hash_index_find(HASH_OF(*data), x, (void **) &data2) == SUCCESS) {
 		if (tok == tok_last) {
@@ -153,7 +153,7 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	    }
 	}
 	return;
-    case INDEX:
+    case FLTR_INDEX:
 	for (x = 0; x < tok->prop.index_count; x++) {
 	    if (zend_hash_index_find(HASH_OF(*data), tok->prop.indexes[x], (void **) &data2) == SUCCESS) {
 		if (tok == tok_last) {
@@ -164,7 +164,7 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	    }
 	}
 	return;
-    case ANY:
+    case FLTR_WILD_CARD:
 	for (zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
 	     zend_hash_get_current_data_ex(HASH_OF(*data), (void **) &data2, &pos) == SUCCESS;
 	     zend_hash_move_forward_ex(HASH_OF(*data), &pos)
@@ -176,14 +176,14 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	    }
 	}
 	return;
-    case SINGLE_KEY:
+    case FLTR_NODE:
 	if (tok == tok_last) {
 	    copyToReturnResult(data, return_value);
 	} else {
 	    iterate(*data, (tok + 1), tok_last, return_value);
 	}
 	return;
-    case FILTER:
+    case FLTR_EXPR:
 	for (zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
 	     zend_hash_get_current_data_ex(HASH_OF(*data), (void **) &data2, &pos) == SUCCESS;
 	     zend_hash_move_forward_ex(HASH_OF(*data), &pos)
@@ -224,7 +224,7 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
     ulong num_key;
 
     switch (tok->prop.type) {
-    case RANGE:
+    case FLTR_RANGE:
 	for (x = tok->prop.indexes[0]; x < tok->prop.indexes[1]; x++) {
 	    if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
 		if (tok == tok_last) {
@@ -235,7 +235,7 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	    }
 	}
 	return;
-    case INDEX:
+    case FLTR_INDEX:
 	for (x = 0; x < tok->prop.index_count; x++) {
 	    if ((data2 = zend_hash_index_find(HASH_OF(data), tok->prop.indexes[x])) != NULL) {
 		if (tok == tok_last) {
@@ -246,7 +246,7 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	    }
 	}
 	return;
-    case ANY:
+    case FLTR_WILD_CARD:
 
 	ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
 	    if (tok == tok_last) {
@@ -258,14 +258,14 @@ void processChildKey(zval * arr, struct token *tok, struct token *tok_last, zval
 	ZEND_HASH_FOREACH_END();
 
 	return;
-    case SINGLE_KEY:
+    case FLTR_NODE:
 	if (tok == tok_last) {
 	    copyToReturnResult(data, return_value);
 	} else {
 	    iterate(data, (tok + 1), tok_last, return_value);
 	}
 	return;
-    case FILTER:
+    case FLTR_EXPR:
 
 	ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
 	    // For each array entry, find the node names and populate their values
