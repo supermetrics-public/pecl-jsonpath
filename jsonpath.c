@@ -15,12 +15,12 @@
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
 
-void iterate(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value);
-void deepJump(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value);
-bool findByValue(zval * arr, expr * node);
-bool checkIfKeyExists(zval * arr, expr * node);
-void processChildKey(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value);
-void iterateWildCard(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value);
+void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+bool findByValue(zval * arr, expr_operator * node);
+bool checkIfKeyExists(zval * arr, expr_operator * node);
+void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value);
 
 zend_class_entry *test_ce;
 
@@ -67,13 +67,13 @@ PHP_METHOD(JsonPath, find)
 	lex_tok_count++;
     }
 
-    parse_token tok[100];
+    operator  tok[100];
     int tok_count = 0;
     int *int_ptr = &tok_count;
     build_parse_tree(lex_tok, lex_tok_values, lex_tok_count, tok, int_ptr);
 
-    parse_token *tok_ptr_start;
-    parse_token *tok_ptr_end;
+    operator * tok_ptr_start;
+    operator * tok_ptr_end;
 
     tok_ptr_start = &tok[0];
     tok_ptr_end = &tok[tok_count - 1];
@@ -89,7 +89,7 @@ PHP_METHOD(JsonPath, find)
     return;
 }
 
-void iterate(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value)
+void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value)
 {
     if (tok > tok_last) {
 	return;
@@ -129,7 +129,7 @@ void copyToReturnResult(zval * arr, zval * return_value)
 }
 #endif
 
-void processChildKey(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value)
+void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data, **data2;
@@ -191,11 +191,11 @@ void processChildKey(zval * arr, parse_token * tok, parse_token * tok_last, zval
 	    // For each array entry, find the node names and populate their values
 	    // Fill up expression NODE_NAME VALS
 	    for (x = 0; x < tok->expression_count; x++) {
-		if (tok->expressions[x + 1].type == ISSET) {
+		if (tok->expressions[x + 1].type == EXPR_ISSET) {
 		    if (!checkIfKeyExists(*data2, &tok->expressions[x])) {
 			continue;
 		    }
-		} else if (tok->expressions[x].type == NODE_NAME) {
+		} else if (tok->expressions[x].type == EXPR_NODE_NAME) {
 		    if (!findByValue(*data2, &tok->expressions[x])) {
 			continue;
 		    }
@@ -297,7 +297,7 @@ void processChildKey(zval * arr, parse_token * tok, parse_token * tok_last, zval
 #endif
 }
 
-void iterateWildCard(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value)
+void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data;
@@ -331,7 +331,7 @@ void iterateWildCard(zval * arr, parse_token * tok, parse_token * tok_last, zval
 #endif
 }
 
-void deepJump(zval * arr, parse_token * tok, parse_token * tok_last, zval * return_value)
+void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value)
 {
     if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
 	return;
@@ -367,7 +367,7 @@ void deepJump(zval * arr, parse_token * tok, parse_token * tok_last, zval * retu
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool findByValue(zval * arr, expr * node)
+bool findByValue(zval * arr, expr_operator * node)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data;
@@ -418,7 +418,7 @@ bool findByValue(zval * arr, expr * node)
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool checkIfKeyExists(zval * arr, expr * node)
+bool checkIfKeyExists(zval * arr, expr_operator * node)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data;
@@ -459,27 +459,27 @@ bool checkIfKeyExists(zval * arr, expr * node)
     return true;
 }
 
-bool compare_lt(expr * lh, expr * rh)
+bool compare_lt(expr_operator * lh, expr_operator * rh)
 {
     return atoi((*lh).value) < atoi((*rh).value);
 }
 
-bool compare_gt(expr * lh, expr * rh)
+bool compare_gt(expr_operator * lh, expr_operator * rh)
 {
     return atoi((*lh).value) > atoi((*rh).value);
 }
 
-bool compare_and(expr * lh, expr * rh)
+bool compare_and(expr_operator * lh, expr_operator * rh)
 {
     return (*lh).value_bool && (*rh).value_bool;
 }
 
-bool compare_or(expr * lh, expr * rh)
+bool compare_or(expr_operator * lh, expr_operator * rh)
 {
     return (*lh).value_bool || (*rh).value_bool;
 }
 
-bool compare_eq(expr * lh, expr * rh)
+bool compare_eq(expr_operator * lh, expr_operator * rh)
 {
 #if PHP_MAJOR_VERSION < 7
     zval *a, *b, *result;
@@ -513,7 +513,7 @@ bool compare_eq(expr * lh, expr * rh)
     return res;
 }
 
-bool isset2(expr * lh, expr * rh)
+bool isset2(expr_operator * lh, expr_operator * rh)
 {
     return (*lh).value_bool && (*rh).value_bool;
 }

@@ -16,7 +16,7 @@ typedef enum {
     TYPE_OPERAND,
     TYPE_OPERATOR,
     TYPE_PAREN,
-} token_type;
+} operator_type;
 
 typedef enum {
     FLTR_RANGE,
@@ -24,73 +24,73 @@ typedef enum {
     FLTR_WILD_CARD,
     FLTR_NODE,
     FLTR_EXPR
-} enum_filter_type;
+} filter_type;
 
 typedef enum {
-    EQ,				//0
-    NE,				//1
-    LT,				//2
-    LTE,			//3
-    GT,				//4
-    GTE,			//5
-    ISSET,			//6
-    OR,				//7
-    AND,			//8
-    PAREN_LEFT,			//9
-    PAREN_RIGHT,		//10
-    LITERAL,			//11
-    BOOL,			//12
-    NODE_NAME			//13
-} token;
+    EXPR_EQ,			//0
+    EXPR_NE,			//1
+    EXPR_LT,			//2
+    EXPR_LTE,			//3
+    EXPR_GT,			//4
+    EXPR_GTE,			//5
+    EXPR_ISSET,			//6
+    EXPR_OR,			//7
+    EXPR_AND,			//8
+    EXPR_PAREN_LEFT,		//9
+    EXPR_PAREN_RIGHT,		//10
+    EXPR_LITERAL,		//11
+    EXPR_BOOL,			//12
+    EXPR_NODE_NAME		//13
+} expr_op_type;
 
 typedef struct {
-    token type;
+    expr_op_type type;
     char value[100];
     bool value_bool;
     char label[MAX_NODE_DEPTH][MAX_NODE_NAME_LEN];
     int label_count;
-} expr;
+} expr_operator;
 
 typedef struct {
-    token_type type;
+    operator_type type;
     char node_value[100];
-    enum_filter_type filter_type;
+    filter_type filter_type;
     int index_count;
     int indexes[100];
-    expr expressions[100];
+    expr_operator expressions[100];
     int expression_count;
-} parse_token;
+} operator;
 
-bool tokenize(char **input, parse_token * tok);
+bool tokenize(char **input, operator * tok);
 
-typedef bool(*compare_cb) (expr *, expr *);
+typedef bool(*compare_cb) (expr_operator *, expr_operator *);
 
-void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int *out_count);
-bool evaluate_postfix_expression(expr * expr, int count);
-compare_cb exec_cb_by_token(token);
-token_type get_token_type(token token);
+void convert_to_postfix(expr_operator * expr_in, int in_count, expr_operator * expr_out, int *out_count);
+bool evaluate_postfix_expression(expr_operator * expr, int count);
+compare_cb exec_cb_by_token(expr_op_type);
+operator_type get_token_type(expr_op_type);
 
-bool compare_lt(expr * lh, expr * rh);
-bool compare_gt(expr * lh, expr * rh);
-bool compare_and(expr * lh, expr * rh);
-bool compare_or(expr * lh, expr * rh);
-bool compare_eq(expr * lh, expr * rh);
-bool isset2(expr * lh, expr * rh);	// lh = rh
+bool compare_lt(expr_operator * lh, expr_operator * rh);
+bool compare_gt(expr_operator * lh, expr_operator * rh);
+bool compare_and(expr_operator * lh, expr_operator * rh);
+bool compare_or(expr_operator * lh, expr_operator * rh);
+bool compare_eq(expr_operator * lh, expr_operator * rh);
+bool isset2(expr_operator * lh, expr_operator * rh);	// lh = rh
 
 #define STACK_MAX 100
 
 struct Stack {
-    expr *data[STACK_MAX];
+    expr_operator *data[STACK_MAX];
     int size;
 };
 typedef struct Stack Stack;
 
 void Stack_Init(Stack * S);
-expr *Stack_Top(Stack * S);
-void Stack_Push(Stack * S, expr * expr);
+expr_operator *Stack_Top(Stack * S);
+void Stack_Push(Stack * S, expr_operator * expr);
 void Stack_Pop(Stack * S);
 
 void build_parse_tree(lex_token lex_tok[100],
-		      char lex_tok_values[100][100], int lex_tok_count, parse_token * tok, int *tok_count);
+		      char lex_tok_values[100][100], int lex_tok_count, operator * tok, int *tok_count);
 
 #endif				/* PARSER_H */

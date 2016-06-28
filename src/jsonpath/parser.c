@@ -2,13 +2,13 @@
 #include "parser.h"
 #include <stdio.h>
 
-bool is_unary(token token_type);
+bool is_unary(expr_op_type);
 
-void tokenize_filter_expression(lex_token * lex_tok, int *pos, parse_token * tok, char lex_tok_values[100][100]
+void tokenize_filter_expression(lex_token * lex_tok, int *pos, operator * tok, char lex_tok_values[100][100]
     )
 {
 
-    expr expr_list[100];
+    expr_operator expr_list[100];
     int i = 0, x = 0;
 
     //TODO make this safer in case LEX_EXPR_END doesnt exist
@@ -25,50 +25,50 @@ void tokenize_filter_expression(lex_token * lex_tok, int *pos, parse_token * tok
 		expr_list[i].label_count++;
 		x++;
 	    }
-	    expr_list[i].type = NODE_NAME;
+	    expr_list[i].type = EXPR_NODE_NAME;
 	    i++;
 	    break;
 	case LEX_LITERAL:
 	    strcpy(expr_list[i].value, lex_tok_values[*pos]);
-	    expr_list[i].type = LITERAL;
+	    expr_list[i].type = EXPR_LITERAL;
 	    i++;
 	    break;
 	case LEX_LT:
-	    expr_list[i].type = LT;
+	    expr_list[i].type = EXPR_LT;
 	    break;
 	case LEX_LTE:
-	    expr_list[i].type = LTE;
+	    expr_list[i].type = EXPR_LTE;
 	    i++;
 	    break;
 	case LEX_GT:
-	    expr_list[i].type = GT;
+	    expr_list[i].type = EXPR_GT;
 	    break;
 	case LEX_GTE:
-	    expr_list[i].type = GTE;
+	    expr_list[i].type = EXPR_GTE;
 	    i++;
 	    break;
 	case LEX_NEQ:
-	    expr_list[i].type = NE;
+	    expr_list[i].type = EXPR_NE;
 	    i++;
 	    break;
 	case LEX_EQ:
-	    expr_list[i].type = EQ;
+	    expr_list[i].type = EXPR_EQ;
 	    i++;
 	    break;
 	case LEX_OR:
-	    if (expr_list[i - 1].type == NODE_NAME) {
-		expr_list[i].type = ISSET;
+	    if (expr_list[i - 1].type == EXPR_NODE_NAME) {
+		expr_list[i].type = EXPR_ISSET;
 		i++;
 	    }
-	    expr_list[i].type = OR;
+	    expr_list[i].type = EXPR_OR;
 	    i++;
 	    break;
 	case LEX_AND:
-	    if (expr_list[i - 1].type == NODE_NAME) {
-		expr_list[i].type = ISSET;
+	    if (expr_list[i - 1].type == EXPR_NODE_NAME) {
+		expr_list[i].type = EXPR_ISSET;
 		i++;
 	    }
-	    expr_list[i].type = AND;
+	    expr_list[i].type = EXPR_AND;
 	    i++;
 	    break;
 	default:
@@ -82,7 +82,7 @@ void tokenize_filter_expression(lex_token * lex_tok, int *pos, parse_token * tok
 }
 
 void build_parse_tree(lex_token lex_tok[100],
-		      char lex_tok_values[100][100], int lex_tok_count, parse_token * tok, int *tok_count)
+		      char lex_tok_values[100][100], int lex_tok_count, operator * tok, int *tok_count)
 {
 
     int i = 0, x = 0, z = 0;
@@ -160,7 +160,7 @@ void Stack_Init(Stack * S)
     S->size = 0;
 }
 
-expr *Stack_Top(Stack * S)
+expr_operator *Stack_Top(Stack * S)
 {
     if (S->size == 0) {
 	fprintf(stderr, "Error: stack empty\n");
@@ -170,7 +170,7 @@ expr *Stack_Top(Stack * S)
     return S->data[S->size - 1];
 }
 
-void Stack_Push(Stack * S, expr * expr)
+void Stack_Push(Stack * S, expr_operator * expr)
 {
     if (S->size < STACK_MAX)
 	S->data[S->size++] = expr;
@@ -186,41 +186,41 @@ void Stack_Pop(Stack * S)
 	S->size--;
 }
 
-token_type get_token_type(token token)
+operator_type get_token_type(expr_op_type token)
 {
 
     switch (token) {
-    case EQ:
-    case NE:
-    case LT:
-    case LTE:
-    case GT:
-    case GTE:
-    case OR:
-    case AND:
-    case ISSET:
+    case EXPR_EQ:
+    case EXPR_NE:
+    case EXPR_LT:
+    case EXPR_LTE:
+    case EXPR_GT:
+    case EXPR_GTE:
+    case EXPR_OR:
+    case EXPR_AND:
+    case EXPR_ISSET:
 	return TYPE_OPERATOR;
-    case PAREN_LEFT:
-    case PAREN_RIGHT:
+    case EXPR_PAREN_LEFT:
+    case EXPR_PAREN_RIGHT:
 	return TYPE_PAREN;
-    case LITERAL:
-    case NODE_NAME:
-    case BOOL:
+    case EXPR_LITERAL:
+    case EXPR_NODE_NAME:
+    case EXPR_BOOL:
 	return TYPE_OPERAND;
     }
 }
 
-bool evaluate_postfix_expression(expr * expression_original, int count)
+bool evaluate_postfix_expression(expr_operator * expression_original, int count)
 {
 
-    expr expression[100] = { 0 };
+    expr_operator expression[100] = { 0 };
 
-    memcpy(expression, expression_original, sizeof(expr) * count);
+    memcpy(expression, expression_original, sizeof(expr_operator) * count);
 
     Stack S;
     Stack_Init(&S);
-    expr *expr_lh;
-    expr *expr_rh;
+    expr_operator *expr_lh;
+    expr_operator *expr_rh;
     bool temp_res;
     int i;
 
@@ -240,7 +240,7 @@ bool evaluate_postfix_expression(expr * expression_original, int count)
 
 	    temp_res = exec_cb_by_token(expression[i].type) (expr_lh, expr_rh);
 
-	    (*expr_lh).type = BOOL;
+	    (*expr_lh).type = EXPR_BOOL;
 	    (*expr_lh).value_bool = temp_res;
 	    break;
 	case TYPE_OPERAND:
@@ -253,12 +253,12 @@ bool evaluate_postfix_expression(expr * expression_original, int count)
 }
 
 // See http://csis.pace.edu/~wolf/CS122/infix-postfix.htm
-void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int *out_count)
+void convert_to_postfix(expr_operator * expr_in, int in_count, expr_operator * expr_out, int *out_count)
 {
 
     Stack S;
     Stack_Init(&S);
-    expr *expr_tmp;
+    expr_operator *expr_tmp;
 
     *out_count = 0;
 
@@ -270,7 +270,7 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int *out_
 	    expr_out[(*out_count)++] = expr_in[i];
 	    break;
 	case TYPE_OPERATOR:
-	    if (!S.size || (*Stack_Top(&S)).type == PAREN_LEFT) {
+	    if (!S.size || (*Stack_Top(&S)).type == EXPR_PAREN_LEFT) {
 		Stack_Push(&S, &expr_in[i]);
 	    } else {
 
@@ -291,13 +291,13 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int *out_
 	    }
 	    break;
 	case TYPE_PAREN:
-	    if (expr_in[i].type == PAREN_LEFT) {
+	    if (expr_in[i].type == EXPR_PAREN_LEFT) {
 		Stack_Push(&S, &expr_in[i]);
 	    } else {
 		while (S.size) {
 		    expr_tmp = Stack_Top(&S);
 		    Stack_Pop(&S);
-		    if ((*expr_tmp).type == PAREN_LEFT) {
+		    if ((*expr_tmp).type == EXPR_PAREN_LEFT) {
 			break;
 		    }
 		    expr_out[(*out_count)++] = *expr_tmp;
@@ -312,75 +312,75 @@ void convert_to_postfix(expr * expr_in, int in_count, expr * expr_out, int *out_
 
 }
 
-compare_cb exec_cb_by_token(token token_type)
+compare_cb exec_cb_by_token(expr_op_type token_type)
 {
 
     switch (token_type) {
-    case EQ:
+    case EXPR_EQ:
 	return compare_eq;
-    case NE:
+    case EXPR_NE:
 	printf("Callback not supported yet");
 	break;
-    case LT:
+    case EXPR_LT:
 	return compare_lt;
-    case LTE:
+    case EXPR_LTE:
 	printf("Callback not supported yet");
 	break;
-    case GT:
+    case EXPR_GT:
 	return compare_gt;
-    case GTE:
+    case EXPR_GTE:
 	printf("Callback not supported yet");
 	break;
-    case ISSET:
+    case EXPR_ISSET:
 	return isset2;
-    case OR:
+    case EXPR_OR:
 	return compare_or;
 	break;
-    case AND:
+    case EXPR_AND:
 	return compare_and;
-    case PAREN_LEFT:
-    case PAREN_RIGHT:
-    case LITERAL:
-    case BOOL:
+    case EXPR_PAREN_LEFT:
+    case EXPR_PAREN_RIGHT:
+    case EXPR_LITERAL:
+    case EXPR_BOOL:
     default:
 	printf("Error, no callback for token");
 	break;
     }
 }
 
-bool is_unary(token token_type)
+bool is_unary(expr_op_type type)
 {
-    return token_type == ISSET;
+    return type == EXPR_ISSET;
 }
 
 //TODO: Distinguish between operator and token?
-int get_operator_precedence(token token_type)
+int get_operator_precedence(expr_op_type type)
 {
 
-    switch (token_type) {
-    case LT:
+    switch (type) {
+    case EXPR_LT:
 	return 0;
-    case LTE:
+    case EXPR_LTE:
 	return 0;
 	break;
-    case GT:
+    case EXPR_GT:
 	return 0;
-    case GTE:
+    case EXPR_GTE:
 	return 0;
-    case NE:
+    case EXPR_NE:
 	return 1;
-    case EQ:
+    case EXPR_EQ:
 	return 1;
-    case AND:
+    case EXPR_AND:
 	return 2;
-    case OR:
+    case EXPR_OR:
 	return 2;
-    case ISSET:
+    case EXPR_ISSET:
 	return -1;
-    case PAREN_LEFT:
-    case PAREN_RIGHT:
-    case LITERAL:
-    case BOOL:
+    case EXPR_PAREN_LEFT:
+    case EXPR_PAREN_RIGHT:
+    case EXPR_LITERAL:
+    case EXPR_BOOL:
     default:
 	printf("Error, no callback for token");
 	break;
