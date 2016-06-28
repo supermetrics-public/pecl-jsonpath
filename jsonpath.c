@@ -271,11 +271,11 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	    // For each array entry, find the node names and populate their values
 	    // Fill up expression NODE_NAME VALS
 	    for (x = 0; x < tok->expression_count; x++) {
-		if (tok->expressions[x + 1].type == ISSET) {
+		if (tok->expressions[x + 1].type == EXPR_ISSET) {
 		    if (!checkIfKeyExists(data2, &tok->expressions[x])) {
 			continue;
 		    }
-		} else if (tok->expressions[x].type == NODE_NAME) {
+		} else if (tok->expressions[x].type == EXPR_NODE_NAME) {
 		    if (!findByValue(data2, &tok->expressions[x])) {
 			continue;
 		    }
