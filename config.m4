@@ -18,6 +18,7 @@ dnl Make sure that the comment is aligned:
 dnl [  --enable-jsonpath           Enable jsonpath support])
 
 JSONPATH_SOURCES="\
+    src/jsonpath/stack.c \
     src/jsonpath/lexer.c \
     src/jsonpath/parser.c \
   ";

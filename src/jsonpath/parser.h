@@ -77,19 +77,6 @@ bool compare_or(expr_operator * lh, expr_operator * rh);
 bool compare_eq(expr_operator * lh, expr_operator * rh);
 bool isset2(expr_operator * lh, expr_operator * rh);	// lh = rh
 
-#define STACK_MAX 100
-
-struct Stack {
-    expr_operator *data[STACK_MAX];
-    int size;
-};
-typedef struct Stack Stack;
-
-void Stack_Init(Stack * S);
-expr_operator *Stack_Top(Stack * S);
-void Stack_Push(Stack * S, expr_operator * expr);
-void Stack_Pop(Stack * S);
-
 void build_parse_tree(lex_token lex_tok[100],
 		      char lex_tok_values[100][100], int lex_tok_count, operator * tok, int *tok_count);
 

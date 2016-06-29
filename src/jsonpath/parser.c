@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
+#include "stack.h"
 #include <stdio.h>
 
 bool is_unary(expr_op_type);
@@ -155,37 +156,6 @@ void build_parse_tree(lex_token lex_tok[100],
     *tok_count = x;
 }
 
-void Stack_Init(Stack * S)
-{
-    S->size = 0;
-}
-
-expr_operator *Stack_Top(Stack * S)
-{
-    if (S->size == 0) {
-	fprintf(stderr, "Error: stack empty\n");
-	return NULL;
-    }
-
-    return S->data[S->size - 1];
-}
-
-void Stack_Push(Stack * S, expr_operator * expr)
-{
-    if (S->size < STACK_MAX)
-	S->data[S->size++] = expr;
-    else
-	fprintf(stderr, "Error: stack full\n");
-}
-
-void Stack_Pop(Stack * S)
-{
-    if (S->size == 0)
-	fprintf(stderr, "Error: stack empty\n");
-    else
-	S->size--;
-}
-
 operator_type get_token_type(expr_op_type token)
 {
 
@@ -212,9 +182,8 @@ operator_type get_token_type(expr_op_type token)
 
 bool evaluate_postfix_expression(expr_operator * op, int count)
 {
-
-    Stack S;
-    Stack_Init(&S);
+    stack s;
+    stack_init(&s);
     expr_operator *expr_lh;
     expr_operator *expr_rh;
 
@@ -237,25 +206,25 @@ bool evaluate_postfix_expression(expr_operator * op, int count)
 	case TYPE_OPERATOR:
 
 	    if (!is_unary((*op).type)) {
-		expr_rh = Stack_Top(&S);
-		Stack_Pop(&S);
-		expr_lh = Stack_Top(&S);
+		expr_rh = stack_top(&s);
+		stack_pop(&s);
+		expr_lh = stack_top(&s);
 	    } else {
-		expr_rh = Stack_Top(&S);
+		expr_rh = stack_top(&s);
 		expr_lh = expr_rh;
 	    }
 
-	    Stack_Pop(&S);
+	    stack_pop(&s);
 
 	    if (exec_cb_by_token((*op).type) (expr_lh, expr_rh)) {
-		Stack_Push(&S, &op_true);
+		stack_push(&s, &op_true);
 	    } else {
-		Stack_Push(&S, &op_false);
+		stack_push(&s, &op_false);
 	    }
 
 	    break;
 	case TYPE_OPERAND:
-	    Stack_Push(&S, op);
+	    stack_push(&s, op);
 	    break;
 	}
 
@@ -263,7 +232,7 @@ bool evaluate_postfix_expression(expr_operator * op, int count)
 	op++;
     }
 
-    expr_lh = Stack_Top(&S);
+    expr_lh = stack_top(&s);
 
     return (*expr_lh).value_bool;
 }
@@ -272,8 +241,8 @@ bool evaluate_postfix_expression(expr_operator * op, int count)
 void convert_to_postfix(expr_operator * expr_in, int in_count, expr_operator * expr_out, int *out_count)
 {
 
-    Stack S;
-    Stack_Init(&S);
+    stack s;
+    stack_init(&s);
     expr_operator *expr_tmp;
 
     *out_count = 0;
@@ -286,33 +255,33 @@ void convert_to_postfix(expr_operator * expr_in, int in_count, expr_operator * e
 	    expr_out[(*out_count)++] = expr_in[i];
 	    break;
 	case TYPE_OPERATOR:
-	    if (!S.size || (*Stack_Top(&S)).type == EXPR_PAREN_LEFT) {
-		Stack_Push(&S, &expr_in[i]);
+	    if (!s.size || (*stack_top(&s)).type == EXPR_PAREN_LEFT) {
+		stack_push(&s, &expr_in[i]);
 	    } else {
 
-		expr_tmp = Stack_Top(&S);
+		expr_tmp = stack_top(&s);
 
 		//TODO compare macro or assign to var?
 		if (get_operator_precedence(expr_in[i].type) < get_operator_precedence((*expr_tmp).type)) {
-		    Stack_Push(&S, &expr_in[i]);
+		    stack_push(&s, &expr_in[i]);
 		} else if (get_operator_precedence(expr_in[i].type) > get_operator_precedence((*expr_tmp).type)) {
-		    expr_out[(*out_count)++] = *Stack_Top(&S);
-		    Stack_Pop(&S);
+		    expr_out[(*out_count)++] = *stack_top(&s);
+		    stack_pop(&s);
 		    i--;	//Try the incoming token again in the next loop iteration
 		} else {
-		    expr_out[(*out_count)++] = *Stack_Top(&S);
-		    Stack_Pop(&S);
-		    Stack_Push(&S, &expr_in[i]);
+		    expr_out[(*out_count)++] = *stack_top(&s);
+		    stack_pop(&s);
+		    stack_push(&s, &expr_in[i]);
 		}
 	    }
 	    break;
 	case TYPE_PAREN:
 	    if (expr_in[i].type == EXPR_PAREN_LEFT) {
-		Stack_Push(&S, &expr_in[i]);
+		stack_push(&s, &expr_in[i]);
 	    } else {
-		while (S.size) {
-		    expr_tmp = Stack_Top(&S);
-		    Stack_Pop(&S);
+		while (s.size) {
+		    expr_tmp = stack_top(&s);
+		    stack_pop(&s);
 		    if ((*expr_tmp).type == EXPR_PAREN_LEFT) {
 			break;
 		    }
@@ -323,7 +292,8 @@ void convert_to_postfix(expr_operator * expr_in, int in_count, expr_operator * e
 	}
     }
 
-    for (; S.size; expr_tmp = Stack_Top(&S), expr_out[(*out_count)++] = *expr_tmp, Stack_Pop(&S)
+    /* Remove remaining elements */
+    for (; s.size; expr_tmp = stack_top(&s), expr_out[(*out_count)++] = *expr_tmp, stack_pop(&s)
 	);
 
 }
