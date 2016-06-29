@@ -210,26 +210,33 @@ operator_type get_token_type(expr_op_type token)
     }
 }
 
-bool evaluate_postfix_expression(expr_operator * expression_original, int count)
+bool evaluate_postfix_expression(expr_operator * op, int count)
 {
-
-    expr_operator expression[100] = { 0 };
-
-    memcpy(expression, expression_original, sizeof(expr_operator) * count);
 
     Stack S;
     Stack_Init(&S);
     expr_operator *expr_lh;
     expr_operator *expr_rh;
-    bool temp_res;
-    int i;
 
-    for (i = 0; i < count; i++) {
+    /* Temporary operators that store intermediate evaluations */
+    expr_operator op_true;
 
-	switch (get_token_type(expression[i].type)) {
+    op_true.type = EXPR_BOOL;
+    op_true.value_bool = true;
+
+    expr_operator op_false;
+
+    op_false.type = EXPR_BOOL;
+    op_false.value_bool = false;
+
+    int i = 0;
+
+    while (i < count) {
+
+	switch (get_token_type((*op).type)) {
 	case TYPE_OPERATOR:
 
-	    if (!is_unary(expression[i].type)) {
+	    if (!is_unary((*op).type)) {
 		expr_rh = Stack_Top(&S);
 		Stack_Pop(&S);
 		expr_lh = Stack_Top(&S);
@@ -238,16 +245,25 @@ bool evaluate_postfix_expression(expr_operator * expression_original, int count)
 		expr_lh = expr_rh;
 	    }
 
-	    temp_res = exec_cb_by_token(expression[i].type) (expr_lh, expr_rh);
+	    Stack_Pop(&S);
 
-	    (*expr_lh).type = EXPR_BOOL;
-	    (*expr_lh).value_bool = temp_res;
+	    if (exec_cb_by_token((*op).type) (expr_lh, expr_rh)) {
+		Stack_Push(&S, &op_true);
+	    } else {
+		Stack_Push(&S, &op_false);
+	    }
+
 	    break;
 	case TYPE_OPERAND:
-	    Stack_Push(&S, &expression[i]);
+	    Stack_Push(&S, op);
 	    break;
 	}
+
+	i++;
+	op++;
     }
+
+    expr_lh = Stack_Top(&S);
 
     return (*expr_lh).value_bool;
 }
