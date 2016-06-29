@@ -513,7 +513,7 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
     return res;
 }
 
-bool isset2(expr_operator * lh, expr_operator * rh)
+bool compare_isset(expr_operator * lh, expr_operator * rh)
 {
     return (*lh).value_bool && (*rh).value_bool;
 }

@@ -318,7 +318,7 @@ compare_cb exec_cb_by_token(expr_op_type token_type)
 	printf("Callback not supported yet");
 	break;
     case EXPR_ISSET:
-	return isset2;
+	return compare_isset;
     case EXPR_OR:
 	return compare_or;
 	break;
