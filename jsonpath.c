@@ -134,6 +134,10 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 #if PHP_MAJOR_VERSION < 7
     zval **data, **data2;
 
+    if (Z_TYPE_P(arr) != IS_ARRAY) {
+	return;
+    }
+
     if (zend_hash_find(HASH_OF(arr), tok->node_value, strlen(tok->node_value) + 1, (void **) &data) != SUCCESS) {
 	return;
     }
@@ -214,6 +218,10 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
     }
 #else
     zval *data, *data2;
+
+    if (Z_TYPE_P(arr) != IS_ARRAY) {
+	return;
+    }
 
     if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, strlen(tok->node_value))) == NULL) {
 	return;
