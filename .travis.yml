@@ -1,0 +1,22 @@
+language: php
+php:
+  - 7.0
+  - 5.6
+  - 5.5
+  - 5.4
+
+env:
+  global:
+    - TEST_PHP_ARGS="-q"
+
+install:
+  - phpize
+  - ./configure --with-jsonpath
+  - make
+
+script:
+  - make test
+
+notifications:
+  email:
+  - michael.w.kaminski@gmail.com
