@@ -19,7 +19,7 @@ void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_valu
 void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 bool findByValue(zval * arr, expr_operator * node TSRMLS_DC);
 bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC);
-void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 
 zend_class_entry *test_ce;
@@ -345,7 +345,7 @@ void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_val
 	return;
     }
 
-    processChildKey(arr, tok, tok_last, return_value);
+    processChildKey(arr, tok, tok_last, return_value TSRMLS_CC);
 
 #if PHP_MAJOR_VERSION < 7
     zval **tmp;
