@@ -34,10 +34,6 @@ extern zend_module_entry jsonpath_module_entry;
 #	define PHP_JSONPATH_API
 #endif
 
-#ifdef ZTS
-#include "TSRM.h"
-#endif
-
 /* 
   	Declare any global variables you may need between the BEGIN
 	and END macros here:     
@@ -57,12 +53,6 @@ ZEND_END_MODULE_GLOBALS(jsonpath)
    encouraged to rename these macros something shorter, see
    examples in any other php module directory.
 */
-
-#ifdef ZTS
-#define JSONPATH_G(v) TSRMG(jsonpath_globals_id, zend_jsonpath_globals *, v)
-#else
-#define JSONPATH_G(v) (jsonpath_globals.v)
-#endif
 
 #endif	/* PHP_JSONPATH_H */
 
