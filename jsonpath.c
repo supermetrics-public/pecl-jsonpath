@@ -35,7 +35,7 @@ PHP_METHOD(JsonPath, find)
     zval *z_array;
     HashTable *arr;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &z_array, &path, &path_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS()TSRMLS_CC, "as", &z_array, &path, &path_len) == FAILURE) {
 	return;
     }
 
@@ -498,7 +498,7 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
     ZVAL_STRING(a, (*lh).value, 0);
     ZVAL_STRING(b, (*rh).value, 0);
 
-    compare_function(result, a, b);
+    compare_function(result, a, b TSRMLS_CC);
 
     bool res = (Z_LVAL_P(result) == 0);
 
@@ -513,7 +513,7 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
 
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b);
+    compare_function(&result, &a, &b TSRMLS_CC);
 
     bool res = (Z_LVAL(result) == 0);
 
@@ -543,7 +543,7 @@ PHP_MINIT_FUNCTION(jsonpath)
     zend_class_entry tmp_ce;
     INIT_CLASS_ENTRY(tmp_ce, "JsonPath", jsonpath_methods);
 
-    test_ce = zend_register_internal_class(&tmp_ce);
+    test_ce = zend_register_internal_class(&tmp_ce TSRMLS_CC);
 
     return SUCCESS;
 }
