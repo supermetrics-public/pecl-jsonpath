@@ -506,7 +506,7 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
     FREE_ZVAL(result);
 #else
 
-    void * ptr TSRMLS_DC; //Hack to avoid passing TSRMLS_DC
+    TSRMLS_D;
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
