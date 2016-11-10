@@ -16,11 +16,11 @@
 static int le_jsonpath;
 
 void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value);
-void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value);
-bool findByValue(zval * arr, expr_operator * node);
-bool checkIfKeyExists(zval * arr, expr_operator * node);
+void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
+bool findByValue(zval * arr, expr_operator * node TSRMLS_DC);
+bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC);
 void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value);
-void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 
 zend_class_entry *test_ce;
 
@@ -100,13 +100,13 @@ void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_valu
 	iterate(arr, (tok + 1), tok_last, return_value);
 	break;
     case WILD_CARD:
-	iterateWildCard(arr, tok, tok_last, return_value);
+	iterateWildCard(arr, tok, tok_last, return_value TSRMLS_CC);
 	return;
     case DEEP_SCAN:
-	deepJump(arr, tok, tok_last, return_value);
+	deepJump(arr, tok, tok_last, return_value TSRMLS_CC);
 	return;
     case CHILD_KEY:
-	processChildKey(arr, tok, tok_last, return_value);
+	processChildKey(arr, tok, tok_last, return_value TSRMLS_CC);
 	return;
     }
 }
@@ -129,7 +129,7 @@ void copyToReturnResult(zval * arr, zval * return_value)
 }
 #endif
 
-void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value)
+void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data, **data2;
@@ -196,11 +196,11 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	    // Fill up expression NODE_NAME VALS
 	    for (x = 0; x < tok->expression_count; x++) {
 		if (tok->expressions[x + 1].type == EXPR_ISSET) {
-		    if (!checkIfKeyExists(*data2, &tok->expressions[x])) {
+		    if (!checkIfKeyExists(*data2, &tok->expressions[x] TSRMLS_CC)) {
 			continue;
 		    }
 		} else if (tok->expressions[x].type == EXPR_NODE_NAME) {
-		    if (!findByValue(*data2, &tok->expressions[x])) {
+		    if (!findByValue(*data2, &tok->expressions[x] TSRMLS_CC)) {
 			continue;
 		    }
 		}
@@ -280,11 +280,11 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	    // Fill up expression NODE_NAME VALS
 	    for (x = 0; x < tok->expression_count; x++) {
 		if (tok->expressions[x + 1].type == EXPR_ISSET) {
-		    if (!checkIfKeyExists(data2, &tok->expressions[x])) {
+		    if (!checkIfKeyExists(data2, &tok->expressions[x] TSRMLS_CC)) {
 			continue;
 		    }
 		} else if (tok->expressions[x].type == EXPR_NODE_NAME) {
-		    if (!findByValue(data2, &tok->expressions[x])) {
+		    if (!findByValue(data2, &tok->expressions[x] TSRMLS_CC)) {
 			continue;
 		    }
 		}
@@ -305,7 +305,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 #endif
 }
 
-void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value)
+void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data;
@@ -339,7 +339,7 @@ void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * ret
 #endif
 }
 
-void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value)
+void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
 {
     if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
 	return;
@@ -355,7 +355,7 @@ void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_val
 	 zend_hash_get_current_data_ex(HASH_OF(arr), (void **) &tmp, &pos) == SUCCESS;
 	 zend_hash_move_forward_ex(HASH_OF(arr), &pos)
 	) {
-	deepJump(*tmp, tok, tok_last, return_value);
+	deepJump(*tmp, tok, tok_last, return_value TSRMLS_CC);
     }
 #else
     zval *data;
@@ -364,7 +364,7 @@ void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_val
     ulong num_key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-	deepJump(data, tok, tok_last, return_value);
+	deepJump(data, tok, tok_last, return_value TSRMLS_CC);
     }
     ZEND_HASH_FOREACH_END();
 #endif
@@ -375,7 +375,7 @@ void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_val
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool findByValue(zval * arr, expr_operator * node)
+bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data;
@@ -426,7 +426,7 @@ bool findByValue(zval * arr, expr_operator * node)
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool checkIfKeyExists(zval * arr, expr_operator * node)
+bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC)
 {
 #if PHP_MAJOR_VERSION < 7
     zval **data;
@@ -487,7 +487,7 @@ bool compare_or(expr_operator * lh, expr_operator * rh)
     return (*lh).value_bool || (*rh).value_bool;
 }
 
-bool compare_eq(expr_operator * lh, expr_operator * rh)
+bool compare_eq(expr_operator * lh, expr_operator * rh TSRMLS_DC)
 {
 #if PHP_MAJOR_VERSION < 7
     zval *a, *b, *result;
