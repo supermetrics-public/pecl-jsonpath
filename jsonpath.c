@@ -15,7 +15,7 @@
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
 
-void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 bool findByValue(zval * arr, expr_operator * node TSRMLS_DC);
 bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC);
@@ -79,7 +79,7 @@ PHP_METHOD(JsonPath, find)
     tok_ptr_end = &tok[tok_count - 1];
 
 
-    iterate(z_array, tok_ptr_start, tok_ptr_end, return_value);
+    iterate(z_array, tok_ptr_start, tok_ptr_end, return_value TSRMLS_CC);
 
     if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
 	convert_to_boolean(return_value);
@@ -89,7 +89,7 @@ PHP_METHOD(JsonPath, find)
     return;
 }
 
-void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value)
+void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
 {
     if (tok > tok_last) {
 	return;
@@ -97,7 +97,7 @@ void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_valu
 
     switch (tok->type) {
     case ROOT:
-	iterate(arr, (tok + 1), tok_last, return_value);
+	iterate(arr, (tok + 1), tok_last, return_value TSRMLS_CC);
 	break;
     case WILD_CARD:
 	iterateWildCard(arr, tok, tok_last, return_value TSRMLS_CC);
@@ -152,7 +152,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(*data2, (tok + 1), tok_last, return_value);
+		    iterate(*data2, (tok + 1), tok_last, return_value TSRMLS_CC);
 		}
 	    }
 	}
@@ -163,7 +163,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(*data2, (tok + 1), tok_last, return_value);
+		    iterate(*data2, (tok + 1), tok_last, return_value TSRMLS_CC);
 		}
 	    }
 	}
@@ -176,7 +176,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	    if (tok == tok_last) {
 		copyToReturnResult(data2, return_value);
 	    } else {
-		iterate(*data2, (tok + 1), tok_last, return_value);
+		iterate(*data2, (tok + 1), tok_last, return_value TSRMLS_CC);
 	    }
 	}
 	return;
@@ -184,7 +184,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	if (tok == tok_last) {
 	    copyToReturnResult(data, return_value);
 	} else {
-	    iterate(*data, (tok + 1), tok_last, return_value);
+	    iterate(*data, (tok + 1), tok_last, return_value TSRMLS_CC);
 	}
 	return;
     case FLTR_EXPR:
@@ -210,7 +210,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(*data2, (tok + 1), tok_last, return_value);
+		    iterate(*data2, (tok + 1), tok_last, return_value TSRMLS_CC);
 		}
 	    }
 	}
@@ -238,7 +238,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value);
+		    iterate(data2, (tok + 1), tok_last, return_value TSRMLS_CC);
 		}
 	    }
 	}
@@ -249,7 +249,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value);
+		    iterate(data2, (tok + 1), tok_last, return_value TSRMLS_CC);
 		}
 	    }
 	}
@@ -260,7 +260,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	    if (tok == tok_last) {
 		copyToReturnResult(data2, return_value);
 	    } else {
-		iterate(data2, (tok + 1), tok_last, return_value);
+		iterate(data2, (tok + 1), tok_last, return_value TSRMLS_CC);
 	    }
 	}
 	ZEND_HASH_FOREACH_END();
@@ -270,7 +270,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	if (tok == tok_last) {
 	    copyToReturnResult(data, return_value);
 	} else {
-	    iterate(data, (tok + 1), tok_last, return_value);
+	    iterate(data, (tok + 1), tok_last, return_value TSRMLS_CC);
 	}
 	return;
     case FLTR_EXPR:
@@ -294,7 +294,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value);
+		    iterate(data2, (tok + 1), tok_last, return_value TSRMLS_CC);
 		}
 	    }
 	}
@@ -319,7 +319,7 @@ void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * ret
 	if (tok == tok_last) {
 	    copyToReturnResult(data, return_value);
 	} else if (Z_TYPE_P(*data) == IS_ARRAY) {
-	    iterate(*data, (tok + 1), tok_last, return_value);
+	    iterate(*data, (tok + 1), tok_last, return_value TSRMLS_CC);
 	}
     }
 #else
@@ -332,7 +332,7 @@ void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * ret
 	if (tok == tok_last) {
 	    copyToReturnResult(data, return_value);
 	} else if (Z_TYPE_P(data) == IS_ARRAY) {
-	    iterate(data, (tok + 1), tok_last, return_value);
+	    iterate(data, (tok + 1), tok_last, return_value TSRMLS_CC);
 	}
     }
     ZEND_HASH_FOREACH_END();
