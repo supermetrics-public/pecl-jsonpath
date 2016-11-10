@@ -14,7 +14,7 @@
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
-
+static TSRMLS_DC;
 void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 bool findByValue(zval * arr, expr_operator * node TSRMLS_DC);
