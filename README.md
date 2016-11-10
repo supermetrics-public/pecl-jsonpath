@@ -1,5 +1,7 @@
 # JsonPath-PHP - extension for PHP 5.x/7.x
 
+[![Build Status](https://travis-ci.org/mkaminski1988/jsonpath-php.svg?branch=master)](https://travis-ci.org/mkaminski1988/jsonpath-php)
+
 ![wrk Benchmark Results](https://cloud.githubusercontent.com/assets/2894330/16245444/e95992be-37ce-11e6-82f9-ad59495fc510.png)
 
 JsonPath is a language for querying and extracting data from JSON, similar to 
