@@ -488,7 +488,9 @@ bool compare_or(expr_operator * lh, expr_operator * rh)
 
 bool compare_eq(expr_operator * lh, expr_operator * rh)
 {
+    TSRMLS_D;
 #if PHP_MAJOR_VERSION < 7
+
     zval *a, *b, *result;
     MAKE_STD_ZVAL(a);
     MAKE_STD_ZVAL(b);
@@ -506,7 +508,6 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
     FREE_ZVAL(result);
 #else
 
-    TSRMLS_D;
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
