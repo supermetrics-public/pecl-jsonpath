@@ -138,7 +138,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	return;
     }
 
-    if (zend_hash_find(HASH_OF(arr), tok->node_value, strlen(tok->node_value) + 1, (void **) &data) != SUCCESS) {
+    if (zend_hash_find(HASH_OF(arr), tok->node_value, strlen(tok->node_value) + 1, (void **) &data TSRMLS_CC) != SUCCESS) {
 	return;
     }
 
@@ -312,7 +312,7 @@ void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * ret
     HashPosition pos;
     zval *zv_dest;
 
-    for (zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
+    for (zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos TSRMLS_CC);
 	 zend_hash_get_current_data_ex(HASH_OF(arr), (void **) &data, &pos) == SUCCESS;
 	 zend_hash_move_forward_ex(HASH_OF(arr), &pos)
 	) {
@@ -351,7 +351,7 @@ void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_val
     zval **tmp;
     HashPosition pos;
 
-    for (zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
+    for (zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos TSRMLS_CC);
 	 zend_hash_get_current_data_ex(HASH_OF(arr), (void **) &tmp, &pos) == SUCCESS;
 	 zend_hash_move_forward_ex(HASH_OF(arr), &pos)
 	) {
@@ -383,7 +383,7 @@ bool findByValue(zval * arr, expr_operator * node)
     int i;
 
     for (i = 0; i < node->label_count; i++) {
-	if (zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i]) + 1, (void **) &data) == SUCCESS) {
+	if (zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i]) + 1, (void **) &data TSRMLS_CC) == SUCCESS) {
 	    arr = *data;
 	} else {
 	    node->value[0] = '\0';
@@ -438,7 +438,7 @@ bool checkIfKeyExists(zval * arr, expr_operator * node)
     node->value_bool = false;
 
     for (i = 0; i < node->label_count; i++) {
-	if (zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i]) + 1, (void **) &data) != SUCCESS) {
+	if (zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i]) + 1, (void **) &data TSRMLS_CC) != SUCCESS) {
 	    node->value_bool = false;
 	    return false;
 	} else {
