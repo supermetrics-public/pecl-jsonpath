@@ -14,7 +14,6 @@
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
-static TSRMLS_DC;
 void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 bool findByValue(zval * arr, expr_operator * node TSRMLS_DC);
@@ -487,7 +486,7 @@ bool compare_or(expr_operator * lh, expr_operator * rh)
     return (*lh).value_bool || (*rh).value_bool;
 }
 
-bool compare_eq(expr_operator * lh, expr_operator * rh TSRMLS_DC)
+bool compare_eq(expr_operator * lh, expr_operator * rh)
 {
 #if PHP_MAJOR_VERSION < 7
     zval *a, *b, *result;
