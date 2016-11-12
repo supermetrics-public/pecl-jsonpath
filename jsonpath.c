@@ -20,6 +20,7 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC);
 bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC);
 void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
+bool is_scalar(zval * arg);
 
 zend_class_entry *test_ce;
 
@@ -394,6 +395,10 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
 	}
     }
 
+    if (!is_scalar(*data)) {
+        return false;
+    }
+
     char *s = NULL;
     size_t s_len;
 
@@ -438,6 +443,10 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
 	    node->value[0] = '\0';
 	    return false;
 	}
+    }
+
+    if (!is_scalar(data)) {
+        return false;
     }
 
     char *s = NULL;
@@ -648,6 +657,27 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
 bool compare_isset(expr_operator * lh, expr_operator * rh)
 {
     return (*lh).value_bool && (*rh).value_bool;
+}
+
+bool is_scalar(zval * arg)
+{
+    switch (Z_TYPE_P(arg)) {
+#if PHP_MAJOR_VERSION < 7
+        case IS_BOOL:
+#else
+        case IS_FALSE:
+        case IS_TRUE:
+#endif
+        case IS_DOUBLE:
+        case IS_LONG:
+        case IS_STRING:
+        return true;
+        break;
+        
+        default:
+        return false;
+        break;
+    }
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_find, 0, 0, 2)
