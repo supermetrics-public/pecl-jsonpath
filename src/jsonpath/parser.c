@@ -36,6 +36,7 @@ void tokenize_filter_expression(lex_token * lex_tok, int *pos, operator * tok, c
 	    break;
 	case LEX_LT:
 	    expr_list[i].type = EXPR_LT;
+            i++;
 	    break;
 	case LEX_LTE:
 	    expr_list[i].type = EXPR_LTE;
@@ -43,6 +44,7 @@ void tokenize_filter_expression(lex_token * lex_tok, int *pos, operator * tok, c
 	    break;
 	case LEX_GT:
 	    expr_list[i].type = EXPR_GT;
+            i++;
 	    break;
 	case LEX_GTE:
 	    expr_list[i].type = EXPR_GTE;
