@@ -9,6 +9,7 @@ php:
 env:
   global:
     - TEST_PHP_ARGS="-q"
+    - REPORT_EXIT_STATUS=1
 
 install:
   - phpize
