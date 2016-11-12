@@ -19,7 +19,7 @@ $obj = array (
 
 
 echo "Assertion 1\n";
-var_dump($jsonPath->find($obj, '$.test[?(@.val > 9)]'));
+var_dump($jsonPath->find($obj, '$.test[?(@.val == 10)]'));
 echo "Assertion 2\n";
 var_dump($jsonPath->find($obj, '$.test[?(@.val < 11)]'));
 echo "Assertion 3\n";
@@ -42,7 +42,7 @@ array(1) {
     ["id"]=>
     int(1)
     ["val"]=>
-    string(2) "10"
+    int(10)
     ["val_str"]=>
     string(5) "table"
   }
@@ -54,7 +54,7 @@ array(1) {
     ["id"]=>
     int(1)
     ["val"]=>
-    string(2) "10"
+    int(10)
     ["val_str"]=>
     string(5) "table"
   }
@@ -70,7 +70,7 @@ array(1) {
     ["id"]=>
     int(1)
     ["val"]=>
-    string(2) "10"
+    int(10)
     ["val_str"]=>
     string(5) "table"
   }
@@ -82,7 +82,7 @@ array(1) {
     ["id"]=>
     int(1)
     ["val"]=>
-    string(2) "10"
+    int(10)
     ["val_str"]=>
     string(5) "table"
   }

@@ -411,11 +411,29 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
 	}
     }
 
-    if (Z_TYPE_P(Z_REFVAL_P(data)) != IS_STRING) {
-	convert_to_string(data);
-    }
+    if (Z_TYPE_P(data) != IS_STRING) {
 
-    strcpy(node->value, Z_STRVAL_P(data));
+        zval zcopy;
+        int free_zcopy;
+        char *s = NULL;
+	size_t s_len;
+
+        free_zcopy = zend_make_printable_zval(data, &zcopy);
+        if (free_zcopy) {
+            data = &zcopy;
+        }
+
+        s_len = Z_STRLEN_P(data);
+        s = Z_STRVAL_P(data);
+
+        if (free_zcopy) {
+            zval_dtor(&zcopy);
+        }
+
+        strncpy(node->value, s, s_len);
+    } else {
+        strcpy(node->value, Z_STRVAL_P(data));
+    }
 #endif
     return true;
 }
