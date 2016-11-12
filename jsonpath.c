@@ -409,12 +409,17 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
         s = Z_STRVAL_P(zvp);
 
         strncpy(node->value, s, s_len);
+        node->value[s_len] = '\0';
 
         if (free_zcopy) {
            zval_dtor(&zcopy);
         }
+
     } else {
-        strcpy(node->value, Z_STRVAL_P(*data));
+        s_len = Z_STRLEN_P(*data);
+        s = Z_STRVAL_P(*data);
+        strncpy(node->value, s, s_len);
+        node->value[s_len] = '\0';
     }
 #else
     zval *data;
@@ -431,6 +436,9 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
 	}
     }
 
+    char *s = NULL;
+    size_t s_len;
+
     if (Z_TYPE_P(data) != IS_STRING) {
 
         zval zcopy;
@@ -446,13 +454,18 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
         s_len = Z_STRLEN_P(data);
         s = Z_STRVAL_P(data);
 
+        strncpy(node->value, s, s_len);
+        node->value[s_len] = '\0';
+
         if (free_zcopy) {
             zval_dtor(&zcopy);
         }
 
-        strncpy(node->value, s, s_len);
     } else {
-        strcpy(node->value, Z_STRVAL_P(data));
+        s_len = Z_STRLEN_P(data);
+        s = Z_STRVAL_P(data);
+        strncpy(node->value, s, s_len);
+        node->value[s_len] = '\0';
     }
 #endif
     return true;
