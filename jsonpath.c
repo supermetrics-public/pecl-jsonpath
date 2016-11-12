@@ -488,7 +488,8 @@ bool compare_or(expr_operator * lh, expr_operator * rh)
 
 bool compare_eq(expr_operator * lh, expr_operator * rh)
 {
-    TSRMLS_D;
+    TSRMLS_FETCH();
+
 #if PHP_MAJOR_VERSION < 7
 
     zval *a, *b, *result;
