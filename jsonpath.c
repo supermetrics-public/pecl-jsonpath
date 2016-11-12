@@ -376,6 +376,10 @@ void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_val
  */
 bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
 {
+    if (Z_TYPE_P(arr) != IS_ARRAY) {
+	return;
+    }
+
 #if PHP_MAJOR_VERSION < 7
     zval **data;
 
