@@ -606,6 +606,82 @@ bool compare_gt(expr_operator * lh, expr_operator * rh)
     return res;
 }
 
+bool compare_lte(expr_operator * lh, expr_operator * rh)
+{
+    TSRMLS_FETCH();
+
+#if PHP_MAJOR_VERSION < 7
+
+    zval *a, *b, *result;
+    MAKE_STD_ZVAL(a);
+    MAKE_STD_ZVAL(b);
+    MAKE_STD_ZVAL(result);
+
+    ZVAL_STRING(a, (*lh).value, 0);
+    ZVAL_STRING(b, (*rh).value, 0);
+
+    compare_function(result, a, b TSRMLS_CC);
+
+    bool res = (Z_LVAL_P(result) <= 0);
+
+    FREE_ZVAL(a);
+    FREE_ZVAL(b);
+    FREE_ZVAL(result);
+#else
+
+    zval a, b, result;
+
+    ZVAL_STRING(&a, (*lh).value);
+    ZVAL_STRING(&b, (*rh).value);
+
+    zval_ptr_dtor(&a);
+    zval_ptr_dtor(&b);
+    compare_function(&result, &a, &b TSRMLS_CC);
+
+    bool res = (Z_LVAL(result) <= 0);
+
+#endif
+    return res;
+}
+
+bool compare_gte(expr_operator * lh, expr_operator * rh)
+{
+    TSRMLS_FETCH();
+
+#if PHP_MAJOR_VERSION < 7
+
+    zval *a, *b, *result;
+    MAKE_STD_ZVAL(a);
+    MAKE_STD_ZVAL(b);
+    MAKE_STD_ZVAL(result);
+
+    ZVAL_STRING(a, (*lh).value, 0);
+    ZVAL_STRING(b, (*rh).value, 0);
+
+    compare_function(result, a, b TSRMLS_CC);
+
+    bool res = (Z_LVAL_P(result) >= 0);
+
+    FREE_ZVAL(a);
+    FREE_ZVAL(b);
+    FREE_ZVAL(result);
+#else
+
+    zval a, b, result;
+
+    ZVAL_STRING(&a, (*lh).value);
+    ZVAL_STRING(&b, (*rh).value);
+
+    zval_ptr_dtor(&a);
+    zval_ptr_dtor(&b);
+    compare_function(&result, &a, &b TSRMLS_CC);
+
+    bool res = (Z_LVAL(result) >= 0);
+
+#endif
+    return res;
+}
+
 bool compare_and(expr_operator * lh, expr_operator * rh)
 {
     return (*lh).value_bool && (*rh).value_bool;

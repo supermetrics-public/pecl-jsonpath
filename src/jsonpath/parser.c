@@ -312,18 +312,15 @@ compare_cb exec_cb_by_token(expr_op_type token_type)
     case EXPR_LT:
 	return compare_lt;
     case EXPR_LTE:
-	printf("Callback not supported yet");
-	break;
+	return compare_lte;
     case EXPR_GT:
 	return compare_gt;
     case EXPR_GTE:
-	printf("Callback not supported yet");
-	break;
+	return compare_gte;
     case EXPR_ISSET:
 	return compare_isset;
     case EXPR_OR:
 	return compare_or;
-	break;
     case EXPR_AND:
 	return compare_and;
     case EXPR_PAREN_LEFT:

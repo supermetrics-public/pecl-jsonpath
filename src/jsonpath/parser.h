@@ -71,7 +71,9 @@ compare_cb exec_cb_by_token(expr_op_type);
 operator_type get_token_type(expr_op_type);
 
 bool compare_lt(expr_operator * lh, expr_operator * rh);
+bool compare_lte(expr_operator * lh, expr_operator * rh);
 bool compare_gt(expr_operator * lh, expr_operator * rh);
+bool compare_gte(expr_operator * lh, expr_operator * rh);
 bool compare_and(expr_operator * lh, expr_operator * rh);
 bool compare_or(expr_operator * lh, expr_operator * rh);
 bool compare_eq(expr_operator * lh, expr_operator * rh);
