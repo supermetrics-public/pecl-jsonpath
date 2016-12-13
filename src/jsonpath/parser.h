@@ -77,6 +77,7 @@ bool compare_gte(expr_operator * lh, expr_operator * rh);
 bool compare_and(expr_operator * lh, expr_operator * rh);
 bool compare_or(expr_operator * lh, expr_operator * rh);
 bool compare_eq(expr_operator * lh, expr_operator * rh);
+bool compare_neq(expr_operator * lh, expr_operator * rh);
 bool compare_isset(expr_operator * lh, expr_operator * rh);	// lh = rh
 
 void build_parse_tree(lex_token lex_tok[100],

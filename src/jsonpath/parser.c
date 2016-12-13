@@ -307,8 +307,7 @@ compare_cb exec_cb_by_token(expr_op_type token_type)
     case EXPR_EQ:
 	return compare_eq;
     case EXPR_NE:
-	printf("Callback not supported yet");
-	break;
+        return compare_neq;
     case EXPR_LT:
 	return compare_lt;
     case EXPR_LTE:
