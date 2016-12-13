@@ -1,5 +1,5 @@
 --TEST--
-Testing >, <, >= <= operators
+Testing <= operator
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--
