@@ -31,9 +31,9 @@ const char *visible[] = {
     "FILTER_START",		/* [ */
 };
 
-lex_token scan(char **p, char *buffer, size_t bufSize)
+lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 {
-
+    char * start = *p;
     lex_token found_token = LEX_NOT_FOUND;
 
     while (**p != '\0' && found_token == LEX_NOT_FOUND) {
@@ -48,9 +48,6 @@ lex_token scan(char **p, char *buffer, size_t bufSize)
 	    switch (*(*p + 1)) {
 	    case '.':
 		found_token = LEX_DEEP_SCAN;
-		break;
-	    case ' ':		/* space is invalid in . ['node'] */
-		/* Throw parsing error */
 		break;
 	    case '[':
 		break;		/* dot is superfluous in .['node'] */
@@ -84,7 +81,9 @@ lex_token scan(char **p, char *buffer, size_t bufSize)
 		for (; **p != '\0' && **p == ' '; (*p)++);
 
 		if (**p != ']') {
-		    //Lexing error
+                    err->pos = *p;
+                    strncpy(err->msg, "Missing closing ] bracket", sizeof(err->msg)); 
+                    return LEX_ERR;
 		}
 		found_token = LEX_NODE;
 		break;
@@ -95,7 +94,9 @@ lex_token scan(char **p, char *buffer, size_t bufSize)
 		for (; **p != '\0' && **p == ' '; (*p)++);
 
 		if (**p != ']') {
-		    //Lexing error
+                    err->pos = *p;
+                    strncpy(err->msg, "Missing closing ] bracket", sizeof(err->msg));
+                    return LEX_ERR;
 		}
 		found_token = LEX_NODE;
 		break;
@@ -135,7 +136,9 @@ lex_token scan(char **p, char *buffer, size_t bufSize)
 	    (*p)++;
 
 	    if (**p != '=') {
-		//Lexing error
+                err->pos = *p;
+                strncpy(err->msg, "! operator missing =", sizeof(err->msg)); 
+                return LEX_ERR;
 	    }
 
 	    found_token = LEX_NEQ;
@@ -157,20 +160,26 @@ lex_token scan(char **p, char *buffer, size_t bufSize)
 	    }
 	    break;
 	case '&':
-	    if (*(*p + 1) == '&') {
-		found_token = LEX_AND;
-		(*p)++;
-	    } else {
-		/* Lexing error */
-	    }
+            (*p)++;
+
+	    if (**p != '&') {
+                err->pos = *p;
+                strncpy(err->msg, "'And' operator must be double &&", sizeof(err->msg)); 
+                return LEX_ERR;
+            }
+
+            found_token = LEX_AND;
 	    break;
 	case '|':
-	    if (*(*p + 1) == '|') {
-		found_token = LEX_OR;
-		(*p)++;
-	    } else {
-		/* Lexing error */
-	    }
+            (*p)++;
+
+	    if (**p != '|') {
+                err->pos = *p;
+                strncpy(err->msg, "'Or' operator must be double ||", sizeof(err->msg)); 
+                return LEX_ERR;
+            }
+
+            found_token = LEX_OR;
 	    break;
 	case '(':
 	    found_token = LEX_PAREN_OPEN;

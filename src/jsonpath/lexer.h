@@ -26,11 +26,17 @@ typedef enum {
     LEX_LITERAL,		/* "some string" 'some string' */
     LEX_FILTER_START,		/* [ */
     LEX_AND,			/* && */
-    LEX_OR			/* || */
+    LEX_OR,			/* || */
+    LEX_ERR                     /* Signals lexing error */
 } lex_token;
 
 extern const char *visible[];
 
-lex_token scan(char **p, char *buffer, size_t bufSize);
+typedef struct {
+    char * pos;                   /* The position where lexing stopped */
+    char msg[100];
+} lex_error;
+
+lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err);
 
 #endif				/* LEXER_H */

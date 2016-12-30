@@ -11,6 +11,8 @@
 #include "php_jsonpath.h"
 #include "zend_operators.h"
 #include <stdbool.h>
+#include "zend_exceptions.h"
+#include <ext/spl/spl_exceptions.h>
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
@@ -51,12 +53,18 @@ PHP_METHOD(JsonPath, find)
 
     lex_token *ptr = lex_tok;
 
-    while ((*ptr = scan(&p, buffer, sizeof(buffer))) != LEX_NOT_FOUND) {
+    lex_error err;
+
+    while ((*ptr = scan(&p, buffer, sizeof(buffer), &err)) != LEX_NOT_FOUND) {
 	switch (*ptr) {
 	case LEX_NODE:
 	case LEX_LITERAL:
 	    strcpy(lex_tok_values[lex_tok_count], buffer);
 	    break;
+        case LEX_ERR:
+            snprintf(err.msg, sizeof(err.msg), "%s at position %d", err.msg, (err.pos - path));
+            zend_throw_exception(spl_ce_RuntimeException, err.msg, 0 TSRMLS_CC);
+            break;
 	default:
 	    lex_tok_values[lex_tok_count][0] = '\0';
 	    break;
