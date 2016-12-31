@@ -10,31 +10,28 @@ $jsonPath = new JsonPath();
 $obj = [
 	'test' => [
 		[
-			"a" => "false",
+			"a" => "true",
 			"b" => "false",
-			"c" => "false",
-			"d" => "true"
+			"c" => "false"
 		]
 	]
 ];
 
 echo "Without parentheses\n";
-var_dump($jsonPath->find($obj, '$.test[?(@.a == "true" || @.b == "true" && @.c == "true" || @.d == "true")]'));
+var_dump($jsonPath->find($obj, '$.test[?(@.a == "true" || @.b == "true" && @.c == "true")]'));
 echo "With parentheses\n";
-var_dump($jsonPath->find($obj, '$.test[?(@.a == "true" || @.b == "true" && (@.c == "true" || @.d == "true"))]'));
+var_dump($jsonPath->find($obj, '$.test[?((@.a == "true" || @.b == "true") && @.c == "true")]'));
 --EXPECT--
 Without parentheses
 array(1) {
   [0]=>
-  array(4) {
+  array(3) {
     ["a"]=>
-    string(5) "false"
+    string(4) "true"
     ["b"]=>
     string(5) "false"
     ["c"]=>
     string(5) "false"
-    ["d"]=>
-    string(4) "true"
   }
 }
 With parentheses
