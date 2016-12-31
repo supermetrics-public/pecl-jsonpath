@@ -1,5 +1,5 @@
 --TEST--
-Testing >, <, >= <= operators
+Ensure exception is thrown for missing double &&
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--
