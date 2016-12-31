@@ -64,7 +64,7 @@ PHP_METHOD(JsonPath, find)
         case LEX_ERR:
             snprintf(err.msg, sizeof(err.msg), "%s at position %d", err.msg, (err.pos - path));
             zend_throw_exception(spl_ce_RuntimeException, err.msg, 0 TSRMLS_CC);
-            break;
+            return;
 	default:
 	    lex_tok_values[lex_tok_count][0] = '\0';
 	    break;
@@ -78,7 +78,12 @@ PHP_METHOD(JsonPath, find)
     operator  tok[100];
     int tok_count = 0;
     int *int_ptr = &tok_count;
-    build_parse_tree(lex_tok, lex_tok_values, lex_tok_count, tok, int_ptr);
+ 
+    parse_error p_err;
+   
+    if (!build_parse_tree(lex_tok, lex_tok_values, lex_tok_count, tok, int_ptr, &p_err)) {
+        zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0 TSRMLS_CC);
+    }
 
     operator * tok_ptr_start;
     operator * tok_ptr_end;

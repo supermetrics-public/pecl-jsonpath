@@ -5,22 +5,40 @@
 
 bool is_unary(expr_op_type);
 
-void tokenize_filter_expression(lex_token * lex_tok, int *pos, operator * tok, char lex_tok_values[100][100]
-    )
-{
+static bool tokenize_filter_expression(
+    lex_token * lex_tok,
+    int *pos,
+    int lex_tok_count,
+    operator * tok,
+    char lex_tok_values[100][100],
+    parse_error * err
+) {
 
     expr_operator expr_list[100];
     int i = 0, x = 0;
 
-    //TODO make this safer in case LEX_EXPR_END doesnt exist
-    while (lex_tok[*pos] != LEX_EXPR_END) {
+    while (*pos < lex_tok_count) {
 
 	switch (lex_tok[*pos]) {
-
+        case LEX_EXPR_START:
+            break;
+	case LEX_PAREN_OPEN:
+	    expr_list[i].type = EXPR_PAREN_LEFT;
+            i++;;
+            break;
+        case LEX_PAREN_CLOSE:
+	    expr_list[i].type = EXPR_PAREN_RIGHT;
+            i++;;
+            break;	
+        case LEX_EXPR_END:
+            convert_to_postfix(expr_list, i, tok->expressions, &tok->expression_count);
+            return true;
+        case LEX_NODE:
+            break;
 	case LEX_CUR_NODE:
 	    x = 0;
 	    expr_list[i].label_count = 0;
-	    while (lex_tok[(*pos) + 1] == LEX_NODE) {
+	    while ((*pos + 1) < lex_tok_count && lex_tok[(*pos) + 1] == LEX_NODE) {
 		(*pos)++;
 		strcpy(expr_list[i].label[x], lex_tok_values[*pos]);
 		expr_list[i].label_count++;
@@ -74,19 +92,36 @@ void tokenize_filter_expression(lex_token * lex_tok, int *pos, operator * tok, c
 	    expr_list[i].type = EXPR_AND;
 	    i++;
 	    break;
-	default:
-	    break;
+        case LEX_NOT_FOUND:
+        case LEX_ROOT:
+        case LEX_DEEP_SCAN:
+        case LEX_SLICE:
+        case LEX_CHILD_SEP:
+        case LEX_RGXP:
+        case LEX_FILTER_START:
+        case LEX_ERR:
+        default:
+            strncpy(err->msg, "Invalid expression token", sizeof(err->msg));
+            return false;
 	}
 
 	(*pos)++;
     }
 
-    convert_to_postfix(expr_list, i, tok->expressions, &tok->expression_count);
+    //We made it to the end without finding an expression terminator
+    strncpy(err->msg, "Missing filter end ]", sizeof(err->msg));
+
+    return false;
 }
 
-void build_parse_tree(lex_token lex_tok[100],
-		      char lex_tok_values[100][100], int lex_tok_count, operator * tok, int *tok_count)
-{
+bool build_parse_tree(
+    lex_token lex_tok[100],
+    char lex_tok_values[100][100],
+    int lex_tok_count, 
+    operator * tok, 
+    int *tok_count,
+    parse_error * err
+) {
 
     int i = 0, x = 0, z = 0;
     int *int_ptr;
@@ -124,9 +159,11 @@ void build_parse_tree(lex_token lex_tok[100],
 		i++;
 		tok[x].filter_type = FLTR_EXPR;
 
-		tokenize_filter_expression(&lex_tok[0], int_ptr, &tok[x], lex_tok_values);
+		if (!tokenize_filter_expression(&lex_tok[0], int_ptr, lex_tok_count, &tok[x], lex_tok_values, err)) {
+                   return false;
+                }
 	    } else if (lex_tok[i + 1] == LEX_FILTER_START) {
-		i++;
+		i += 2;
 		z = 0;
 		//TODO What if only 1 element, make sure type doesn't change
 		tok[x].filter_type = FLTR_INDEX;
@@ -141,11 +178,14 @@ void build_parse_tree(lex_token lex_tok[100],
 			tok[x].indexes[z] = atoi(lex_tok_values[i]);	//TODO error checking
 			tok[x].index_count++;
 			z++;
-		    }
+		    } else {
+                        break;
+                    }
 		    i++;
 		}
 		if (lex_tok[i] != LEX_EXPR_END) {
-		    /* Throw parsing error */
+                    strncpy(err->msg, "Missing filter end ]", sizeof(err->msg));
+                    return false;
 		}
 	    }
 	    x++;
@@ -156,6 +196,8 @@ void build_parse_tree(lex_token lex_tok[100],
     }
 
     *tok_count = x;
+
+    return true;
 }
 
 operator_type get_token_type(expr_op_type token)

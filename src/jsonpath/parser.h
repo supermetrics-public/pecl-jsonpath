@@ -61,6 +61,10 @@ typedef struct {
     int expression_count;
 } operator;
 
+typedef struct {
+    char msg[100];
+} parse_error;
+
 bool tokenize(char **input, operator * tok);
 
 typedef bool(*compare_cb) (expr_operator *, expr_operator *);
@@ -80,7 +84,12 @@ bool compare_eq(expr_operator * lh, expr_operator * rh);
 bool compare_neq(expr_operator * lh, expr_operator * rh);
 bool compare_isset(expr_operator * lh, expr_operator * rh);	// lh = rh
 
-void build_parse_tree(lex_token lex_tok[100],
-		      char lex_tok_values[100][100], int lex_tok_count, operator * tok, int *tok_count);
+bool build_parse_tree(
+    lex_token lex_tok[100],
+    char lex_tok_values[100][100],
+    int lex_tok_count, operator * tok,
+    int *tok_count,
+    parse_error * err
+);
 
 #endif				/* PARSER_H */
