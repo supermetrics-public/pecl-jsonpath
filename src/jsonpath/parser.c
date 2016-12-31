@@ -306,9 +306,9 @@ void convert_to_postfix(expr_operator * expr_in, int in_count, expr_operator * e
 		expr_tmp = stack_top(&s);
 
 		//TODO compare macro or assign to var?
-		if (get_operator_precedence(expr_in[i].type) < get_operator_precedence((*expr_tmp).type)) {
+		if (get_operator_precedence(expr_in[i].type) > get_operator_precedence((*expr_tmp).type)) {
 		    stack_push(&s, &expr_in[i]);
-		} else if (get_operator_precedence(expr_in[i].type) > get_operator_precedence((*expr_tmp).type)) {
+		} else if (get_operator_precedence(expr_in[i].type) < get_operator_precedence((*expr_tmp).type)) {
 		    expr_out[(*out_count)++] = *stack_top(&s);
 		    stack_pop(&s);
 		    i--;	//Try the incoming token again in the next loop iteration
@@ -384,25 +384,25 @@ int get_operator_precedence(expr_op_type type)
 {
 
     switch (type) {
+    case EXPR_ISSET:
+	return 10000;
     case EXPR_LT:
-	return 0;
+	return 1000;
     case EXPR_LTE:
-	return 0;
+	return 1000;
 	break;
     case EXPR_GT:
-	return 0;
+	return 1000;
     case EXPR_GTE:
-	return 0;
+	return 1000;
     case EXPR_NE:
-	return 1;
+	return 900;
     case EXPR_EQ:
-	return 1;
+	return 900;
     case EXPR_AND:
-	return 2;
+	return 800;
     case EXPR_OR:
-	return 2;
-    case EXPR_ISSET:
-	return -1;
+	return 700;
     case EXPR_PAREN_LEFT:
     case EXPR_PAREN_RIGHT:
     case EXPR_LITERAL:
