@@ -3,9 +3,12 @@
 #ifndef S_SPLINT_S
 #include <ctype.h>
 #endif
-static void extract_quoted_literal(char *p, char *buffer, size_t bufSize);
-static void extract_unbounded_literal(char *p, char *buffer, size_t bufSize);
-static void extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufSize);
+#include "safe_string.h"
+#include <stdbool.h>
+
+static bool extract_quoted_literal(char *p, char *buffer, size_t bufSize, lex_error * err);
+static bool extract_unbounded_literal(char *p, char *buffer, size_t bufSize, lex_error * err);
+static bool extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufSize, lex_error * err);
 
 const char *visible[] = {
     "NOT_FOUND",		/* Token not found */
@@ -62,7 +65,9 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 	    if (found_token == LEX_NODE) {
 		(*p)++;
 
-		extract_unbounded_literal(*p, buffer, bufSize);
+		if (!extract_unbounded_literal(*p, buffer, bufSize, err)) {
+                    return LEX_ERR;
+                }
 
 		*p += strlen(buffer) - 1;
 	    }
@@ -75,27 +80,31 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 
 	    switch (**p) {
 	    case '\'':
-		extract_quoted_literal(*p, buffer, bufSize);
+		if (!extract_quoted_literal(*p, buffer, bufSize, err)) {
+                    return LEX_ERR;
+                }
 		*p += strlen(buffer) + 2;
 
 		for (; **p != '\0' && **p == ' '; (*p)++);
 
 		if (**p != ']') {
                     err->pos = *p;
-                    strncpy(err->msg, "Missing closing ] bracket", sizeof(err->msg)); 
+                    strcpy(err->msg, "Missing closing ] bracket"); 
                     return LEX_ERR;
 		}
 		found_token = LEX_NODE;
 		break;
 	    case '"':
-		extract_quoted_literal(*p, buffer, bufSize);
+		if (!extract_quoted_literal(*p, buffer, bufSize, err)) {
+                    return LEX_ERR;
+                }
 		*p += strlen(buffer) + 2;
 
 		for (; **p != '\0' && **p == ' '; (*p)++);
 
 		if (**p != ']') {
                     err->pos = *p;
-                    strncpy(err->msg, "Missing closing ] bracket", sizeof(err->msg));
+                    strcpy(err->msg, "Missing closing ] bracket");
                     return LEX_ERR;
 		}
 		found_token = LEX_NODE;
@@ -137,7 +146,7 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 
 	    if (**p != '=') {
                 err->pos = *p;
-                strncpy(err->msg, "! operator missing =", sizeof(err->msg)); 
+                strcpy(err->msg, "! operator missing ="); 
                 return LEX_ERR;
 	    }
 
@@ -164,7 +173,7 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 
 	    if (**p != '&') {
                 err->pos = *p;
-                strncpy(err->msg, "'And' operator must be double &&", sizeof(err->msg)); 
+                strcpy(err->msg, "'And' operator must be double &&"); 
                 return LEX_ERR;
             }
 
@@ -175,7 +184,7 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 
 	    if (**p != '|') {
                 err->pos = *p;
-                strncpy(err->msg, "'Or' operator must be double ||", sizeof(err->msg)); 
+                strcpy(err->msg, "'Or' operator must be double ||"); 
                 return LEX_ERR;
             }
 
@@ -188,12 +197,16 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 	    found_token = LEX_PAREN_CLOSE;
 	    break;
 	case '\'':
-	    extract_quoted_literal(*p, buffer, bufSize);
+	    if (!extract_quoted_literal(*p, buffer, bufSize, err)) {
+                return LEX_ERR;
+            }
 	    *p += strlen(buffer) + 1;
 	    found_token = LEX_LITERAL;
 	    break;
 	case '"':
-	    extract_quoted_literal(*p, buffer, bufSize);
+	    if (!extract_quoted_literal(*p, buffer, bufSize, err)) {
+                return LEX_ERR;
+            }
 	    *p += strlen(buffer) + 1;
 	    found_token = LEX_LITERAL;
 	    break;
@@ -210,7 +223,9 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 	case '7':
 	case '8':
 	case '9':
-	    extract_unbounded_numeric_literal(*p, buffer, bufSize);
+	    if (!extract_unbounded_numeric_literal(*p, buffer, bufSize, err)) {
+                return LEX_ERR;
+            }
 	    *p += strlen(buffer) - 1;
 	    found_token = LEX_LITERAL;
 	    break;
@@ -223,7 +238,7 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 }
 
 /* Extract contents of string bounded by single or double quotes */
-static void extract_quoted_literal(char *p, char *buffer, size_t bufSize)
+static bool extract_quoted_literal(char *p, char *buffer, size_t bufSize, lex_error * err)
 {
 
     char *start;
@@ -237,17 +252,17 @@ static void extract_quoted_literal(char *p, char *buffer, size_t bufSize)
 
     cpy_len = (size_t) (p - start);
 
-    if (cpy_len > (size_t) bufSize - 1) {
-	printf("Error: Exceeded max node name length of %d\n", (int) bufSize - 1);
-	return;
+    if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
+        err->pos = p;
+        sprintf(err->msg, "String size exceeded %d bytes", bufSize);
+        return false;
     }
 
-    strncpy(buffer, start, cpy_len);
-    buffer[cpy_len] = '\0';
+    return true;
 }
 
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
-static void extract_unbounded_literal(char *p, char *buffer, size_t bufSize)
+static bool extract_unbounded_literal(char *p, char *buffer, size_t bufSize, lex_error * err)
 {
 
     char *start;
@@ -261,17 +276,17 @@ static void extract_unbounded_literal(char *p, char *buffer, size_t bufSize)
 
     cpy_len = (size_t) (p - start);
 
-    if (cpy_len > (size_t) bufSize - 1) {
-	printf("Error: Exceeded max node name length of %d\n", (int) bufSize - 1);
-	return;
+    if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
+        err->pos = p;
+        sprintf(err->msg, "String size exceeded %d bytes", bufSize);
+        return false;
     }
 
-    strncpy(buffer, start, cpy_len);
-    buffer[cpy_len] = '\0';
+    return true;
 }
 
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
-static void extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufSize)
+static bool extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufSize, lex_error * err)
 {
 
     char *start;
@@ -285,11 +300,11 @@ static void extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufS
 
     cpy_len = (size_t) (p - start);
 
-    if (cpy_len > (size_t) bufSize - 1) {
-	printf("Error: Exceeded max node name length of %d\n", (int) bufSize - 1);
-	return;
+    if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
+        err->pos = p;
+        sprintf(err->msg, "String size exceeded %d bytes", bufSize);
+        return false;
     }
 
-    strncpy(buffer, start, cpy_len);
-    buffer[cpy_len] = '\0';
+    return true;
 }
