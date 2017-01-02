@@ -86,7 +86,7 @@ bool compare_isset(expr_operator * lh, expr_operator * rh);	// lh = rh
 
 bool build_parse_tree(
     lex_token lex_tok[PARSE_BUF_LEN],
-    char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN],
+    char lex_tok_values[][PARSE_BUF_LEN],
     int lex_tok_count, 
     operator * tok,
     int *tok_count,

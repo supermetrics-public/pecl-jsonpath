@@ -43,13 +43,13 @@ PHP_METHOD(JsonPath, find)
 
     array_init(return_value);
 
-    lex_token lex_tok[100];
-    char lex_tok_values[100][100];
+    lex_token lex_tok[PARSE_BUF_LEN];
+    char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN];
     int lex_tok_count = 0;
 
     char *p = path;
 
-    char buffer[100];
+    char buffer[PARSE_BUF_LEN];
 
     lex_token *ptr = lex_tok;
 

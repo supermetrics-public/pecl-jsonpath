@@ -11,7 +11,7 @@ static bool tokenize_expression(
     int *pos,
     int lex_tok_count,
     operator * tok,
-    char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN],
+    char lex_tok_values[][PARSE_BUF_LEN],
     parse_error * err
 ) {
 
@@ -41,6 +41,10 @@ static bool tokenize_expression(
 	    expr_list[i].label_count = 0;
 	    while ((*pos + 1) < lex_tok_count && lex_tok[(*pos) + 1] == LEX_NODE) {
 		(*pos)++;
+                if (x == MAX_NODE_DEPTH) {
+                    strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));
+                    return false;
+                }
                 if (jp_str_cpy(expr_list[i].label[x], PARSE_BUF_LEN, lex_tok_values[*pos], strlen(lex_tok_values[*pos])) > 0) {
                     strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));                   
                     return false;
@@ -123,7 +127,7 @@ static bool tokenize_expression(
 
 bool build_parse_tree(
     lex_token lex_tok[PARSE_BUF_LEN],
-    char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN],
+    char lex_tok_values[][PARSE_BUF_LEN],
     int lex_tok_count, 
     operator * tok, 
     int *tok_count,
