@@ -17,7 +17,7 @@
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
 void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
-void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
+void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
 bool findByValue(zval * arr, expr_operator * node TSRMLS_DC);
 bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC);
 void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
@@ -116,7 +116,7 @@ void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_valu
 	iterateWildCard(arr, tok, tok_last, return_value TSRMLS_CC);
 	return;
     case DEEP_SCAN:
-	deepJump(arr, tok, tok_last, return_value TSRMLS_CC);
+	recurse(arr, tok, tok_last, return_value TSRMLS_CC);
 	return;
     case CHILD_KEY:
 	processChildKey(arr, tok, tok_last, return_value TSRMLS_CC);
@@ -352,7 +352,7 @@ void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * ret
 #endif
 }
 
-void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
+void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
 {
     if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
 	return;
@@ -368,7 +368,7 @@ void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_val
 	 zend_hash_get_current_data_ex(HASH_OF(arr), (void **) &tmp, &pos) == SUCCESS;
 	 zend_hash_move_forward_ex(HASH_OF(arr), &pos)
 	) {
-	deepJump(*tmp, tok, tok_last, return_value TSRMLS_CC);
+	recurse(*tmp, tok, tok_last, return_value TSRMLS_CC);
     }
 #else
     zval *data;
@@ -377,7 +377,7 @@ void deepJump(zval * arr, operator * tok, operator * tok_last, zval * return_val
     ulong num_key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-	deepJump(data, tok, tok_last, return_value TSRMLS_CC);
+	recurse(data, tok, tok_last, return_value TSRMLS_CC);
     }
     ZEND_HASH_FOREACH_END();
 #endif
