@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #define MAX_NODE_DEPTH 5
-#define MAX_NODE_NAME_LEN 25	/* Includes null-terminator */
+#define PARSE_BUF_LEN 100
 
 typedef enum {
     DEFAULT,
@@ -45,24 +45,24 @@ typedef enum {
 
 typedef struct {
     expr_op_type type;
-    char value[100];
+    char value[PARSE_BUF_LEN];
     bool value_bool;
-    char label[MAX_NODE_DEPTH][MAX_NODE_NAME_LEN];
+    char label[MAX_NODE_DEPTH][PARSE_BUF_LEN];
     int label_count;
 } expr_operator;
 
 typedef struct {
     operator_type type;
-    char node_value[100];
+    char node_value[PARSE_BUF_LEN];
     filter_type filter_type;
     int index_count;
-    int indexes[100];
-    expr_operator expressions[100];
+    int indexes[PARSE_BUF_LEN];
+    expr_operator expressions[PARSE_BUF_LEN];
     int expression_count;
 } operator;
 
 typedef struct {
-    char msg[100];
+    char msg[PARSE_BUF_LEN];
 } parse_error;
 
 bool tokenize(char **input, operator * tok);
@@ -85,9 +85,10 @@ bool compare_neq(expr_operator * lh, expr_operator * rh);
 bool compare_isset(expr_operator * lh, expr_operator * rh);	// lh = rh
 
 bool build_parse_tree(
-    lex_token lex_tok[100],
-    char lex_tok_values[100][100],
-    int lex_tok_count, operator * tok,
+    lex_token lex_tok[PARSE_BUF_LEN],
+    char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN],
+    int lex_tok_count, 
+    operator * tok,
     int *tok_count,
     parse_error * err
 );

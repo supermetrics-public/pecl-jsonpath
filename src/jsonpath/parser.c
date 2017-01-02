@@ -2,19 +2,20 @@
 #include "parser.h"
 #include "stack.h"
 #include <stdio.h>
+#include "safe_string.h"
 
 bool is_unary(expr_op_type);
 
-static bool tokenize_filter_expression(
+static bool tokenize_expression(
     lex_token * lex_tok,
     int *pos,
     int lex_tok_count,
     operator * tok,
-    char lex_tok_values[100][100],
+    char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN],
     parse_error * err
 ) {
 
-    expr_operator expr_list[100];
+    expr_operator expr_list[PARSE_BUF_LEN];
     int i = 0, x = 0;
 
     while (*pos < lex_tok_count) {
@@ -40,7 +41,10 @@ static bool tokenize_filter_expression(
 	    expr_list[i].label_count = 0;
 	    while ((*pos + 1) < lex_tok_count && lex_tok[(*pos) + 1] == LEX_NODE) {
 		(*pos)++;
-		strcpy(expr_list[i].label[x], lex_tok_values[*pos]);
+                if (jp_str_cpy(expr_list[i].label[x], PARSE_BUF_LEN, lex_tok_values[*pos], strlen(lex_tok_values[*pos])) > 0) {
+                    strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));                   
+                    return false;
+                }
 		expr_list[i].label_count++;
 		x++;
 	    }
@@ -48,7 +52,10 @@ static bool tokenize_filter_expression(
 	    i++;
 	    break;
 	case LEX_LITERAL:
-	    strcpy(expr_list[i].value, lex_tok_values[*pos]);
+            if (jp_str_cpy(expr_list[i].value, PARSE_BUF_LEN, lex_tok_values[*pos], strlen(lex_tok_values[*pos])) > 0) {
+                strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));                   
+                return false;
+            }
 	    expr_list[i].type = EXPR_LITERAL;
 	    i++;
 	    break;
@@ -115,8 +122,8 @@ static bool tokenize_filter_expression(
 }
 
 bool build_parse_tree(
-    lex_token lex_tok[100],
-    char lex_tok_values[100][100],
+    lex_token lex_tok[PARSE_BUF_LEN],
+    char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN],
     int lex_tok_count, 
     operator * tok, 
     int *tok_count,
@@ -150,7 +157,11 @@ bool build_parse_tree(
 
 	    tok[x].filter_type = FLTR_NODE;
 	    tok[x].index_count = 0;
-	    strcpy(tok[x].node_value, lex_tok_values[i]);
+	    
+            if (jp_str_cpy(tok[x].node_value, PARSE_BUF_LEN, lex_tok_values[i], strlen(lex_tok_values[i])) > 0) {
+                strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));
+                return false;
+            }
 
 	    int_ptr = &i;
 
@@ -159,7 +170,7 @@ bool build_parse_tree(
 		i++;
 		tok[x].filter_type = FLTR_EXPR;
 
-		if (!tokenize_filter_expression(&lex_tok[0], int_ptr, lex_tok_count, &tok[x], lex_tok_values, err)) {
+		if (!tokenize_expression(&lex_tok[0], int_ptr, lex_tok_count, &tok[x], lex_tok_values, err)) {
                    return false;
                 }
 	    } else if (lex_tok[i + 1] == LEX_FILTER_START) {
