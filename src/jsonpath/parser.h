@@ -4,8 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#define MAX_NODE_DEPTH 5
-#define PARSE_BUF_LEN 100
+#define PARSE_BUF_LEN 50
 
 typedef enum {
     DEFAULT,
@@ -47,7 +46,7 @@ typedef struct {
     expr_op_type type;
     char value[PARSE_BUF_LEN];
     bool value_bool;
-    char label[MAX_NODE_DEPTH][PARSE_BUF_LEN];
+    char label[PARSE_BUF_LEN];
     int label_count;
 } expr_operator;
 
@@ -57,7 +56,7 @@ typedef struct {
     filter_type filter_type;
     int index_count;
     int indexes[PARSE_BUF_LEN];
-    expr_operator expressions[PARSE_BUF_LEN];
+    expr_operator expressions[25];
     int expression_count;
 } operator;
 

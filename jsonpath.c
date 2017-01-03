@@ -398,14 +398,23 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
     zval **data;
 
     int i;
+/*
+    char * offset = expr_list[i].label[0];
+    int str_len = 0;
 
     for (i = 0; i < node->label_count; i++) {
-	if (zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i]) + 1, (void **) &data) == SUCCESS) {
+
+        while (*(offset + str_len) != '\0'; str_len++;);
+        str_len++;
+
+	if (zend_hash_find(HASH_OF(arr), offset, (str_len + 1), (void **) &data) == SUCCESS) {
 	    arr = *data;
 	} else {
 	    node->value[0] = '\0';
 	    return false;
 	}
+
+        offset += str_len + 1;
     }
 
     if (!is_scalar(*data)) {
@@ -443,19 +452,28 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
         strncpy(node->value, s, s_len);
         node->value[s_len] = '\0';
     }
+*/
 #else
     zval *data;
 
     int i;
 
+    char * offset = node->label;
+    int str_len = 0;
     for (i = 0; i < node->label_count; i++) {
 
-	if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) != NULL) {
+        while (*(offset + str_len) != '\0') {
+            str_len++;
+        }
+
+//        printf("We got %s\n", offset);
+	if ((data = zend_hash_str_find(HASH_OF(arr), offset, str_len)) != NULL) {
 	    arr = data;
 	} else {
 	    node->value[0] = '\0';
 	    return false;
 	}
+        offset += str_len + 1;
     }
 
     if (!is_scalar(data)) {
@@ -529,15 +547,24 @@ bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC)
 
     node->value_bool = false;
 
+    char * offset = node->label;
+    int str_len = 0;
+
     for (i = 0; i < node->label_count; i++) {
 
-	if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) == NULL) {
+        while (*(offset + str_len) != '\0') {
+            str_len++;
+        }
+
+	if ((data = zend_hash_str_find(HASH_OF(arr), offset, str_len)) == NULL) {
 	    node->value_bool = false;
 	    return false;
 	} else {
 	    node->value_bool = true;
 	    arr = data;
 	}
+
+        offset += str_len + 1;
     }
 #endif
     return true;
