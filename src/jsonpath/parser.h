@@ -47,7 +47,7 @@ typedef struct {
     expr_op_type type;
     char value[PARSE_BUF_LEN];
     bool value_bool;
-    char label[MAX_NODE_DEPTH][PARSE_BUF_LEN];
+    char * label[MAX_NODE_DEPTH];
     int label_count;
 } expr_operator;
 

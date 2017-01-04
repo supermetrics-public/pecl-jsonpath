@@ -45,10 +45,7 @@ static bool tokenize_expression(
                     strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));
                     return false;
                 }
-                if (jp_str_cpy(expr_list[i].label[x], PARSE_BUF_LEN, lex_tok_values[*pos], strlen(lex_tok_values[*pos])) > 0) {
-                    strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));                   
-                    return false;
-                }
+                expr_list[i].label[x] = lex_tok_values[*pos];
 		expr_list[i].label_count++;
 		x++;
 	    }
