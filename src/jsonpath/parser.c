@@ -39,21 +39,18 @@ static bool tokenize_expression(
 	case LEX_CUR_NODE:
 	    x = 0;
 	    expr_list[i].label_count = 0;
-            char * offset = expr_list[i].label;
 	    while ((*pos + 1) < lex_tok_count && lex_tok[(*pos) + 1] == LEX_NODE) {
 		(*pos)++;
                 if (x == MAX_NODE_DEPTH) {
                     strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));
                     return false;
                 }
-                if (jp_str_cpy(offset, PARSE_BUF_LEN, lex_tok_values[*pos], strlen(lex_tok_values[*pos])) > 0) {
+                if (jp_str_cpy(expr_list[i].label[x], PARSE_BUF_LEN, lex_tok_values[*pos], strlen(lex_tok_values[*pos])) > 0) {
                     strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));                   
                     return false;
                 }
-                //printf("Label: `%s`\n", offset);
 		expr_list[i].label_count++;
 		x++;
-                offset += strlen(lex_tok_values[*pos]) + 1;
 	    }
 	    expr_list[i].type = EXPR_NODE_NAME;
 	    i++;
