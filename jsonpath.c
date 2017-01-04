@@ -236,7 +236,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	return;
     }
 
-    if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, strlen(tok->node_value))) == NULL) {
+    if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, tok->node_value_len)) == NULL) {
 	return;
     }
 

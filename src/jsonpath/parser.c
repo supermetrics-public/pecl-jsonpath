@@ -158,12 +158,9 @@ bool build_parse_tree(
 
 	    tok[x].filter_type = FLTR_NODE;
 	    tok[x].index_count = 0;
+            tok[x].node_value = lex_tok_values[i];
+            tok[x].node_value_len = strlen(lex_tok_values[i]);
 	    
-            if (jp_str_cpy(tok[x].node_value, PARSE_BUF_LEN, lex_tok_values[i], strlen(lex_tok_values[i])) > 0) {
-                strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));
-                return false;
-            }
-
 	    int_ptr = &i;
 
 	    if (lex_tok[i + 1] == LEX_EXPR_START) {

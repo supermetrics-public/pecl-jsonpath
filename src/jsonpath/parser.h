@@ -53,7 +53,8 @@ typedef struct {
 
 typedef struct {
     operator_type type;
-    char node_value[PARSE_BUF_LEN];
+    char * node_value;
+    int node_value_len;
     filter_type filter_type;
     int index_count;
     int indexes[PARSE_BUF_LEN];
