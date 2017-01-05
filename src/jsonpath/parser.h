@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #define MAX_NODE_DEPTH 5
-#define PARSE_BUF_LEN 100
+#define PARSE_BUF_LEN 50
 
 typedef enum {
     DEFAULT,
@@ -58,7 +58,7 @@ typedef struct {
     filter_type filter_type;
     int index_count;
     int indexes[PARSE_BUF_LEN];
-    expr_operator expressions[PARSE_BUF_LEN];
+    expr_operator * expressions;
     int expression_count;
 } operator;
 
@@ -93,5 +93,7 @@ bool build_parse_tree(
     int *tok_count,
     parse_error * err
 );
+
+void * jpath_malloc(size_t size);
 
 #endif				/* PARSER_H */

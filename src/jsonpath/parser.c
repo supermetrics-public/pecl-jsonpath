@@ -6,6 +6,26 @@
 
 bool is_unary(expr_op_type);
 
+static int get_expression_node_count(
+    lex_token * lex_tok,
+    int pos,
+    int lex_tok_count
+) {
+
+    int count = 0;
+
+    while (pos < lex_tok_count) {
+        count++;
+ 
+        if (lex_tok[pos] == LEX_EXPR_END) {
+            return count;
+        }       
+        pos++;
+    }
+
+    return -1;
+}
+
 static bool tokenize_expression(
     lex_token * lex_tok,
     int *pos,
@@ -131,7 +151,7 @@ bool build_parse_tree(
     parse_error * err
 ) {
 
-    int i = 0, x = 0, z = 0;
+    int i = 0, x = 0, z = 0, expr_count = 0;
     int *int_ptr;
 
     for (i = 0; i < lex_tok_count; i++) {
@@ -165,9 +185,16 @@ bool build_parse_tree(
 
 	    if (lex_tok[i + 1] == LEX_EXPR_START) {
 
+                expr_count = get_expression_node_count(&lex_tok[0], *int_ptr, lex_tok_count);
+
+                if (expr_count == -1) {
+                    strncpy(err->msg, "Missing filter end ]", sizeof(err->msg));
+                    return false;
+                }
+
 		i++;
 		tok[x].filter_type = FLTR_EXPR;
-
+                tok[x].expressions = (expr_operator *) jpath_malloc(sizeof(expr_operator) * expr_count); 
 		if (!tokenize_expression(&lex_tok[0], int_ptr, lex_tok_count, &tok[x], lex_tok_values, err)) {
                    return false;
                 }

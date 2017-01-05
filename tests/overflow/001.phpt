@@ -13,4 +13,4 @@ try {
     echo get_class($e) . ": " . $e->getMessage();
 }
 --EXPECT--
-RuntimeException: String size exceeded 100 bytes at position 143
+RuntimeException: String size exceeded 50 bytes at position 143

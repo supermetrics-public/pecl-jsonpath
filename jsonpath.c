@@ -91,8 +91,16 @@ PHP_METHOD(JsonPath, find)
     tok_ptr_start = &tok[0];
     tok_ptr_end = &tok[tok_count - 1];
 
-
     iterate(z_array, tok_ptr_start, tok_ptr_end, return_value TSRMLS_CC);
+
+    operator * fr = tok_ptr_start;
+
+    while (fr <= tok_ptr_end) {
+        if (fr->filter_type == FLTR_EXPR) {
+            efree((void *)fr->expressions);    
+        } 
+        fr++;
+    }
 
     if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
 	convert_to_boolean(return_value);
@@ -805,6 +813,10 @@ bool is_scalar(zval * arg)
         return false;
         break;
     }
+}
+
+void * jpath_malloc(size_t size) {
+    return emalloc(size);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_find, 0, 0, 2)
