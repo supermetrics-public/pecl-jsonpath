@@ -40,7 +40,8 @@ typedef enum {
     EXPR_PAREN_RIGHT,		//10
     EXPR_LITERAL,		//11
     EXPR_BOOL,			//12
-    EXPR_NODE_NAME		//13
+    EXPR_NODE_NAME,		//13
+    EXPR_RGXP                   //14
 } expr_op_type;
 
 typedef struct {
@@ -84,6 +85,7 @@ bool compare_or(expr_operator * lh, expr_operator * rh);
 bool compare_eq(expr_operator * lh, expr_operator * rh);
 bool compare_neq(expr_operator * lh, expr_operator * rh);
 bool compare_isset(expr_operator * lh, expr_operator * rh);	// lh = rh
+bool compare_rgxp(expr_operator * lh, expr_operator * rh);
 
 bool build_parse_tree(
     lex_token lex_tok[PARSE_BUF_LEN],

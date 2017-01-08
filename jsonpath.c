@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include "zend_exceptions.h"
 #include <ext/spl/spl_exceptions.h>
+#include <ext/pcre/php_pcre.h>
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
@@ -792,6 +793,64 @@ bool compare_neq(expr_operator * lh, expr_operator * rh)
 bool compare_isset(expr_operator * lh, expr_operator * rh)
 {
     return (*lh).value_bool && (*rh).value_bool;
+}
+
+bool compare_rgxp(expr_operator * lh, expr_operator * rh)
+{
+    TSRMLS_FETCH();
+
+#if PHP_MAJOR_VERSION < 7
+
+    zval * pattern;
+    pcre_cache_entry *pce;
+
+    MAKE_STD_ZVAL(pattern);
+    ZVAL_STRINGL(pattern, (*rh).value, strlen((*rh).value), 0);
+
+    if ((pce = pcre_get_compiled_regex_cache(Z_STRVAL_P(pattern), Z_STRLEN_P(pattern) TSRMLS_CC)) == NULL) {
+        zval_dtor(pattern);
+        FREE_ZVAL(pattern);
+        return false;
+    }
+
+    zval * retval;
+    zval * subpats;
+
+    MAKE_STD_ZVAL(retval);
+    ALLOC_INIT_ZVAL(subpats);
+
+    php_pcre_match_impl(pce, (*lh).value, strlen((*lh).value), retval, subpats, 0, 0, 0, 0);
+
+    long ret = Z_LVAL_P(retval);
+
+    zval_ptr_dtor(&subpats);
+    FREE_ZVAL(retval);
+    FREE_ZVAL(pattern);
+
+    return ret > 0;
+#else
+    zval pattern;
+    pcre_cache_entry *pce;
+
+    ZVAL_STRING(&pattern, (*rh).value);
+
+    if ((pce = pcre_get_compiled_regex_cache(Z_STR(pattern))) == NULL) {
+        zval_ptr_dtor(&pattern);
+        return false;
+    }
+
+    zval retval;
+    zval subpats;
+
+    ZVAL_NULL(&retval);
+    ZVAL_NULL(&subpats);
+
+    php_pcre_match_impl(pce, (*lh).value, strlen((*lh).value), &retval, &subpats, 0, 0, 0, 0);
+
+    zval_ptr_dtor(&subpats);
+    zval_ptr_dtor(&pattern);
+    return Z_LVAL(retval) > 0;
+#endif
 }
 
 bool is_scalar(zval * arg)

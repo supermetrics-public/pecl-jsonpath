@@ -120,12 +120,15 @@ static bool tokenize_expression(
 	    expr_list[i].type = EXPR_AND;
 	    i++;
 	    break;
+        case LEX_RGXP:
+            expr_list[i].type = EXPR_RGXP;
+            i++;
+            break;
         case LEX_NOT_FOUND:
         case LEX_ROOT:
         case LEX_DEEP_SCAN:
         case LEX_SLICE:
         case LEX_CHILD_SEP:
-        case LEX_RGXP:
         case LEX_FILTER_START:
         case LEX_ERR:
         default:
@@ -249,6 +252,7 @@ operator_type get_token_type(expr_op_type token)
     case EXPR_OR:
     case EXPR_AND:
     case EXPR_ISSET:
+    case EXPR_RGXP:
 	return TYPE_OPERATOR;
     case EXPR_PAREN_LEFT:
     case EXPR_PAREN_RIGHT:
@@ -400,6 +404,8 @@ compare_cb exec_cb_by_token(expr_op_type token_type)
 	return compare_or;
     case EXPR_AND:
 	return compare_and;
+    case EXPR_RGXP:
+        return compare_rgxp;
     case EXPR_PAREN_LEFT:
     case EXPR_PAREN_RIGHT:
     case EXPR_LITERAL:
@@ -431,6 +437,8 @@ int get_operator_precedence(expr_op_type type)
 	return 1000;
     case EXPR_GTE:
 	return 1000;
+    case EXPR_RGXP:
+        return 1000;
     case EXPR_NE:
 	return 900;
     case EXPR_EQ:
