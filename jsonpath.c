@@ -819,7 +819,7 @@ bool compare_rgxp(expr_operator * lh, expr_operator * rh)
     MAKE_STD_ZVAL(retval);
     ALLOC_INIT_ZVAL(subpats);
 
-    php_pcre_match_impl(pce, (*lh).value, strlen((*lh).value), retval, subpats, 0, 0, 0, 0);
+    php_pcre_match_impl(pce, (*lh).value, strlen((*lh).value), retval, subpats, 0, 0, 0, 0 TSRMLS_CC);
 
     long ret = Z_LVAL_P(retval);
 
