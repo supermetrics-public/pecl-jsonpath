@@ -6,6 +6,8 @@
 
 bool is_unary(expr_op_type);
 
+// Return node count (not including last token)
+
 static int get_expression_node_count(
     lex_token * lex_tok,
     int pos,
@@ -15,11 +17,13 @@ static int get_expression_node_count(
     int count = 0;
 
     while (pos < lex_tok_count) {
-        count++;
- 
+
         if (lex_tok[pos] == LEX_EXPR_END) {
             return count;
-        }       
+        }
+
+        count++;
+
         pos++;
     }
 
