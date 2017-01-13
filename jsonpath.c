@@ -400,7 +400,7 @@ void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_valu
 bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
 {
     if (Z_TYPE_P(arr) != IS_ARRAY) {
-	return;
+	return false;
     }
 
 #if PHP_MAJOR_VERSION < 7
