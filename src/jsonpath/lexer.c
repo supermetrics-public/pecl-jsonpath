@@ -254,7 +254,7 @@ static bool extract_quoted_literal(char *p, char *buffer, size_t bufSize, lex_er
 
     if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
         err->pos = p;
-        sprintf(err->msg, "String size exceeded %d bytes", bufSize);
+        sprintf(err->msg, "String size exceeded %ld bytes", bufSize);
         return false;
     }
 
@@ -278,7 +278,7 @@ static bool extract_unbounded_literal(char *p, char *buffer, size_t bufSize, lex
 
     if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
         err->pos = p;
-        sprintf(err->msg, "String size exceeded %d bytes", bufSize);
+        sprintf(err->msg, "String size exceeded %ld bytes", bufSize);
         return false;
     }
 
@@ -302,7 +302,7 @@ static bool extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufS
 
     if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
         err->pos = p;
-        sprintf(err->msg, "String size exceeded %d bytes", bufSize);
+        sprintf(err->msg, "String size exceeded %ld bytes", bufSize);
         return false;
     }
 

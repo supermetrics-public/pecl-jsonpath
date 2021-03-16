@@ -59,7 +59,7 @@ PHP_METHOD(JsonPath, find)
 	    strcpy(lex_tok_values[lex_tok_count], buffer);
 	    break;
         case LEX_ERR:
-            snprintf(err.msg, sizeof(err.msg), "%s at position %d", err.msg, (err.pos - path));
+            snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - path));
             zend_throw_exception(spl_ce_RuntimeException, err.msg, 0 TSRMLS_CC);
             return;
 	default:
@@ -496,7 +496,9 @@ bool compare_rgxp(expr_operator * lh, expr_operator * rh)
     ZVAL_NULL(&retval);
     ZVAL_NULL(&subpats);
 
-    php_pcre_match_impl(pce, (*lh).value, strlen((*lh).value), &retval, &subpats, 0, 0, 0, 0);
+    zend_string *s_lh = zend_string_init((*lh).value, strlen((*lh).value), 0);
+
+    php_pcre_match_impl(pce, s_lh, &retval, &subpats, 0, 0, 0, 0);
 
     zval_ptr_dtor(&subpats);
     zval_ptr_dtor(&pattern);
