@@ -30,11 +30,7 @@ zend_class_entry *test_ce;
 PHP_METHOD(JsonPath, find)
 {
     char *path;
-#if PHP_MAJOR_VERSION < 7
-    int path_len;
-#else
     size_t path_len;
-#endif
     zval *z_array;
     HashTable *arr;
 
@@ -133,15 +129,6 @@ void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_valu
     }
 }
 
-#if PHP_MAJOR_VERSION < 7
-void copyToReturnResult(zval ** arr, zval * return_value)
-{
-    zval *zv_dest;
-    ALLOC_ZVAL(zv_dest);
-    MAKE_COPY_ZVAL(arr, zv_dest);
-    add_next_index_zval(return_value, zv_dest);
-}
-#else
 void copyToReturnResult(zval * arr, zval * return_value)
 {
     zval tmp;
@@ -149,96 +136,9 @@ void copyToReturnResult(zval * arr, zval * return_value)
     zval_copy_ctor(&tmp);
     add_next_index_zval(return_value, &tmp);
 }
-#endif
 
 void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
 {
-#if PHP_MAJOR_VERSION < 7
-    zval **data, **data2;
-
-    if (Z_TYPE_P(arr) != IS_ARRAY) {
-	return;
-    }
-
-    if (zend_hash_find(HASH_OF(arr), tok->node_value, strlen(tok->node_value) + 1, (void **) &data) != SUCCESS) {
-	return;
-    }
-
-    int x;
-    HashPosition pos;
-
-    switch (tok->filter_type) {
-    case FLTR_RANGE:
-	for (x = tok->indexes[0]; x < tok->indexes[1]; x++) {
-	    if (zend_hash_index_find(HASH_OF(*data), x, (void **) &data2) == SUCCESS) {
-		if (tok == tok_last) {
-		    copyToReturnResult(data2, return_value);
-		} else {
-		    iterate(*data2, (tok + 1), tok_last, return_value TSRMLS_CC);
-		}
-	    }
-	}
-	return;
-    case FLTR_INDEX:
-	for (x = 0; x < tok->index_count; x++) {
-	    if (zend_hash_index_find(HASH_OF(*data), tok->indexes[x], (void **) &data2) == SUCCESS) {
-		if (tok == tok_last) {
-		    copyToReturnResult(data2, return_value);
-		} else {
-		    iterate(*data2, (tok + 1), tok_last, return_value TSRMLS_CC);
-		}
-	    }
-	}
-	return;
-    case FLTR_WILD_CARD:
-	for (zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
-	     zend_hash_get_current_data_ex(HASH_OF(*data), (void **) &data2, &pos) == SUCCESS;
-	     zend_hash_move_forward_ex(HASH_OF(*data), &pos)
-	    ) {
-	    if (tok == tok_last) {
-		copyToReturnResult(data2, return_value);
-	    } else {
-		iterate(*data2, (tok + 1), tok_last, return_value TSRMLS_CC);
-	    }
-	}
-	return;
-    case FLTR_NODE:
-	if (tok == tok_last) {
-	    copyToReturnResult(data, return_value);
-	} else {
-	    iterate(*data, (tok + 1), tok_last, return_value TSRMLS_CC);
-	}
-	return;
-    case FLTR_EXPR:
-	for (zend_hash_internal_pointer_reset_ex(HASH_OF(*data), &pos);
-	     zend_hash_get_current_data_ex(HASH_OF(*data), (void **) &data2, &pos) == SUCCESS;
-	     zend_hash_move_forward_ex(HASH_OF(*data), &pos)
-	    ) {
-	    // For each array entry, find the node names and populate their values
-	    // Fill up expression NODE_NAME VALS
-	    for (x = 0; x < tok->expression_count; x++) {
-		if (tok->expressions[x + 1].type == EXPR_ISSET) {
-		    if (!checkIfKeyExists(*data2, &tok->expressions[x] TSRMLS_CC)) {
-			continue;
-		    }
-		} else if (tok->expressions[x].type == EXPR_NODE_NAME) {
-		    if (!findByValue(*data2, &tok->expressions[x] TSRMLS_CC)) {
-			continue;
-		    }
-		}
-	    }
-
-	    if (evaluate_postfix_expression(tok->expressions, tok->expression_count)) {
-		if (tok == tok_last) {
-		    copyToReturnResult(data2, return_value);
-		} else {
-		    iterate(*data2, (tok + 1), tok_last, return_value TSRMLS_CC);
-		}
-	    }
-	}
-	break;
-    }
-#else
     zval *data, *data2;
 
     if (Z_TYPE_P(arr) != IS_ARRAY) {
@@ -324,27 +224,10 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 
 	break;
     }
-#endif
 }
 
 void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
 {
-#if PHP_MAJOR_VERSION < 7
-    zval **data;
-    HashPosition pos;
-    zval *zv_dest;
-
-    for (zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
-	 zend_hash_get_current_data_ex(HASH_OF(arr), (void **) &data, &pos) == SUCCESS;
-	 zend_hash_move_forward_ex(HASH_OF(arr), &pos)
-	) {
-	if (tok == tok_last) {
-	    copyToReturnResult(data, return_value);
-	} else if (Z_TYPE_P(*data) == IS_ARRAY) {
-	    iterate(*data, (tok + 1), tok_last, return_value TSRMLS_CC);
-	}
-    }
-#else
     zval *data;
     zval *zv_dest;
     zend_string *key;
@@ -358,7 +241,6 @@ void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * ret
 	}
     }
     ZEND_HASH_FOREACH_END();
-#endif
 }
 
 void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
@@ -369,17 +251,6 @@ void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_valu
 
     processChildKey(arr, tok, tok_last, return_value TSRMLS_CC);
 
-#if PHP_MAJOR_VERSION < 7
-    zval **tmp;
-    HashPosition pos;
-
-    for (zend_hash_internal_pointer_reset_ex(HASH_OF(arr), &pos);
-	 zend_hash_get_current_data_ex(HASH_OF(arr), (void **) &tmp, &pos) == SUCCESS;
-	 zend_hash_move_forward_ex(HASH_OF(arr), &pos)
-	) {
-	recurse(*tmp, tok, tok_last, return_value TSRMLS_CC);
-    }
-#else
     zval *data;
     zval *zv_dest;
     zend_string *key;
@@ -389,7 +260,6 @@ void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_valu
 	recurse(data, tok, tok_last, return_value TSRMLS_CC);
     }
     ZEND_HASH_FOREACH_END();
-#endif
 }
 
 /**
@@ -403,56 +273,6 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
 	return false;
     }
 
-#if PHP_MAJOR_VERSION < 7
-    zval **data;
-
-    int i;
-
-    for (i = 0; i < node->label_count; i++) {
-	if (zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i]) + 1, (void **) &data) == SUCCESS) {
-	    arr = *data;
-	} else {
-	    node->value[0] = '\0';
-	    return false;
-	}
-    }
-
-    if (!is_scalar(*data)) {
-        return false;
-    }
-
-    char *s = NULL;
-    size_t s_len;
-
-    if (Z_TYPE_P(*data) != IS_STRING) {
-
-        zval *zvp, zcopy;
-        zvp = *data;
-        int free_zcopy;
-
-        zend_make_printable_zval(zvp, &zcopy, &free_zcopy);
-        
-        if (free_zcopy) {
-            zvp = &zcopy;
-        }
-
-        s_len = Z_STRLEN_P(zvp);
-        s = Z_STRVAL_P(zvp);
-
-        strncpy(node->value, s, s_len);
-        node->value[s_len] = '\0';
-
-        if (free_zcopy) {
-           zval_dtor(&zcopy);
-        }
-
-    } else {
-        s_len = Z_STRLEN_P(*data);
-        s = Z_STRVAL_P(*data);
-        strncpy(node->value, s, s_len);
-        node->value[s_len] = '\0';
-    }
-#else
     zval *data;
 
     int i;
@@ -502,7 +322,7 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
         strncpy(node->value, s, s_len);
         node->value[s_len] = '\0';
     }
-#endif
+
     return true;
 }
 
@@ -513,25 +333,6 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
  */
 bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC)
 {
-#if PHP_MAJOR_VERSION < 7
-    zval **data;
-
-    HashPosition pos;		/* hash iterator */
-
-    int i;
-
-    node->value_bool = false;
-
-    for (i = 0; i < node->label_count; i++) {
-	if (zend_hash_find(HASH_OF(arr), node->label[i], strlen(node->label[i]) + 1, (void **) &data) != SUCCESS) {
-	    node->value_bool = false;
-	    return false;
-	} else {
-	    node->value_bool = true;
-	    arr = *data;
-	}
-    }
-#else
     zval *data;
 
     int i;
@@ -548,32 +349,13 @@ bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC)
 	    arr = data;
 	}
     }
-#endif
+
     return true;
 }
 
 bool compare_lt(expr_operator * lh, expr_operator * rh)
 {
     TSRMLS_FETCH();
-
-#if PHP_MAJOR_VERSION < 7
-
-    zval *a, *b, *result;
-    MAKE_STD_ZVAL(a);
-    MAKE_STD_ZVAL(b);
-    MAKE_STD_ZVAL(result);
-
-    ZVAL_STRING(a, (*lh).value, 0);
-    ZVAL_STRING(b, (*rh).value, 0);
-
-    compare_function(result, a, b TSRMLS_CC);
-
-    bool res = (Z_LVAL_P(result) < 0);
-
-    FREE_ZVAL(a);
-    FREE_ZVAL(b);
-    FREE_ZVAL(result);
-#else
 
     zval a, b, result;
 
@@ -586,32 +368,12 @@ bool compare_lt(expr_operator * lh, expr_operator * rh)
 
     bool res = (Z_LVAL(result) < 0);
 
-#endif
     return res;
 }
 
 bool compare_gt(expr_operator * lh, expr_operator * rh)
 {
     TSRMLS_FETCH();
-
-#if PHP_MAJOR_VERSION < 7
-
-    zval *a, *b, *result;
-    MAKE_STD_ZVAL(a);
-    MAKE_STD_ZVAL(b);
-    MAKE_STD_ZVAL(result);
-
-    ZVAL_STRING(a, (*lh).value, 0);
-    ZVAL_STRING(b, (*rh).value, 0);
-
-    compare_function(result, a, b TSRMLS_CC);
-
-    bool res = (Z_LVAL_P(result) > 0);
-
-    FREE_ZVAL(a);
-    FREE_ZVAL(b);
-    FREE_ZVAL(result);
-#else
 
     zval a, b, result;
 
@@ -624,32 +386,12 @@ bool compare_gt(expr_operator * lh, expr_operator * rh)
 
     bool res = (Z_LVAL(result) > 0);
 
-#endif
     return res;
 }
 
 bool compare_lte(expr_operator * lh, expr_operator * rh)
 {
     TSRMLS_FETCH();
-
-#if PHP_MAJOR_VERSION < 7
-
-    zval *a, *b, *result;
-    MAKE_STD_ZVAL(a);
-    MAKE_STD_ZVAL(b);
-    MAKE_STD_ZVAL(result);
-
-    ZVAL_STRING(a, (*lh).value, 0);
-    ZVAL_STRING(b, (*rh).value, 0);
-
-    compare_function(result, a, b TSRMLS_CC);
-
-    bool res = (Z_LVAL_P(result) <= 0);
-
-    FREE_ZVAL(a);
-    FREE_ZVAL(b);
-    FREE_ZVAL(result);
-#else
 
     zval a, b, result;
 
@@ -662,32 +404,12 @@ bool compare_lte(expr_operator * lh, expr_operator * rh)
 
     bool res = (Z_LVAL(result) <= 0);
 
-#endif
     return res;
 }
 
 bool compare_gte(expr_operator * lh, expr_operator * rh)
 {
     TSRMLS_FETCH();
-
-#if PHP_MAJOR_VERSION < 7
-
-    zval *a, *b, *result;
-    MAKE_STD_ZVAL(a);
-    MAKE_STD_ZVAL(b);
-    MAKE_STD_ZVAL(result);
-
-    ZVAL_STRING(a, (*lh).value, 0);
-    ZVAL_STRING(b, (*rh).value, 0);
-
-    compare_function(result, a, b TSRMLS_CC);
-
-    bool res = (Z_LVAL_P(result) >= 0);
-
-    FREE_ZVAL(a);
-    FREE_ZVAL(b);
-    FREE_ZVAL(result);
-#else
 
     zval a, b, result;
 
@@ -700,7 +422,6 @@ bool compare_gte(expr_operator * lh, expr_operator * rh)
 
     bool res = (Z_LVAL(result) >= 0);
 
-#endif
     return res;
 }
 
@@ -718,25 +439,6 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
 {
     TSRMLS_FETCH();
 
-#if PHP_MAJOR_VERSION < 7
-
-    zval *a, *b, *result;
-    MAKE_STD_ZVAL(a);
-    MAKE_STD_ZVAL(b);
-    MAKE_STD_ZVAL(result);
-
-    ZVAL_STRING(a, (*lh).value, 0);
-    ZVAL_STRING(b, (*rh).value, 0);
-
-    compare_function(result, a, b TSRMLS_CC);
-
-    bool res = (Z_LVAL_P(result) == 0);
-
-    FREE_ZVAL(a);
-    FREE_ZVAL(b);
-    FREE_ZVAL(result);
-#else
-
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
@@ -748,32 +450,12 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
 
     bool res = (Z_LVAL(result) == 0);
 
-#endif
     return res;
 }
 
 bool compare_neq(expr_operator * lh, expr_operator * rh)
 {
     TSRMLS_FETCH();
-
-#if PHP_MAJOR_VERSION < 7
-
-    zval *a, *b, *result;
-    MAKE_STD_ZVAL(a);
-    MAKE_STD_ZVAL(b);
-    MAKE_STD_ZVAL(result);
-
-    ZVAL_STRING(a, (*lh).value, 0);
-    ZVAL_STRING(b, (*rh).value, 0);
-
-    compare_function(result, a, b TSRMLS_CC);
-
-    bool res = (Z_LVAL_P(result) != 0);
-
-    FREE_ZVAL(a);
-    FREE_ZVAL(b);
-    FREE_ZVAL(result);
-#else
 
     zval a, b, result;
 
@@ -786,7 +468,6 @@ bool compare_neq(expr_operator * lh, expr_operator * rh)
 
     bool res = (Z_LVAL(result) != 0);
 
-#endif
     return res;
 }
 
@@ -799,36 +480,6 @@ bool compare_rgxp(expr_operator * lh, expr_operator * rh)
 {
     TSRMLS_FETCH();
 
-#if PHP_MAJOR_VERSION < 7
-
-    zval * pattern;
-    pcre_cache_entry *pce;
-
-    MAKE_STD_ZVAL(pattern);
-    ZVAL_STRINGL(pattern, (*rh).value, strlen((*rh).value), 0);
-
-    if ((pce = pcre_get_compiled_regex_cache(Z_STRVAL_P(pattern), Z_STRLEN_P(pattern) TSRMLS_CC)) == NULL) {
-        zval_dtor(pattern);
-        FREE_ZVAL(pattern);
-        return false;
-    }
-
-    zval * retval;
-    zval * subpats;
-
-    MAKE_STD_ZVAL(retval);
-    ALLOC_INIT_ZVAL(subpats);
-
-    php_pcre_match_impl(pce, (*lh).value, strlen((*lh).value), retval, subpats, 0, 0, 0, 0 TSRMLS_CC);
-
-    long ret = Z_LVAL_P(retval);
-
-    zval_ptr_dtor(&subpats);
-    FREE_ZVAL(retval);
-    FREE_ZVAL(pattern);
-
-    return ret > 0;
-#else
     zval pattern;
     pcre_cache_entry *pce;
 
@@ -850,18 +501,13 @@ bool compare_rgxp(expr_operator * lh, expr_operator * rh)
     zval_ptr_dtor(&subpats);
     zval_ptr_dtor(&pattern);
     return Z_LVAL(retval) > 0;
-#endif
 }
 
 bool is_scalar(zval * arg)
 {
     switch (Z_TYPE_P(arg)) {
-#if PHP_MAJOR_VERSION < 7
-        case IS_BOOL:
-#else
         case IS_FALSE:
         case IS_TRUE:
-#endif
         case IS_DOUBLE:
         case IS_LONG:
         case IS_STRING:
