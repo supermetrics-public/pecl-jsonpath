@@ -213,6 +213,16 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 	case '*':
 	    found_token = LEX_WILD_CARD;
 	    break;
+	case '-':
+		if (!isdigit(*(*p + 1))) {
+			return LEX_ERR;
+		}
+		if (!extract_unbounded_numeric_literal(*p, buffer, bufSize, err)) {
+                return LEX_ERR;
+            }
+	    *p += strlen(buffer) - 1;
+	    found_token = LEX_LITERAL;
+	    break;
 	case '0':
 	case '1':
 	case '2':
@@ -295,6 +305,10 @@ static bool extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufS
     for (; *p != '\0' && *p == ' '; p++);
 
     start = p;
+
+	if (*p == '-') {
+		p++;
+	}
 
     for (; isdigit(*p); p++);
 

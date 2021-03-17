@@ -159,6 +159,7 @@ bool build_parse_tree(
 ) {
 
     int i = 0, x = 0, z = 0, expr_count = 0;
+	int slice_counter = 0;
     int *int_ptr;
 
     for (i = 0; i < lex_tok_count; i++) {
@@ -208,6 +209,7 @@ bool build_parse_tree(
 	    } else if (lex_tok[i + 1] == LEX_FILTER_START) {
 		i += 2;
 		z = 0;
+		slice_counter = 0;
 		//TODO What if only 1 element, make sure type doesn't change
 		tok[x].filter_type = FLTR_INDEX;
 		while (lex_tok[i] != LEX_EXPR_END) {
@@ -215,6 +217,18 @@ bool build_parse_tree(
 			tok[x].filter_type = FLTR_INDEX;
 		    } else if (lex_tok[i] == LEX_SLICE) {
 			tok[x].filter_type = FLTR_RANGE;
+			slice_counter++;
+			// [:a] => [0:a]
+			// [a::] => [a:0:]
+			if (slice_counter > tok[x].index_count) {
+				if (slice_counter == 1) {
+					tok[x].indexes[z] = 0;
+				} else if (slice_counter == 2) {
+					tok[x].indexes[z] = 0;
+				}
+				tok[x].index_count++;
+				z++;
+			}
 		    } else if (lex_tok[i] == LEX_WILD_CARD) {
 			tok[x].filter_type = FLTR_WILD_CARD;
 		    } else if (lex_tok[i] == LEX_LITERAL) {
