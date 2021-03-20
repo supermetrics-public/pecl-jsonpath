@@ -573,7 +573,8 @@ PHP_RSHUTDOWN_FUNCTION(jsonpath)
 PHP_MINFO_FUNCTION(jsonpath)
 {
     php_info_print_table_start();
-    php_info_print_table_header(2, "jsonpath support", "enabled");
+    php_info_print_table_row(2, "jsonpath support", "enabled");
+    php_info_print_table_row(2, "jsonpath version", PHP_JSONPATH_VERSION);
     php_info_print_table_end();
 
     /* Remove comments if you have entries in php.ini
