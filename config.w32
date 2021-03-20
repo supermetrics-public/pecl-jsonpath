@@ -1,13 +1,6 @@
-// $Id$
-// vim:ft=javascript
+ARG_ENABLE('jsonpath', 'enable jsonpath support', 'no');
 
-// If your extension references something external, use ARG_WITH
-// ARG_WITH("jsonpath", "for jsonpath support", "no");
-
-// Otherwise, use ARG_ENABLE
-// ARG_ENABLE("jsonpath", "enable jsonpath support", "no");
-
-if (PHP_JSONPATH != "no") {
-	EXTENSION("jsonpath", "jsonpath.c");
+if (PHP_JSONPATH != 'no') {
+	AC_DEFINE('HAVE_JSONPATH', 1, 'jsonpath support enabled')
+	EXTENSION('jsonpath', 'jsonpath.c', null, '/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1');
 }
-
