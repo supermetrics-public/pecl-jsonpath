@@ -24,6 +24,7 @@ typedef enum {
     LEX_PAREN_OPEN,		/* ( */
     LEX_PAREN_CLOSE,		/* ) */
     LEX_LITERAL,		/* "some string" 'some string' */
+    LEX_LITERAL_BOOL,   /* true, false */
     LEX_FILTER_START,		/* [ */
     LEX_AND,			/* && */
     LEX_OR,			/* || */

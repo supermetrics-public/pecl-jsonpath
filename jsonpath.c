@@ -56,6 +56,7 @@ PHP_METHOD(JsonPath, find)
 	switch (*ptr) {
 	case LEX_NODE:
 	case LEX_LITERAL:
+    case LEX_LITERAL_BOOL:
 	    strcpy(lex_tok_values[lex_tok_count], buffer);
 	    break;
         case LEX_ERR:
@@ -145,8 +146,13 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	return;
     }
 
-    if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, tok->node_value_len)) == NULL) {
-	return;
+    // FLTR_WILD_CARD doesn't necessarily target a specific node. E.g. $..[*] should loop through the
+    // whole array.
+    // TODO: Check if we need to deal with empty string as array key
+    if (tok->node_value_len == 0) {
+        data = arr;
+    } else if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, tok->node_value_len)) == NULL) {
+	    return;
     }
 
     int x;
@@ -155,6 +161,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
     int range_start = 0;
     int range_end = 0;
     int range_step = 1;
+    expr_operator *node;
 
     switch (tok->filter_type) {
     case FLTR_RANGE:
@@ -251,6 +258,14 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		    iterate(data2, (tok + 1), tok_last, return_value);
 		}
 	    }
+        
+        // Clean up node values to prevent incorrect node values during recursive wildcard iterations
+        for (x = 0; x < tok->expression_count; x++) {
+            if (tok->expressions[x].type == EXPR_NODE_NAME) {
+                node = &tok->expressions[x];
+                node->value[0] = '\0';
+            }
+        }
 	}
 	ZEND_HASH_FOREACH_END();
 
@@ -326,7 +341,13 @@ bool findByValue(zval * arr, expr_operator * node)
     char *s = NULL;
     size_t s_len;
 
-    if (Z_TYPE_P(data) != IS_STRING) {
+    if (Z_TYPE_P(data) == IS_TRUE) {
+        strncpy(node->value, "JP_LITERAL_TRUE", 15);
+        node->value[15] = '\0';
+    } else if (Z_TYPE_P(data) == IS_FALSE) {
+        strncpy(node->value, "JP_LITERAL_FALSE", 16);
+        node->value[16] = '\0';
+    } else if (Z_TYPE_P(data) != IS_STRING) {
 
         zval zcopy;
         int free_zcopy;

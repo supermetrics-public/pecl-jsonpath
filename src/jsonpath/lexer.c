@@ -9,6 +9,7 @@
 static bool extract_quoted_literal(char *p, char *buffer, size_t bufSize, lex_error * err);
 static bool extract_unbounded_literal(char *p, char *buffer, size_t bufSize, lex_error * err);
 static bool extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufSize, lex_error * err);
+static bool extract_boolean_literal(char *p, char *buffer, size_t bufSize, lex_error * err);
 
 const char *visible[] = {
     "NOT_FOUND",		/* Token not found */
@@ -31,7 +32,8 @@ const char *visible[] = {
     "PAREN_OPEN",		/* ( */
     "PAREN_CLOSE",		/* ) */
     "LITERAL",			/* \"some string\" 'some string' */
-    "FILTER_START",		/* [ */
+    "LITERAL_BOOL",     /* true, false */
+    "FILTER_START"		/* [ */
 };
 
 lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
@@ -213,6 +215,14 @@ lex_token scan(char **p, char *buffer, size_t bufSize, lex_error * err)
 	case '*':
 	    found_token = LEX_WILD_CARD;
 	    break;
+	case 't':
+	case 'f':
+		if (!extract_boolean_literal(*p, buffer, bufSize, err)) {
+			return LEX_ERR;
+		}
+	    *p += strlen(buffer) - 1;
+	    found_token = LEX_LITERAL_BOOL;
+	    break;
 	case '-':
 		if (!isdigit(*(*p + 1))) {
 			return LEX_ERR;
@@ -311,6 +321,29 @@ static bool extract_unbounded_numeric_literal(char *p, char *buffer, size_t bufS
 	}
 
     for (; isdigit(*p); p++);
+
+    cpy_len = (size_t) (p - start);
+
+    if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
+        err->pos = p;
+        sprintf(err->msg, "String size exceeded %ld bytes", bufSize);
+        return false;
+    }
+
+    return true;
+}
+
+/* Extract boolean */
+static bool extract_boolean_literal(char *p, char *buffer, size_t bufSize, lex_error * err)
+{
+    char *start;
+    size_t cpy_len;
+
+    for (; *p != '\0' && *p == ' '; p++);
+
+    start = p;
+
+    for (; *p != '\0' && !isspace(*p) && (*p == '_' || *p == '-' || !ispunct(*p)); p++);
 
     cpy_len = (size_t) (p - start);
 
