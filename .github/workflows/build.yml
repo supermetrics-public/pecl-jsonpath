@@ -40,7 +40,6 @@ jobs:
                 run: |
                     TEST_PHP_ARGS="-q"
                     [[ "${{ matrix.use-opcache }}" != "true" ]] || TEST_PHP_ARGS="$TEST_PHP_ARGS -d zend_extension=opcache.so -d opcache.enable=1 -d opcache.enable_cli=1"
-                    TEST_PHP_ARGS="$TEST_PHP_ARGS -d extension=$PWD/modules/jsonpath.so"
                     echo "Test PHP arguments: $TEST_PHP_ARGS"
                     echo "TEST_PHP_ARGS=$TEST_PHP_ARGS" >> $GITHUB_ENV
           
