@@ -152,10 +152,39 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
     int x;
     zend_string *key;
     ulong num_key;
+    int range_start = 0;
+    int range_end = 0;
+    int range_step = 1;
 
     switch (tok->filter_type) {
     case FLTR_RANGE:
-	for (x = tok->indexes[0]; x < tok->indexes[1]; x++) {
+    // [a:]
+    if (tok->index_count == 1) {
+        range_start = tok->indexes[0];
+    }
+    // [a:b], [a:b:]
+    else if (tok->index_count == 2) {
+        range_start = tok->indexes[0];
+        range_end = tok->indexes[1];
+    }
+    // [a:b:c]
+    else if (tok->index_count == 3) {
+        range_start = tok->indexes[0];
+        range_end = tok->indexes[1];
+        if (tok->indexes[2] != 0) {
+            range_step = tok->indexes[2];
+        }
+    }
+
+    if (range_start < 0) {
+        range_start = zend_hash_num_elements(HASH_OF(data)) - abs(range_start);
+    }
+
+    if (range_end <= 0) {
+        range_end = zend_hash_num_elements(HASH_OF(data)) - abs(range_end);
+    }
+
+	for (x = range_start; x < range_end; x += range_step) {
 	    if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
@@ -167,6 +196,9 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	return;
     case FLTR_INDEX:
 	for (x = 0; x < tok->index_count; x++) {
+        if (tok->indexes[x] < 0) {
+            tok->indexes[x] = zend_hash_num_elements(HASH_OF(data)) - abs(tok->indexes[x]);
+        }
 	    if ((data2 = zend_hash_index_find(HASH_OF(data), tok->indexes[x])) != NULL) {
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
