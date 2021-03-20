@@ -39,9 +39,10 @@ typedef enum {
     EXPR_PAREN_LEFT,		//9
     EXPR_PAREN_RIGHT,		//10
     EXPR_LITERAL,		//11
-    EXPR_BOOL,			//12
-    EXPR_NODE_NAME,		//13
-    EXPR_RGXP                   //14
+    EXPR_LITERAL_BOOL,  //12
+    EXPR_BOOL,			//13
+    EXPR_NODE_NAME,		//14
+    EXPR_RGXP                   //15
 } expr_op_type;
 
 typedef struct {

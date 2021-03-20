@@ -52,8 +52,12 @@ static bool tokenize_expression(
             i++;;
             break;
         case LEX_PAREN_CLOSE:
-	    expr_list[i].type = EXPR_PAREN_RIGHT;
-            i++;;
+			if (expr_list[i - 1].type == EXPR_NODE_NAME) {
+				expr_list[i].type = EXPR_ISSET;
+				i++;
+	    	}
+	    	expr_list[i].type = EXPR_PAREN_RIGHT;
+            i++;
             break;	
         case LEX_EXPR_END:
             convert_to_postfix(expr_list, i, tok->expressions, &tok->expression_count);
@@ -84,6 +88,20 @@ static bool tokenize_expression(
 	    expr_list[i].type = EXPR_LITERAL;
 	    i++;
 	    break;
+	case LEX_LITERAL_BOOL:
+		if (jp_str_cpy(expr_list[i].value, PARSE_BUF_LEN, lex_tok_values[*pos], strlen(lex_tok_values[*pos])) > 0) {
+			strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));                   
+			return false;
+		}
+		expr_list[i].type = EXPR_LITERAL_BOOL;
+		
+		if (strcmp(expr_list[i].value, "true") == 0) {
+			jp_str_cpy(expr_list[i].value, PARSE_BUF_LEN, "JP_LITERAL_TRUE", 15);
+		} else if (strcmp(expr_list[i].value, "false") == 0) {
+			jp_str_cpy(expr_list[i].value, PARSE_BUF_LEN, "JP_LITERAL_FALSE", 16);
+		}
+		i++;
+		break;
 	case LEX_LT:
 	    expr_list[i].type = EXPR_LT;
             i++;
@@ -191,7 +209,7 @@ bool build_parse_tree(
 	    
 	    int_ptr = &i;
 
-	    if (lex_tok[i + 1] == LEX_EXPR_START) {
+		if (lex_tok[i + 1] == LEX_EXPR_START) {
 
                 expr_count = get_expression_node_count(&lex_tok[0], *int_ptr, lex_tok_count);
 
@@ -276,6 +294,7 @@ operator_type get_token_type(expr_op_type token)
     case EXPR_PAREN_RIGHT:
 	return TYPE_PAREN;
     case EXPR_LITERAL:
+	case EXPR_LITERAL_BOOL:
     case EXPR_NODE_NAME:
     case EXPR_BOOL:
 	return TYPE_OPERAND;
@@ -427,6 +446,7 @@ compare_cb exec_cb_by_token(expr_op_type token_type)
     case EXPR_PAREN_LEFT:
     case EXPR_PAREN_RIGHT:
     case EXPR_LITERAL:
+	case EXPR_LITERAL_BOOL:
     case EXPR_BOOL:
     default:
 	printf("Error, no callback for token");
@@ -468,6 +488,7 @@ int get_operator_precedence(expr_op_type type)
     case EXPR_PAREN_LEFT:
     case EXPR_PAREN_RIGHT:
     case EXPR_LITERAL:
+	case EXPR_LITERAL_BOOL:
     case EXPR_BOOL:
     default:
 	printf("Error, no callback for token");
