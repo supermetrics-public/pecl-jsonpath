@@ -17,12 +17,12 @@
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
-void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
-void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
-bool findByValue(zval * arr, expr_operator * node TSRMLS_DC);
-bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC);
-void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
-void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC);
+void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+bool findByValue(zval * arr, expr_operator * node);
+bool checkIfKeyExists(zval * arr, expr_operator * node);
+void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value);
+void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value);
 bool is_scalar(zval * arg);
 
 zend_class_entry *test_ce;
@@ -34,7 +34,7 @@ PHP_METHOD(JsonPath, find)
     zval *z_array;
     HashTable *arr;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS()TSRMLS_CC, "as", &z_array, &path, &path_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &z_array, &path, &path_len) == FAILURE) {
 	return;
     }
 
@@ -60,7 +60,7 @@ PHP_METHOD(JsonPath, find)
 	    break;
         case LEX_ERR:
             snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - path));
-            zend_throw_exception(spl_ce_RuntimeException, err.msg, 0 TSRMLS_CC);
+            zend_throw_exception(spl_ce_RuntimeException, err.msg, 0);
             return;
 	default:
 	    lex_tok_values[lex_tok_count][0] = '\0';
@@ -79,7 +79,7 @@ PHP_METHOD(JsonPath, find)
     parse_error p_err;
    
     if (!build_parse_tree(lex_tok, lex_tok_values, lex_tok_count, tok, int_ptr, &p_err)) {
-        zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0 TSRMLS_CC);
+        zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0);
     }
 
     operator * tok_ptr_start;
@@ -88,7 +88,7 @@ PHP_METHOD(JsonPath, find)
     tok_ptr_start = &tok[0];
     tok_ptr_end = &tok[tok_count - 1];
 
-    iterate(z_array, tok_ptr_start, tok_ptr_end, return_value TSRMLS_CC);
+    iterate(z_array, tok_ptr_start, tok_ptr_end, return_value);
 
     operator * fr = tok_ptr_start;
 
@@ -107,7 +107,7 @@ PHP_METHOD(JsonPath, find)
     return;
 }
 
-void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
+void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value)
 {
     if (tok > tok_last) {
 	return;
@@ -115,16 +115,16 @@ void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_valu
 
     switch (tok->type) {
     case ROOT:
-	iterate(arr, (tok + 1), tok_last, return_value TSRMLS_CC);
+	iterate(arr, (tok + 1), tok_last, return_value);
 	break;
     case WILD_CARD:
-	iterateWildCard(arr, tok, tok_last, return_value TSRMLS_CC);
+	iterateWildCard(arr, tok, tok_last, return_value);
 	return;
     case DEEP_SCAN:
-	recurse(arr, tok, tok_last, return_value TSRMLS_CC);
+	recurse(arr, tok, tok_last, return_value);
 	return;
     case CHILD_KEY:
-	processChildKey(arr, tok, tok_last, return_value TSRMLS_CC);
+	processChildKey(arr, tok, tok_last, return_value);
 	return;
     }
 }
@@ -137,7 +137,7 @@ void copyToReturnResult(zval * arr, zval * return_value)
     add_next_index_zval(return_value, &tmp);
 }
 
-void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
+void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value)
 {
     zval *data, *data2;
 
@@ -160,7 +160,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value TSRMLS_CC);
+		    iterate(data2, (tok + 1), tok_last, return_value);
 		}
 	    }
 	}
@@ -171,7 +171,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value TSRMLS_CC);
+		    iterate(data2, (tok + 1), tok_last, return_value);
 		}
 	    }
 	}
@@ -182,7 +182,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	    if (tok == tok_last) {
 		copyToReturnResult(data2, return_value);
 	    } else {
-		iterate(data2, (tok + 1), tok_last, return_value TSRMLS_CC);
+		iterate(data2, (tok + 1), tok_last, return_value);
 	    }
 	}
 	ZEND_HASH_FOREACH_END();
@@ -192,7 +192,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	if (tok == tok_last) {
 	    copyToReturnResult(data, return_value);
 	} else {
-	    iterate(data, (tok + 1), tok_last, return_value TSRMLS_CC);
+	    iterate(data, (tok + 1), tok_last, return_value);
 	}
 	return;
     case FLTR_EXPR:
@@ -202,11 +202,11 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	    // Fill up expression NODE_NAME VALS
 	    for (x = 0; x < tok->expression_count; x++) {
 		if (tok->expressions[x + 1].type == EXPR_ISSET) {
-		    if (!checkIfKeyExists(data2, &tok->expressions[x] TSRMLS_CC)) {
+		    if (!checkIfKeyExists(data2, &tok->expressions[x])) {
 			continue;
 		    }
 		} else if (tok->expressions[x].type == EXPR_NODE_NAME) {
-		    if (!findByValue(data2, &tok->expressions[x] TSRMLS_CC)) {
+		    if (!findByValue(data2, &tok->expressions[x])) {
 			continue;
 		    }
 		}
@@ -216,7 +216,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 		if (tok == tok_last) {
 		    copyToReturnResult(data2, return_value);
 		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value TSRMLS_CC);
+		    iterate(data2, (tok + 1), tok_last, return_value);
 		}
 	    }
 	}
@@ -226,7 +226,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
     }
 }
 
-void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
+void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value)
 {
     zval *data;
     zval *zv_dest;
@@ -237,19 +237,19 @@ void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * ret
 	if (tok == tok_last) {
 	    copyToReturnResult(data, return_value);
 	} else if (Z_TYPE_P(data) == IS_ARRAY) {
-	    iterate(data, (tok + 1), tok_last, return_value TSRMLS_CC);
+	    iterate(data, (tok + 1), tok_last, return_value);
 	}
     }
     ZEND_HASH_FOREACH_END();
 }
 
-void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value TSRMLS_DC)
+void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value)
 {
     if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
 	return;
     }
 
-    processChildKey(arr, tok, tok_last, return_value TSRMLS_CC);
+    processChildKey(arr, tok, tok_last, return_value);
 
     zval *data;
     zval *zv_dest;
@@ -257,7 +257,7 @@ void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_valu
     ulong num_key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-	recurse(data, tok, tok_last, return_value TSRMLS_CC);
+	recurse(data, tok, tok_last, return_value);
     }
     ZEND_HASH_FOREACH_END();
 }
@@ -267,7 +267,7 @@ void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_valu
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
+bool findByValue(zval * arr, expr_operator * node)
 {
     if (Z_TYPE_P(arr) != IS_ARRAY) {
 	return false;
@@ -331,7 +331,7 @@ bool findByValue(zval * arr, expr_operator * node TSRMLS_DC)
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC)
+bool checkIfKeyExists(zval * arr, expr_operator * node)
 {
     zval *data;
 
@@ -355,8 +355,6 @@ bool checkIfKeyExists(zval * arr, expr_operator * node TSRMLS_DC)
 
 bool compare_lt(expr_operator * lh, expr_operator * rh)
 {
-    TSRMLS_FETCH();
-
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
@@ -364,7 +362,7 @@ bool compare_lt(expr_operator * lh, expr_operator * rh)
 
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b TSRMLS_CC);
+    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) < 0);
 
@@ -373,8 +371,6 @@ bool compare_lt(expr_operator * lh, expr_operator * rh)
 
 bool compare_gt(expr_operator * lh, expr_operator * rh)
 {
-    TSRMLS_FETCH();
-
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
@@ -382,7 +378,7 @@ bool compare_gt(expr_operator * lh, expr_operator * rh)
 
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b TSRMLS_CC);
+    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) > 0);
 
@@ -391,8 +387,6 @@ bool compare_gt(expr_operator * lh, expr_operator * rh)
 
 bool compare_lte(expr_operator * lh, expr_operator * rh)
 {
-    TSRMLS_FETCH();
-
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
@@ -400,7 +394,7 @@ bool compare_lte(expr_operator * lh, expr_operator * rh)
 
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b TSRMLS_CC);
+    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) <= 0);
 
@@ -409,8 +403,6 @@ bool compare_lte(expr_operator * lh, expr_operator * rh)
 
 bool compare_gte(expr_operator * lh, expr_operator * rh)
 {
-    TSRMLS_FETCH();
-
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
@@ -418,7 +410,7 @@ bool compare_gte(expr_operator * lh, expr_operator * rh)
 
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b TSRMLS_CC);
+    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) >= 0);
 
@@ -437,8 +429,6 @@ bool compare_or(expr_operator * lh, expr_operator * rh)
 
 bool compare_eq(expr_operator * lh, expr_operator * rh)
 {
-    TSRMLS_FETCH();
-
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
@@ -446,7 +436,7 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
 
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b TSRMLS_CC);
+    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) == 0);
 
@@ -455,8 +445,6 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
 
 bool compare_neq(expr_operator * lh, expr_operator * rh)
 {
-    TSRMLS_FETCH();
-
     zval a, b, result;
 
     ZVAL_STRING(&a, (*lh).value);
@@ -464,7 +452,7 @@ bool compare_neq(expr_operator * lh, expr_operator * rh)
 
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b TSRMLS_CC);
+    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) != 0);
 
@@ -478,8 +466,6 @@ bool compare_isset(expr_operator * lh, expr_operator * rh)
 
 bool compare_rgxp(expr_operator * lh, expr_operator * rh)
 {
-    TSRMLS_FETCH();
-
     zval pattern;
     pcre_cache_entry *pce;
 
@@ -543,7 +529,7 @@ PHP_MINIT_FUNCTION(jsonpath)
     zend_class_entry tmp_ce;
     INIT_CLASS_ENTRY(tmp_ce, "JsonPath", jsonpath_methods);
 
-    test_ce = zend_register_internal_class(&tmp_ce TSRMLS_CC);
+    test_ce = zend_register_internal_class(&tmp_ce);
 
     return SUCCESS;
 }
