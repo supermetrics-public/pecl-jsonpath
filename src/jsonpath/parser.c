@@ -182,6 +182,9 @@ bool build_parse_tree(
 
     for (i = 0; i < lex_tok_count; i++) {
 
+		// Initialize to sentinel value
+		tok[x].filter_type = -1;
+
 	switch (lex_tok[i]) {
 
 	case ROOT:

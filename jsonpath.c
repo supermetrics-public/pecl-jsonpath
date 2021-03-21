@@ -240,7 +240,7 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
 	    // For each array entry, find the node names and populate their values
 	    // Fill up expression NODE_NAME VALS
 	    for (x = 0; x < tok->expression_count; x++) {
-		if (tok->expressions[x + 1].type == EXPR_ISSET) {
+		if (x < tok->expression_count - 1 && tok->expressions[x + 1].type == EXPR_ISSET) {
 		    if (!checkIfKeyExists(data2, &tok->expressions[x])) {
 			continue;
 		    }
@@ -413,9 +413,9 @@ bool compare_lt(expr_operator * lh, expr_operator * rh)
     ZVAL_STRING(&a, (*lh).value);
     ZVAL_STRING(&b, (*rh).value);
 
+    compare_function(&result, &a, &b);
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) < 0);
 
@@ -429,9 +429,9 @@ bool compare_gt(expr_operator * lh, expr_operator * rh)
     ZVAL_STRING(&a, (*lh).value);
     ZVAL_STRING(&b, (*rh).value);
 
+    compare_function(&result, &a, &b);
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) > 0);
 
@@ -445,9 +445,9 @@ bool compare_lte(expr_operator * lh, expr_operator * rh)
     ZVAL_STRING(&a, (*lh).value);
     ZVAL_STRING(&b, (*rh).value);
 
+    compare_function(&result, &a, &b);
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) <= 0);
 
@@ -461,9 +461,9 @@ bool compare_gte(expr_operator * lh, expr_operator * rh)
     ZVAL_STRING(&a, (*lh).value);
     ZVAL_STRING(&b, (*rh).value);
 
+    compare_function(&result, &a, &b);
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) >= 0);
 
@@ -487,9 +487,9 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
     ZVAL_STRING(&a, (*lh).value);
     ZVAL_STRING(&b, (*rh).value);
 
+    compare_function(&result, &a, &b);
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) == 0);
 
@@ -503,9 +503,9 @@ bool compare_neq(expr_operator * lh, expr_operator * rh)
     ZVAL_STRING(&a, (*lh).value);
     ZVAL_STRING(&b, (*rh).value);
 
+    compare_function(&result, &a, &b);
     zval_ptr_dtor(&a);
     zval_ptr_dtor(&b);
-    compare_function(&result, &a, &b);
 
     bool res = (Z_LVAL(result) != 0);
 
