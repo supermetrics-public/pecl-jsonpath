@@ -17,25 +17,25 @@
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
-void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value);
-void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value);
-bool findByValue(zval * arr, expr_operator * node);
-bool checkIfKeyExists(zval * arr, expr_operator * node);
-void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value);
-void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value);
-bool is_scalar(zval * arg);
+void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value);
+void recurse(zval* arr, operator * tok, operator * tok_last, zval* return_value);
+bool findByValue(zval* arr, expr_operator* node);
+bool checkIfKeyExists(zval* arr, expr_operator* node);
+void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* return_value);
+void iterateWildCard(zval* arr, operator * tok, operator * tok_last, zval* return_value);
+bool is_scalar(zval* arg);
 
-zend_class_entry *test_ce;
+zend_class_entry* test_ce;
 
 PHP_METHOD(JsonPath, find)
 {
-    char *path;
+    char* path;
     size_t path_len;
-    zval *z_array;
-    HashTable *arr;
+    zval* z_array;
+    HashTable* arr;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &z_array, &path, &path_len) == FAILURE) {
-	return;
+        return;
     }
 
     array_init(return_value);
@@ -44,41 +44,41 @@ PHP_METHOD(JsonPath, find)
     char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN];
     int lex_tok_count = 0;
 
-    char *p = path;
+    char* p = path;
 
     char buffer[PARSE_BUF_LEN];
 
-    lex_token *ptr = lex_tok;
+    lex_token* ptr = lex_tok;
 
     lex_error err;
 
     while ((*ptr = scan(&p, buffer, sizeof(buffer), &err)) != LEX_NOT_FOUND) {
-	switch (*ptr) {
-	case LEX_NODE:
-	case LEX_LITERAL:
-    case LEX_LITERAL_BOOL:
-	    strcpy(lex_tok_values[lex_tok_count], buffer);
-	    break;
+        switch (*ptr) {
+        case LEX_NODE:
+        case LEX_LITERAL:
+        case LEX_LITERAL_BOOL:
+            strcpy(lex_tok_values[lex_tok_count], buffer);
+            break;
         case LEX_ERR:
             snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - path));
             zend_throw_exception(spl_ce_RuntimeException, err.msg, 0);
             return;
-	default:
-	    lex_tok_values[lex_tok_count][0] = '\0';
-	    break;
-	}
+        default:
+            lex_tok_values[lex_tok_count][0] = '\0';
+            break;
+        }
 
-	ptr++;
+        ptr++;
 
-	lex_tok_count++;
+        lex_tok_count++;
     }
 
-    operator  tok[100];
+    operator tok[100];
     int tok_count = 0;
-    int *int_ptr = &tok_count;
- 
+    int* int_ptr = &tok_count;
+
     parse_error p_err;
-   
+
     if (!build_parse_tree(lex_tok, lex_tok_values, lex_tok_count, tok, int_ptr, &p_err)) {
         zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0);
     }
@@ -95,42 +95,42 @@ PHP_METHOD(JsonPath, find)
 
     while (fr <= tok_ptr_end) {
         if (fr->filter_type == FLTR_EXPR) {
-            efree((void *)fr->expressions);    
-        } 
+            efree((void*)fr->expressions);
+        }
         fr++;
     }
 
     if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
-	convert_to_boolean(return_value);
-	RETURN_FALSE;
+        convert_to_boolean(return_value);
+        RETURN_FALSE;
     }
 
     return;
 }
 
-void iterate(zval * arr, operator * tok, operator * tok_last, zval * return_value)
+void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value)
 {
     if (tok > tok_last) {
-	return;
+        return;
     }
 
     switch (tok->type) {
     case ROOT:
-	iterate(arr, (tok + 1), tok_last, return_value);
-	break;
+        iterate(arr, (tok + 1), tok_last, return_value);
+        break;
     case WILD_CARD:
-	iterateWildCard(arr, tok, tok_last, return_value);
-	return;
+        iterateWildCard(arr, tok, tok_last, return_value);
+        return;
     case DEEP_SCAN:
-	recurse(arr, tok, tok_last, return_value);
-	return;
+        recurse(arr, tok, tok_last, return_value);
+        return;
     case CHILD_KEY:
-	processChildKey(arr, tok, tok_last, return_value);
-	return;
+        processChildKey(arr, tok, tok_last, return_value);
+        return;
     }
 }
 
-void copyToReturnResult(zval * arr, zval * return_value)
+void copyToReturnResult(zval* arr, zval* return_value)
 {
     zval tmp;
     ZVAL_COPY_VALUE(&tmp, arr);
@@ -138,12 +138,12 @@ void copyToReturnResult(zval * arr, zval * return_value)
     add_next_index_zval(return_value, &tmp);
 }
 
-void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * return_value)
+void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* return_value)
 {
-    zval *data, *data2;
+    zval* data, * data2;
 
     if (Z_TYPE_P(arr) != IS_ARRAY) {
-	return;
+        return;
     }
 
     // FLTR_WILD_CARD doesn't necessarily target a specific node. E.g. $..[*] should loop through the
@@ -151,160 +151,168 @@ void processChildKey(zval * arr, operator * tok, operator * tok_last, zval * ret
     // TODO: Check if we need to deal with empty string as array key
     if (tok->node_value_len == 0) {
         data = arr;
-    } else if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, tok->node_value_len)) == NULL) {
-	    return;
+    }
+    else if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, tok->node_value_len)) == NULL) {
+        return;
     }
 
     int x;
-    zend_string *key;
+    zend_string* key;
     ulong num_key;
     int range_start = 0;
     int range_end = 0;
     int range_step = 1;
-    expr_operator *node;
+    expr_operator* node;
 
     switch (tok->filter_type) {
     case FLTR_RANGE:
-    // [a:]
-    if (tok->index_count == 1) {
-        range_start = tok->indexes[0];
-    }
-    // [a:b], [a:b:]
-    else if (tok->index_count == 2) {
-        range_start = tok->indexes[0];
-        range_end = tok->indexes[1];
-    }
-    // [a:b:c]
-    else if (tok->index_count == 3) {
-        range_start = tok->indexes[0];
-        range_end = tok->indexes[1];
-        if (tok->indexes[2] != 0) {
-            range_step = tok->indexes[2];
+        // [a:]
+        if (tok->index_count == 1) {
+            range_start = tok->indexes[0];
         }
-    }
-
-    if (range_start < 0) {
-        range_start = zend_hash_num_elements(HASH_OF(data)) - abs(range_start);
-    }
-
-    if (range_end <= 0) {
-        range_end = zend_hash_num_elements(HASH_OF(data)) - abs(range_end);
-    }
-
-	for (x = range_start; x < range_end; x += range_step) {
-	    if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
-		if (tok == tok_last) {
-		    copyToReturnResult(data2, return_value);
-		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value);
-		}
-	    }
-	}
-	return;
-    case FLTR_INDEX:
-	for (x = 0; x < tok->index_count; x++) {
-        if (tok->indexes[x] < 0) {
-            tok->indexes[x] = zend_hash_num_elements(HASH_OF(data)) - abs(tok->indexes[x]);
+        // [a:b], [a:b:]
+        else if (tok->index_count == 2) {
+            range_start = tok->indexes[0];
+            range_end = tok->indexes[1];
         }
-	    if ((data2 = zend_hash_index_find(HASH_OF(data), tok->indexes[x])) != NULL) {
-		if (tok == tok_last) {
-		    copyToReturnResult(data2, return_value);
-		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value);
-		}
-	    }
-	}
-	return;
-    case FLTR_WILD_CARD:
-
-	ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
-	    if (tok == tok_last) {
-		copyToReturnResult(data2, return_value);
-	    } else {
-		iterate(data2, (tok + 1), tok_last, return_value);
-	    }
-	}
-	ZEND_HASH_FOREACH_END();
-
-	return;
-    case FLTR_NODE:
-	if (tok == tok_last) {
-	    copyToReturnResult(data, return_value);
-	} else {
-	    iterate(data, (tok + 1), tok_last, return_value);
-	}
-	return;
-    case FLTR_EXPR:
-
-	ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
-	    // For each array entry, find the node names and populate their values
-	    // Fill up expression NODE_NAME VALS
-	    for (x = 0; x < tok->expression_count; x++) {
-		if (x < tok->expression_count - 1 && tok->expressions[x + 1].type == EXPR_ISSET) {
-		    if (!checkIfKeyExists(data2, &tok->expressions[x])) {
-			continue;
-		    }
-		} else if (tok->expressions[x].type == EXPR_NODE_NAME) {
-		    if (!findByValue(data2, &tok->expressions[x])) {
-			continue;
-		    }
-		}
-	    }
-
-	    if (evaluate_postfix_expression(tok->expressions, tok->expression_count)) {
-		if (tok == tok_last) {
-		    copyToReturnResult(data2, return_value);
-		} else {
-		    iterate(data2, (tok + 1), tok_last, return_value);
-		}
-	    }
-        
-        // Clean up node values to prevent incorrect node values during recursive wildcard iterations
-        for (x = 0; x < tok->expression_count; x++) {
-            if (tok->expressions[x].type == EXPR_NODE_NAME) {
-                node = &tok->expressions[x];
-                node->value[0] = '\0';
+        // [a:b:c]
+        else if (tok->index_count == 3) {
+            range_start = tok->indexes[0];
+            range_end = tok->indexes[1];
+            if (tok->indexes[2] != 0) {
+                range_step = tok->indexes[2];
             }
         }
-	}
-	ZEND_HASH_FOREACH_END();
 
-	break;
+        if (range_start < 0) {
+            range_start = zend_hash_num_elements(HASH_OF(data)) - abs(range_start);
+        }
+
+        if (range_end <= 0) {
+            range_end = zend_hash_num_elements(HASH_OF(data)) - abs(range_end);
+        }
+
+        for (x = range_start; x < range_end; x += range_step) {
+            if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
+                if (tok == tok_last) {
+                    copyToReturnResult(data2, return_value);
+                }
+                else {
+                    iterate(data2, (tok + 1), tok_last, return_value);
+                }
+            }
+        }
+        return;
+    case FLTR_INDEX:
+        for (x = 0; x < tok->index_count; x++) {
+            if (tok->indexes[x] < 0) {
+                tok->indexes[x] = zend_hash_num_elements(HASH_OF(data)) - abs(tok->indexes[x]);
+            }
+            if ((data2 = zend_hash_index_find(HASH_OF(data), tok->indexes[x])) != NULL) {
+                if (tok == tok_last) {
+                    copyToReturnResult(data2, return_value);
+                }
+                else {
+                    iterate(data2, (tok + 1), tok_last, return_value);
+                }
+            }
+        }
+        return;
+    case FLTR_WILD_CARD:
+
+        ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
+            if (tok == tok_last) {
+                copyToReturnResult(data2, return_value);
+            }
+            else {
+                iterate(data2, (tok + 1), tok_last, return_value);
+            }
+        }
+        ZEND_HASH_FOREACH_END();
+
+        return;
+    case FLTR_NODE:
+        if (tok == tok_last) {
+            copyToReturnResult(data, return_value);
+        }
+        else {
+            iterate(data, (tok + 1), tok_last, return_value);
+        }
+        return;
+    case FLTR_EXPR:
+
+        ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
+            // For each array entry, find the node names and populate their values
+            // Fill up expression NODE_NAME VALS
+            for (x = 0; x < tok->expression_count; x++) {
+                if (x < tok->expression_count - 1 && tok->expressions[x + 1].type == EXPR_ISSET) {
+                    if (!checkIfKeyExists(data2, &tok->expressions[x])) {
+                        continue;
+                    }
+                }
+                else if (tok->expressions[x].type == EXPR_NODE_NAME) {
+                    if (!findByValue(data2, &tok->expressions[x])) {
+                        continue;
+                    }
+                }
+            }
+
+            if (evaluate_postfix_expression(tok->expressions, tok->expression_count)) {
+                if (tok == tok_last) {
+                    copyToReturnResult(data2, return_value);
+                }
+                else {
+                    iterate(data2, (tok + 1), tok_last, return_value);
+                }
+            }
+
+            // Clean up node values to prevent incorrect node values during recursive wildcard iterations
+            for (x = 0; x < tok->expression_count; x++) {
+                if (tok->expressions[x].type == EXPR_NODE_NAME) {
+                    node = &tok->expressions[x];
+                    node->value[0] = '\0';
+                }
+            }
+        }
+        ZEND_HASH_FOREACH_END();
+
+        break;
     }
 }
 
-void iterateWildCard(zval * arr, operator * tok, operator * tok_last, zval * return_value)
+void iterateWildCard(zval* arr, operator * tok, operator * tok_last, zval* return_value)
 {
-    zval *data;
-    zval *zv_dest;
-    zend_string *key;
+    zval* data;
+    zval* zv_dest;
+    zend_string* key;
     ulong num_key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-	if (tok == tok_last) {
-	    copyToReturnResult(data, return_value);
-	} else if (Z_TYPE_P(data) == IS_ARRAY) {
-	    iterate(data, (tok + 1), tok_last, return_value);
-	}
+        if (tok == tok_last) {
+            copyToReturnResult(data, return_value);
+        }
+        else if (Z_TYPE_P(data) == IS_ARRAY) {
+            iterate(data, (tok + 1), tok_last, return_value);
+        }
     }
     ZEND_HASH_FOREACH_END();
 }
 
-void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_value)
+void recurse(zval* arr, operator * tok, operator * tok_last, zval* return_value)
 {
     if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
-	return;
+        return;
     }
 
     processChildKey(arr, tok, tok_last, return_value);
 
-    zval *data;
-    zval *zv_dest;
-    zend_string *key;
+    zval* data;
+    zval* zv_dest;
+    zend_string* key;
     ulong num_key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-	recurse(data, tok, tok_last, return_value);
+        recurse(data, tok, tok_last, return_value);
     }
     ZEND_HASH_FOREACH_END();
 }
@@ -314,45 +322,48 @@ void recurse(zval * arr, operator * tok, operator * tok_last, zval * return_valu
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool findByValue(zval * arr, expr_operator * node)
+bool findByValue(zval* arr, expr_operator* node)
 {
     if (Z_TYPE_P(arr) != IS_ARRAY) {
-	return false;
+        return false;
     }
 
-    zval *data;
+    zval* data;
 
     int i;
 
     for (i = 0; i < node->label_count; i++) {
 
-	if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) != NULL) {
-	    arr = data;
-	} else {
-	    node->value[0] = '\0';
-	    return false;
-	}
+        if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) != NULL) {
+            arr = data;
+        }
+        else {
+            node->value[0] = '\0';
+            return false;
+        }
     }
 
     if (!is_scalar(data)) {
         return false;
     }
 
-    char *s = NULL;
+    char* s = NULL;
     size_t s_len;
 
     if (Z_TYPE_P(data) == IS_TRUE) {
         strncpy(node->value, "JP_LITERAL_TRUE", 15);
         node->value[15] = '\0';
-    } else if (Z_TYPE_P(data) == IS_FALSE) {
+    }
+    else if (Z_TYPE_P(data) == IS_FALSE) {
         strncpy(node->value, "JP_LITERAL_FALSE", 16);
         node->value[16] = '\0';
-    } else if (Z_TYPE_P(data) != IS_STRING) {
+    }
+    else if (Z_TYPE_P(data) != IS_STRING) {
 
         zval zcopy;
         int free_zcopy;
-        char *s = NULL;
-	size_t s_len;
+        char* s = NULL;
+        size_t s_len;
 
         free_zcopy = zend_make_printable_zval(data, &zcopy);
         if (free_zcopy) {
@@ -369,7 +380,8 @@ bool findByValue(zval * arr, expr_operator * node)
             zval_dtor(&zcopy);
         }
 
-    } else {
+    }
+    else {
         s_len = Z_STRLEN_P(data);
         s = Z_STRVAL_P(data);
         strncpy(node->value, s, s_len);
@@ -384,9 +396,9 @@ bool findByValue(zval * arr, expr_operator * node)
  * *array   array to check in
  * **entry  pointer to array entry
  */
-bool checkIfKeyExists(zval * arr, expr_operator * node)
+bool checkIfKeyExists(zval* arr, expr_operator* node)
 {
-    zval *data;
+    zval* data;
 
     int i;
 
@@ -394,19 +406,20 @@ bool checkIfKeyExists(zval * arr, expr_operator * node)
 
     for (i = 0; i < node->label_count; i++) {
 
-	if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) == NULL) {
-	    node->value_bool = false;
-	    return false;
-	} else {
-	    node->value_bool = true;
-	    arr = data;
-	}
+        if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) == NULL) {
+            node->value_bool = false;
+            return false;
+        }
+        else {
+            node->value_bool = true;
+            arr = data;
+        }
     }
 
     return true;
 }
 
-bool compare_lt(expr_operator * lh, expr_operator * rh)
+bool compare_lt(expr_operator* lh, expr_operator* rh)
 {
     zval a, b, result;
 
@@ -422,7 +435,7 @@ bool compare_lt(expr_operator * lh, expr_operator * rh)
     return res;
 }
 
-bool compare_gt(expr_operator * lh, expr_operator * rh)
+bool compare_gt(expr_operator* lh, expr_operator* rh)
 {
     zval a, b, result;
 
@@ -438,7 +451,7 @@ bool compare_gt(expr_operator * lh, expr_operator * rh)
     return res;
 }
 
-bool compare_lte(expr_operator * lh, expr_operator * rh)
+bool compare_lte(expr_operator* lh, expr_operator* rh)
 {
     zval a, b, result;
 
@@ -454,7 +467,7 @@ bool compare_lte(expr_operator * lh, expr_operator * rh)
     return res;
 }
 
-bool compare_gte(expr_operator * lh, expr_operator * rh)
+bool compare_gte(expr_operator* lh, expr_operator* rh)
 {
     zval a, b, result;
 
@@ -470,17 +483,17 @@ bool compare_gte(expr_operator * lh, expr_operator * rh)
     return res;
 }
 
-bool compare_and(expr_operator * lh, expr_operator * rh)
+bool compare_and(expr_operator* lh, expr_operator* rh)
 {
     return (*lh).value_bool && (*rh).value_bool;
 }
 
-bool compare_or(expr_operator * lh, expr_operator * rh)
+bool compare_or(expr_operator* lh, expr_operator* rh)
 {
     return (*lh).value_bool || (*rh).value_bool;
 }
 
-bool compare_eq(expr_operator * lh, expr_operator * rh)
+bool compare_eq(expr_operator* lh, expr_operator* rh)
 {
     zval a, b, result;
 
@@ -496,7 +509,7 @@ bool compare_eq(expr_operator * lh, expr_operator * rh)
     return res;
 }
 
-bool compare_neq(expr_operator * lh, expr_operator * rh)
+bool compare_neq(expr_operator* lh, expr_operator* rh)
 {
     zval a, b, result;
 
@@ -512,15 +525,15 @@ bool compare_neq(expr_operator * lh, expr_operator * rh)
     return res;
 }
 
-bool compare_isset(expr_operator * lh, expr_operator * rh)
+bool compare_isset(expr_operator* lh, expr_operator* rh)
 {
     return (*lh).value_bool && (*rh).value_bool;
 }
 
-bool compare_rgxp(expr_operator * lh, expr_operator * rh)
+bool compare_rgxp(expr_operator* lh, expr_operator* rh)
 {
     zval pattern;
-    pcre_cache_entry *pce;
+    pcre_cache_entry* pce;
 
     ZVAL_STRING(&pattern, (*rh).value);
 
@@ -535,7 +548,7 @@ bool compare_rgxp(expr_operator * lh, expr_operator * rh)
     ZVAL_NULL(&retval);
     ZVAL_NULL(&subpats);
 
-    zend_string *s_lh = zend_string_init((*lh).value, strlen((*lh).value), 0);
+    zend_string* s_lh = zend_string_init((*lh).value, strlen((*lh).value), 0);
 
     php_pcre_match_impl(pce, s_lh, &retval, &subpats, 0, 0, 0, 0);
 
@@ -544,31 +557,31 @@ bool compare_rgxp(expr_operator * lh, expr_operator * rh)
     return Z_LVAL(retval) > 0;
 }
 
-bool is_scalar(zval * arg)
+bool is_scalar(zval* arg)
 {
     switch (Z_TYPE_P(arg)) {
-        case IS_FALSE:
-        case IS_TRUE:
-        case IS_DOUBLE:
-        case IS_LONG:
-        case IS_STRING:
+    case IS_FALSE:
+    case IS_TRUE:
+    case IS_DOUBLE:
+    case IS_LONG:
+    case IS_STRING:
         return true;
         break;
-        
-        default:
+
+    default:
         return false;
         break;
     }
 }
 
-void * jpath_malloc(size_t size) {
+void* jpath_malloc(size_t size) {
     return emalloc(size);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_find, 0, 0, 2)
-    ZEND_ARG_ARRAY_INFO(0, haystack, 0)
-    ZEND_ARG_INFO(0, needle)
-    ZEND_END_ARG_INFO()
+ZEND_ARG_ARRAY_INFO(0, haystack, 0)
+ZEND_ARG_INFO(0, needle)
+ZEND_END_ARG_INFO()
 
 const zend_function_entry jsonpath_methods[] = {
     PHP_ME(JsonPath, find, arginfo_find, ZEND_ACC_PUBLIC)
