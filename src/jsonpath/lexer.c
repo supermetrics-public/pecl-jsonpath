@@ -325,6 +325,13 @@ static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufS
 
 	for (; isdigit(*p); p++);
 
+	// Optional decimal separator and fraction part
+	if (*p != '\0' && *(p + 1) != '\0' && *p == '.' && isdigit(*(p + 1))) {
+		p++;
+
+		for (; isdigit(*p); p++);
+	}
+
 	cpy_len = (size_t)(p - start);
 
 	if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
