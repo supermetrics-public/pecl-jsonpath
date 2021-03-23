@@ -552,8 +552,10 @@ bool compare_rgxp(expr_operator* lh, expr_operator* rh)
 
     php_pcre_match_impl(pce, s_lh, &retval, &subpats, 0, 0, 0, 0);
 
+    zend_string_release_ex(s_lh, 0);
     zval_ptr_dtor(&subpats);
     zval_ptr_dtor(&pattern);
+
     return Z_LVAL(retval) > 0;
 }
 
