@@ -5,6 +5,7 @@
 #include "safe_string.h"
 
 bool is_unary(expr_op_type);
+int get_operator_precedence(expr_op_type type);
 
 // Return node count (not including last token)
 
