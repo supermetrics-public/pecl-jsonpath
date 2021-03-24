@@ -25,7 +25,13 @@ void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* retur
 void iterateWildCard(zval* arr, operator * tok, operator * tok_last, zval* return_value);
 bool is_scalar(zval* arg);
 
-zend_class_entry* test_ce;
+zend_class_entry* jsonpath_ce;
+
+#if PHP_VERSION_ID < 80000
+#include "jsonpath_legacy_arginfo.h"
+#else
+#include "jsonpath_arginfo.h"
+#endif
 
 PHP_METHOD(JsonPath, find)
 {
@@ -580,24 +586,14 @@ void* jpath_malloc(size_t size) {
     return emalloc(size);
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_find, 0, 0, 2)
-ZEND_ARG_ARRAY_INFO(0, haystack, 0)
-ZEND_ARG_INFO(0, needle)
-ZEND_END_ARG_INFO()
-
-const zend_function_entry jsonpath_methods[] = {
-    PHP_ME(JsonPath, find, arginfo_find, ZEND_ACC_PUBLIC)
-    PHP_FE_END
-};
-
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(jsonpath)
 {
-    zend_class_entry tmp_ce;
-    INIT_CLASS_ENTRY(tmp_ce, "JsonPath", jsonpath_methods);
+    zend_class_entry jsonpath_class_entry;
+    INIT_CLASS_ENTRY(jsonpath_class_entry, "JsonPath", class_JsonPath_methods);
 
-    test_ce = zend_register_internal_class(&tmp_ce);
+    jsonpath_ce = zend_register_internal_class(&jsonpath_class_entry);
 
     return SUCCESS;
 }
