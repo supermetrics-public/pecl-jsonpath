@@ -122,7 +122,12 @@ void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value)
 
     switch (tok->type) {
     case ROOT:
-        iterate(arr, (tok + 1), tok_last, return_value);
+        if (tok->filter_type == FLTR_RANGE) {
+            processChildKey(arr, tok, tok_last, return_value);
+        }
+        else {
+            iterate(arr, (tok + 1), tok_last, return_value);
+        }
         break;
     case WILD_CARD:
         iterateWildCard(arr, tok, tok_last, return_value);
