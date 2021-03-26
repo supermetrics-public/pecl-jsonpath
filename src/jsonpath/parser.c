@@ -189,18 +189,18 @@ bool build_parse_tree(
 
 		switch (lex_tok[i]) {
 
-		case ROOT:
-			tok[x].type = ROOT;
-			x++;
-			break;
 		case LEX_WILD_CARD:
 			tok[x].type = WILD_CARD;
 			x++;
 			break;
+		case ROOT:
 		case LEX_DEEP_SCAN:
 		case LEX_NODE:
 
-			if (lex_tok[i] == LEX_DEEP_SCAN) {
+			if (lex_tok[i] == ROOT) {
+				tok[x].type = ROOT;
+			}
+			else if (lex_tok[i] == LEX_DEEP_SCAN) {
 				tok[x].type = DEEP_SCAN;
 				i++;
 			}
