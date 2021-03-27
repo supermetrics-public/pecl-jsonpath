@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "stack.h"
+#include <limits.h>
 #include <stdio.h>
 #include "safe_string.h"
 
@@ -248,10 +249,10 @@ bool build_parse_tree(
 						// [a::] => [a:0:]
 						if (slice_counter > tok[x].index_count) {
 							if (slice_counter == 1) {
-								tok[x].indexes[z] = 0;
+								tok[x].indexes[z] = INT_MAX;
 							}
 							else if (slice_counter == 2) {
-								tok[x].indexes[z] = 0;
+								tok[x].indexes[z] = INT_MAX;
 							}
 							tok[x].index_count++;
 							z++;
