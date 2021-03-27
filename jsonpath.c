@@ -170,7 +170,7 @@ void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* retur
 
     int x;
     zend_string* key;
-    ulong num_key;
+    zend_ulong num_key;
     int range_start;
     int range_end;
     int range_step;
@@ -333,7 +333,7 @@ void iterateWildCard(zval* arr, operator * tok, operator * tok_last, zval* retur
     zval* data;
     zval* zv_dest;
     zend_string* key;
-    ulong num_key;
+    zend_ulong num_key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
         if (tok == tok_last) {
@@ -357,7 +357,7 @@ void recurse(zval* arr, operator * tok, operator * tok_last, zval* return_value)
     zval* data;
     zval* zv_dest;
     zend_string* key;
-    ulong num_key;
+    zend_ulong num_key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
         recurse(data, tok, tok_last, return_value);
