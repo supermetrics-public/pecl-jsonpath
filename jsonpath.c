@@ -10,6 +10,7 @@
 #include "src/jsonpath/parser.h"
 #include "php_jsonpath.h"
 #include "zend_operators.h"
+#include <limits.h>
 #include <stdbool.h>
 #include "zend_exceptions.h"
 #include <ext/spl/spl_exceptions.h>
@@ -170,46 +171,82 @@ void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* retur
     int x;
     zend_string* key;
     ulong num_key;
-    int range_start = 0;
-    int range_end = 0;
-    int range_step = 1;
+    int range_start;
+    int range_end;
+    int range_step;
+    int data_length;
     expr_operator* node;
 
     switch (tok->filter_type) {
     case FLTR_RANGE:
-        // [a:]
-        if (tok->index_count == 1) {
-            range_start = tok->indexes[0];
+        data_length = zend_hash_num_elements(HASH_OF(data));
+
+        range_start = tok->indexes[0];
+        range_end = tok->index_count > 1 ? tok->indexes[1] : INT_MAX;
+        range_step = tok->index_count > 2 ? tok->indexes[2] : 1;
+
+        // Zero-steps are not allowed, abort
+        if (range_step == 0) {
+            return;
         }
-        // [a:b], [a:b:]
-        else if (tok->index_count == 2) {
-            range_start = tok->indexes[0];
-            range_end = tok->indexes[1];
+
+        // Replace placeholder with actual value
+        if (range_start == INT_MAX) {
+            range_start = range_step > 0 ? 0 : data_length - 1;
         }
-        // [a:b:c]
-        else if (tok->index_count == 3) {
-            range_start = tok->indexes[0];
-            range_end = tok->indexes[1];
-            if (tok->indexes[2] != 0) {
-                range_step = tok->indexes[2];
+        // Indexing from the end of the list
+        else if (range_start < 0) {
+            range_start = data_length - abs(range_start);
+        }
+
+        // Replace placeholder with actual value
+        if (range_end == INT_MAX) {
+            range_end = range_step > 0 ? data_length : -1;
+        }
+        // Indexing from the end of the list
+        else if (range_end < 0) {
+            range_end = data_length - abs(range_end);
+        }
+
+        // Set suitable boundaries for start index
+        range_start = range_start < -1 ? -1 : range_start;
+        range_start = range_start > data_length ? data_length : range_start;
+
+        // Set suitable boundaries for end index
+        range_end = range_end < -1 ? -1 : range_end;
+        range_end = range_end > data_length ? data_length : range_end;
+
+        if (range_step > 0) {
+            // Make sure that the range is sane so we don't end up in an infinite loop
+            if (range_start >= range_end) {
+                return;
+            }
+
+            for (x = range_start; x < range_end; x += range_step) {
+                if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
+                    if (tok == tok_last) {
+                        copyToReturnResult(data2, return_value);
+                    }
+                    else {
+                        iterate(data2, (tok + 1), tok_last, return_value);
+                    }
+                }
             }
         }
+        else {
+            // Make sure that the range is sane so we don't end up in an infinite loop
+            if (range_start <= range_end) {
+                return;
+            }
 
-        if (range_start < 0) {
-            range_start = zend_hash_num_elements(HASH_OF(data)) - abs(range_start);
-        }
-
-        if (range_end <= 0) {
-            range_end = zend_hash_num_elements(HASH_OF(data)) - abs(range_end);
-        }
-
-        for (x = range_start; x < range_end; x += range_step) {
-            if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
-                if (tok == tok_last) {
-                    copyToReturnResult(data2, return_value);
-                }
-                else {
-                    iterate(data2, (tok + 1), tok_last, return_value);
+            for (x = range_start; x > range_end; x += range_step) {
+                if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
+                    if (tok == tok_last) {
+                        copyToReturnResult(data2, return_value);
+                    }
+                    else {
+                        iterate(data2, (tok + 1), tok_last, return_value);
+                    }
                 }
             }
         }
