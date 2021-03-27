@@ -233,6 +233,11 @@ bool build_parse_tree(
 				}
 			}
 			else if (lex_tok[i + 1] == LEX_FILTER_START) {
+				if (lex_tok[i + 2] == LEX_EXPR_END) {
+					strncpy(err->msg, "Filter must not be empty", sizeof(err->msg));
+					return false;
+				}
+
 				i += 2;
 				z = 0;
 				slice_counter = 0;

@@ -267,7 +267,13 @@ static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_er
 	char* start;
 	size_t cpy_len;
 
-	for (; *p != '\0' && (*p == '\'' || *p == '"' || *p == ' '); p++);
+	for (; *p != '\0' && (*p == '\'' || *p == '"' || *p == ' '); p++) {
+		// Find first occurrence
+		if (*p == '\'' || *p == '"') {
+			p++;
+			break;
+		}
+	}
 
 	start = p;
 

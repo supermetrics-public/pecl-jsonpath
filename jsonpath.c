@@ -158,12 +158,15 @@ void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* retur
         return;
     }
 
-    // FLTR_WILD_CARD doesn't necessarily target a specific node. E.g. $..[*] should loop through the
-    // whole array.
-    // TODO: Check if we need to deal with empty string as array key
-    if (tok->node_value_len == 0) {
+    // Sometimes we want to loop through the whole array. Examples:
+    // $..[*]
+    // $[0:6]
+    if (tok->node_value_len == 0 && (tok->type == ROOT || tok->type == DEEP_SCAN)) {
         data = arr;
     }
+    // And sometimes we're interested only in a particular key. Examples:
+    // $['somekey']
+    // $.somekey
     else if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, tok->node_value_len)) == NULL) {
         return;
     }
