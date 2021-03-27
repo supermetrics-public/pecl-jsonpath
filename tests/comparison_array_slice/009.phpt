@@ -25,5 +25,5 @@ array(2) {
   [0]=>
   string(5) "fifth"
   [1]=>
-  string(6) "forth"
+  string(5) "forth"
 }
