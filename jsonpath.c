@@ -123,7 +123,7 @@ void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value)
 
     switch (tok->type) {
     case ROOT:
-        if (tok->filter_type == FLTR_RANGE) {
+        if (tok->filter_type == FLTR_RANGE || tok->filter_type == FLTR_INDEX) {
             processChildKey(arr, tok, tok_last, return_value);
         }
         else {
