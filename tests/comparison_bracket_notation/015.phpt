@@ -28,4 +28,4 @@ array[1]{
   int(3)
 }
 --XFAIL--
-Requires filter expression support in wildcard iteration
+Requires filter handling in wildcard iteration

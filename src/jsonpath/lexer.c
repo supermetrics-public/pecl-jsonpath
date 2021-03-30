@@ -260,16 +260,17 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err)
 	return found_token;
 }
 
-/* Extract contents of string bounded by single or double quotes */
+/* Extract contents of string bounded by either single or double quotes */
 static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_error* err)
 {
-
 	char* start;
+	char quote_type;
 	size_t cpy_len;
 
 	for (; *p != '\0' && (*p == '\'' || *p == '"' || *p == ' '); p++) {
 		// Find first occurrence
 		if (*p == '\'' || *p == '"') {
+			quote_type = *p;
 			p++;
 			break;
 		}
@@ -277,7 +278,7 @@ static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_er
 
 	start = p;
 
-	for (; *p != '\0' && (*p != '\'' && *p != '"'); p++);
+	for (; *p != '\0' && *p != quote_type && *(p - 1) != '\\'; p++);
 
 	cpy_len = (size_t)(p - start);
 
