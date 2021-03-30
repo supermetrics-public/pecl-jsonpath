@@ -60,27 +60,33 @@ PHP_METHOD(JsonPath, find)
     lex_error err;
 
     while ((*ptr = scan(&p, buffer, sizeof(buffer), &err)) != LEX_NOT_FOUND) {
+
+        lex_tok_count++;
+
+        if (lex_tok_count > PARSE_BUF_LEN) {
+            zend_throw_exception(spl_ce_RuntimeException, "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
+            return;
+        }
+
         switch (*ptr) {
         case LEX_NODE:
         case LEX_LITERAL:
         case LEX_LITERAL_BOOL:
-            strcpy(lex_tok_values[lex_tok_count], buffer);
+            strcpy(lex_tok_values[lex_tok_count-1], buffer);
             break;
         case LEX_ERR:
             snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - path));
             zend_throw_exception(spl_ce_RuntimeException, err.msg, 0);
             return;
         default:
-            lex_tok_values[lex_tok_count][0] = '\0';
+            lex_tok_values[lex_tok_count-1][0] = '\0';
             break;
         }
 
         ptr++;
-
-        lex_tok_count++;
     }
 
-    operator tok[100];
+    operator tok[PARSE_BUF_LEN];
     int tok_count = 0;
     int* int_ptr = &tok_count;
 
