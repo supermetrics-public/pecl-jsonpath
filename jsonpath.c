@@ -18,6 +18,7 @@
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
+bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count);
 void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value);
 void recurse(zval* arr, operator * tok, operator * tok_last, zval* return_value);
 bool findByValue(zval* arr, expr_operator* node);
@@ -36,67 +37,46 @@ zend_class_entry* jsonpath_ce;
 
 PHP_METHOD(JsonPath, find)
 {
-    char* path;
-    size_t path_len;
-    zval* z_array;
-    HashTable* arr;
+    /* parse php method parameters */
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &z_array, &path, &path_len) == FAILURE) {
+    char* j_path;
+    size_t j_path_len;
+    zval* search_target;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &search_target, &j_path, &j_path_len) == FAILURE) {
         return;
     }
 
-    array_init(return_value);
+    /* tokenize JSON-path string */
 
     lex_token lex_tok[PARSE_BUF_LEN];
-    char lex_tok_values[PARSE_BUF_LEN][PARSE_BUF_LEN];
+    char lex_tok_literals[PARSE_BUF_LEN][PARSE_BUF_LEN];
     int lex_tok_count = 0;
 
-    char* p = path;
-
-    char buffer[PARSE_BUF_LEN];
-
-    lex_token* ptr = lex_tok;
-
-    lex_error err;
-
-    while ((*ptr = scan(&p, buffer, sizeof(buffer), &err)) != LEX_NOT_FOUND) {
-        switch (*ptr) {
-        case LEX_NODE:
-        case LEX_LITERAL:
-        case LEX_LITERAL_BOOL:
-            strcpy(lex_tok_values[lex_tok_count], buffer);
-            break;
-        case LEX_ERR:
-            snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - path));
-            zend_throw_exception(spl_ce_RuntimeException, err.msg, 0);
-            return;
-        default:
-            lex_tok_values[lex_tok_count][0] = '\0';
-            break;
-        }
-
-        ptr++;
-
-        lex_tok_count++;
+    if (!scanTokens(j_path, lex_tok, lex_tok_literals, &lex_tok_count)) {
+        return;
     }
 
-    operator tok[100];
-    int tok_count = 0;
-    int* int_ptr = &tok_count;
+    /* assemble an array of query execution instructions from parsed tokens */
 
+    operator tok[PARSE_BUF_LEN];
+    int tok_count = 0;
     parse_error p_err;
 
-    if (!build_parse_tree(lex_tok, lex_tok_values, lex_tok_count, tok, int_ptr, &p_err)) {
+    if (!build_parse_tree(lex_tok, lex_tok_literals, lex_tok_count, tok, &tok_count, &p_err)) {
         zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0);
     }
 
-    operator * tok_ptr_start;
-    operator * tok_ptr_end;
+    /* execute the JSON-path query instructions against the search target (PHP object/array) */
 
-    tok_ptr_start = &tok[0];
-    tok_ptr_end = &tok[tok_count - 1];
+    operator * tok_ptr_start = &tok[0];
+    operator * tok_ptr_end = &tok[tok_count - 1];
 
-    iterate(z_array, tok_ptr_start, tok_ptr_end, return_value);
+    array_init(return_value);
+
+    iterate(search_target, tok_ptr_start, tok_ptr_end, return_value);
+
+    /* free the memory allocated for filter expressions */
 
     operator * fr = tok_ptr_start;
 
@@ -107,12 +87,55 @@ PHP_METHOD(JsonPath, find)
         fr++;
     }
 
+    /* return false if no results were found by the JSON-path query */
+
     if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
         convert_to_boolean(return_value);
         RETURN_FALSE;
     }
 
     return;
+}
+
+bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count)
+{
+    lex_token cur_tok;
+    char* p = json_path;
+    char buffer[PARSE_BUF_LEN];
+    lex_error err;
+
+    int i = 0;
+
+    while ((cur_tok = scan(&p, buffer, sizeof(buffer), &err)) != LEX_NOT_FOUND) {
+
+        if (i >= PARSE_BUF_LEN) {
+            zend_throw_exception(spl_ce_RuntimeException,
+                "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
+            return false;
+        }
+
+        switch (cur_tok) {
+        case LEX_NODE:
+        case LEX_LITERAL:
+        case LEX_LITERAL_BOOL:
+            strcpy(tok_literals[i], buffer);
+            break;
+        case LEX_ERR:
+            snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - json_path));
+            zend_throw_exception(spl_ce_RuntimeException, err.msg, 0);
+            return false;
+        default:
+            tok_literals[i][0] = '\0';
+            break;
+        }
+
+        tok[i] = cur_tok;
+        i++;
+    }
+
+    *tok_count = i;
+
+    return true;
 }
 
 void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value)
