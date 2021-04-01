@@ -265,15 +265,23 @@ static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_er
 {
 	char* start;
 	char quote_type;
+	bool quote_found = false;
 	size_t cpy_len;
 
 	for (; *p != '\0' && (*p == '\'' || *p == '"' || *p == ' '); p++) {
 		// Find first occurrence
 		if (*p == '\'' || *p == '"') {
+			quote_found = true;
 			quote_type = *p;
 			p++;
 			break;
 		}
+	}
+
+	if (quote_found == false) {
+		err->pos = p;
+		strcpy(err->msg, "Missing opening quote in string literal");
+		return false;
 	}
 
 	start = p;
