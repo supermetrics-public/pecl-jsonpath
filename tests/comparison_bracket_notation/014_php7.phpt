@@ -2,6 +2,7 @@
 Test bracket notation with number on string
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
+<?php if (version_compare(PHP_VERSION, '8.0.0', '>=')) print "skip"; ?>
 --FILE--
 <?php
 
@@ -14,8 +15,6 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught TypeError: JsonPath::find(): Argument #1 ($data) must be of type array, string given in %s014.php:%d
-Stack trace:
-#0 %s014.php(%d): JsonPath->find('Hello World', '$[0]')
-#1 {main}
-  thrown in %s014.php on line %d
+Warning: JsonPath::find() expects parameter 1 to be array, string given in %s014_php7.php on line %d
+Assertion 1
+NULL
