@@ -218,7 +218,7 @@ bool build_parse_tree(
 
 			int_ptr = &i;
 
-			if (lex_tok[i + 1] == LEX_EXPR_START) {
+			if (i < lex_tok_count - 1 && lex_tok[i + 1] == LEX_EXPR_START) {
 
 				expr_count = get_expression_node_count(&lex_tok[0], *int_ptr, lex_tok_count);
 
@@ -234,7 +234,7 @@ bool build_parse_tree(
 					return false;
 				}
 			}
-			else if (lex_tok[i + 1] == LEX_FILTER_START) {
+			else if (i < lex_tok_count - 1 && lex_tok[i + 1] == LEX_FILTER_START) {
 				if (lex_tok[i + 2] == LEX_EXPR_END) {
 					strncpy(err->msg, "Filter must not be empty", sizeof(err->msg));
 					return false;
