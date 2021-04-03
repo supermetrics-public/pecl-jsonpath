@@ -46,12 +46,14 @@ static bool tokenize_expression(
 
 	while (*pos < lex_tok_count) {
 
+		expr_list[i].value[0] = '\0';
+
 		switch (lex_tok[*pos]) {
 		case LEX_EXPR_START:
 			break;
 		case LEX_PAREN_OPEN:
 			expr_list[i].type = EXPR_PAREN_LEFT;
-			i++;;
+			i++;
 			break;
 		case LEX_PAREN_CLOSE:
 			if (expr_list[i - 1].type == EXPR_NODE_NAME) {

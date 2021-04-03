@@ -21,8 +21,8 @@ static int le_jsonpath;
 bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count);
 void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value);
 void recurse(zval* arr, operator * tok, operator * tok_last, zval* return_value);
-bool findByValue(zval* arr, expr_operator* node);
-bool checkIfKeyExists(zval* arr, expr_operator* node);
+void resolvePropertySelectorValue(zval* arr, expr_operator* node);
+void resolveIssetSelector(zval* arr, expr_operator* node);
 void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* return_value);
 void iterateWildCard(zval* arr, operator * tok, operator * tok_last, zval* return_value);
 bool is_scalar(zval* arg);
@@ -201,7 +201,6 @@ void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* retur
     int range_end;
     int range_step;
     int data_length;
-    expr_operator* node;
 
     switch (tok->filter_type) {
     case FLTR_RANGE:
@@ -320,14 +319,10 @@ void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* retur
             // Fill up expression NODE_NAME VALS
             for (x = 0; x < tok->expression_count; x++) {
                 if (x < tok->expression_count - 1 && tok->expressions[x + 1].type == EXPR_ISSET) {
-                    if (!checkIfKeyExists(data2, &tok->expressions[x])) {
-                        continue;
-                    }
+                    resolveIssetSelector(data2, &tok->expressions[x]);
                 }
                 else if (tok->expressions[x].type == EXPR_NODE_NAME) {
-                    if (!findByValue(data2, &tok->expressions[x])) {
-                        continue;
-                    }
+                    resolvePropertySelectorValue(data2, &tok->expressions[x]);
                 }
             }
 
@@ -343,8 +338,7 @@ void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* retur
             // Clean up node values to prevent incorrect node values during recursive wildcard iterations
             for (x = 0; x < tok->expression_count; x++) {
                 if (tok->expressions[x].type == EXPR_NODE_NAME) {
-                    node = &tok->expressions[x];
-                    node->value[0] = '\0';
+                    tok->expressions[x].value[0] = '\0';
                 }
             }
         }
@@ -391,38 +385,28 @@ void recurse(zval* arr, operator * tok, operator * tok_last, zval* return_value)
     ZEND_HASH_FOREACH_END();
 }
 
-/**
- * *value   value to check for
- * *array   array to check in
- * **entry  pointer to array entry
- */
-bool findByValue(zval* arr, expr_operator* node)
+/* populate the expression operator with the array value that */
+/* corresponds to the JSON-path object selector. */
+/* e.g. $.path.to.val -> $[path][to][val] */
+void resolvePropertySelectorValue(zval* arr, expr_operator* node)
 {
     if (Z_TYPE_P(arr) != IS_ARRAY) {
-        return false;
+        return;
     }
 
     zval* data;
 
-    int i;
-
-    for (i = 0; i < node->label_count; i++) {
-
-        if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) != NULL) {
-            arr = data;
+    for (int i = 0; i < node->label_count; i++) {
+        if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) == NULL) {
+            return;
         }
-        else {
-            node->value[0] = '\0';
-            return false;
-        }
+        arr = data;
     }
 
+    /* we can't compare strings/numbers to non-scalar values in JSON-path */
     if (!is_scalar(data)) {
-        return false;
+        return;
     }
-
-    char* s = NULL;
-    size_t s_len;
 
     if (Z_TYPE_P(data) == IS_TRUE) {
         strncpy(node->value, "JP_LITERAL_TRUE", 15);
@@ -435,17 +419,14 @@ bool findByValue(zval* arr, expr_operator* node)
     else if (Z_TYPE_P(data) != IS_STRING) {
 
         zval zcopy;
-        int free_zcopy;
-        char* s = NULL;
-        size_t s_len;
 
-        free_zcopy = zend_make_printable_zval(data, &zcopy);
+        int free_zcopy = zend_make_printable_zval(data, &zcopy);
         if (free_zcopy) {
             data = &zcopy;
         }
 
-        s_len = Z_STRLEN_P(data);
-        s = Z_STRVAL_P(data);
+        size_t s_len = Z_STRLEN_P(data);
+        char* s = Z_STRVAL_P(data);
 
         strncpy(node->value, s, s_len);
         node->value[s_len] = '\0';
@@ -453,44 +434,31 @@ bool findByValue(zval* arr, expr_operator* node)
         if (free_zcopy) {
             zval_dtor(&zcopy);
         }
-
     }
     else {
-        s_len = Z_STRLEN_P(data);
-        s = Z_STRVAL_P(data);
+        size_t s_len = Z_STRLEN_P(data);
+        char* s = Z_STRVAL_P(data);
         strncpy(node->value, s, s_len);
         node->value[s_len] = '\0';
     }
-
-    return true;
 }
 
-/**
- * *value   value to check for
- * *array   array to check in
- * **entry  pointer to array entry
- */
-bool checkIfKeyExists(zval* arr, expr_operator* node)
+/* assign the isset() operator a boolean value based on whether there is an */
+/* array key for the corresponding JSON-path object selector. */
+void resolveIssetSelector(zval* arr, expr_operator* node)
 {
     zval* data;
 
-    int i;
-
-    node->value_bool = false;
-
-    for (i = 0; i < node->label_count; i++) {
-
+    for (int i = 0; i < node->label_count; i++) {
         if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) == NULL) {
             node->value_bool = false;
-            return false;
+            break;
         }
         else {
             node->value_bool = true;
             arr = data;
         }
     }
-
-    return true;
 }
 
 bool compare_lt(expr_operator* lh, expr_operator* rh)
