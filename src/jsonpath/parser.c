@@ -46,12 +46,14 @@ static bool tokenize_expression(
 
 	while (*pos < lex_tok_count) {
 
+		expr_list[i].value[0] = '\0';
+
 		switch (lex_tok[*pos]) {
 		case LEX_EXPR_START:
 			break;
 		case LEX_PAREN_OPEN:
 			expr_list[i].type = EXPR_PAREN_LEFT;
-			i++;;
+			i++;
 			break;
 		case LEX_PAREN_CLOSE:
 			if (expr_list[i - 1].type == EXPR_NODE_NAME) {
@@ -216,7 +218,7 @@ bool build_parse_tree(
 
 			int_ptr = &i;
 
-			if (lex_tok[i + 1] == LEX_EXPR_START) {
+			if (i < lex_tok_count - 1 && lex_tok[i + 1] == LEX_EXPR_START) {
 
 				expr_count = get_expression_node_count(&lex_tok[0], *int_ptr, lex_tok_count);
 
@@ -232,50 +234,56 @@ bool build_parse_tree(
 					return false;
 				}
 			}
-			else if (lex_tok[i + 1] == LEX_FILTER_START) {
-				if (lex_tok[i + 2] == LEX_EXPR_END) {
-					strncpy(err->msg, "Filter must not be empty", sizeof(err->msg));
-					return false;
-				}
+			else if (i < lex_tok_count - 1 && lex_tok[i + 1] == LEX_FILTER_START) {
 
-				i += 2;
-				z = 0;
-				slice_counter = 0;
-				//TODO What if only 1 element, make sure type doesn't change
-				tok[x].filter_type = FLTR_INDEX;
-				while (lex_tok[i] != LEX_EXPR_END) {
-					if (lex_tok[i] == LEX_CHILD_SEP) {
-						tok[x].filter_type = FLTR_INDEX;
+				if (i < lex_tok_count - 2) {
+
+					i += 2;
+
+					if (lex_tok[i] == LEX_EXPR_END) {
+						strncpy(err->msg, "Filter must not be empty", sizeof(err->msg));
+						return false;
 					}
-					else if (lex_tok[i] == LEX_SLICE) {
-						tok[x].filter_type = FLTR_RANGE;
-						slice_counter++;
-						// [:a] => [0:a]
-						// [a::] => [a:0:]
-						if (slice_counter > tok[x].index_count) {
-							if (slice_counter == 1) {
-								tok[x].indexes[z] = INT_MAX;
+
+					z = 0;
+					slice_counter = 0;
+					//TODO What if only 1 element, make sure type doesn't change
+					tok[x].filter_type = FLTR_INDEX;
+					while (lex_tok[i] != LEX_EXPR_END) {
+						if (lex_tok[i] == LEX_CHILD_SEP) {
+							tok[x].filter_type = FLTR_INDEX;
+						}
+						else if (lex_tok[i] == LEX_SLICE) {
+							tok[x].filter_type = FLTR_RANGE;
+							slice_counter++;
+							// [:a] => [0:a]
+							// [a::] => [a:0:]
+							if (slice_counter > tok[x].index_count) {
+								if (slice_counter == 1) {
+									tok[x].indexes[z] = INT_MAX;
+								}
+								else if (slice_counter == 2) {
+									tok[x].indexes[z] = INT_MAX;
+								}
+								tok[x].index_count++;
+								z++;
 							}
-							else if (slice_counter == 2) {
-								tok[x].indexes[z] = INT_MAX;
-							}
+						}
+						else if (lex_tok[i] == LEX_WILD_CARD) {
+							tok[x].filter_type = FLTR_WILD_CARD;
+						}
+						else if (lex_tok[i] == LEX_LITERAL) {
+							tok[x].indexes[z] = atoi(lex_tok_values[i]);	//TODO error checking
 							tok[x].index_count++;
 							z++;
 						}
+						else {
+							break;
+						}
+						i++;
 					}
-					else if (lex_tok[i] == LEX_WILD_CARD) {
-						tok[x].filter_type = FLTR_WILD_CARD;
-					}
-					else if (lex_tok[i] == LEX_LITERAL) {
-						tok[x].indexes[z] = atoi(lex_tok_values[i]);	//TODO error checking
-						tok[x].index_count++;
-						z++;
-					}
-					else {
-						break;
-					}
-					i++;
 				}
+
 				if (lex_tok[i] != LEX_EXPR_END) {
 					strncpy(err->msg, "Missing filter end ]", sizeof(err->msg));
 					return false;
