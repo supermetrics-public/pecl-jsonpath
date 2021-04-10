@@ -51,4 +51,4 @@ jobs:
 
             -   name: Show errors
                 if: ${{ failure() }}
-                run: ./.build.scripts/show-errors.sh
+                run: ./.build-scripts/show-errors.sh
