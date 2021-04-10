@@ -34,16 +34,16 @@ var_dump($result);
 Assertion 1
 array(5) {
   [0]=>
-  string(13) "russian dolls"
-  [1]=>
-  string(9) "something"
-  [2]=>
-  string(3) "top"
-  [3]=>
-  string(5) "value"
-  [4]=>
   array(1) {
     ["key"]=>
     string(13) "russian dolls"
   }
+  [1]=>
+  string(13) "russian dolls"
+  [2]=>
+  string(9) "something"
+  [3]=>
+  string(3) "top"
+  [4]=>
+  string(5) "value"
 }

@@ -29,19 +29,19 @@ var_dump($result);
 Assertion 1
 array(4) {
   [0]=>
-  int(42)
-  [1]=>
-  string(6) "string"
-  [2]=>
   array(1) {
     ["key"]=>
     string(5) "value"
   }
-  [3]=>
+  [1]=>
   array(2) {
     [0]=>
     int(0)
     [1]=>
     int(1)
   }
+  [2]=>
+  int(42)
+  [3]=>
+  string(6) "string"
 }
