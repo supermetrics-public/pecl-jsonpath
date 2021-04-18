@@ -21,6 +21,8 @@ void parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][P
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level);
 #endif
+bool check_parens_balance(lex_token lex_tok[], int lex_tok_count);
+bool validate_root_next(struct ast_node* head);
 
 const char* AST_STR[] = {"AST_AND",        "AST_BOOL",        "AST_EQ",          "AST_EXPR",  "AST_GT",
                          "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_ISSET", "AST_LITERAL_BOOL",
@@ -335,7 +337,47 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
         /* return call initiated by LEX_EXPR_START */
         return true;
       default:
-        assert(0);
+        /* this token is probably in an invalid position. the problem should */
+        /* be caught later by validate_parse_tree. */
+        break;
+    }
+  }
+
+  return true;
+}
+
+bool validate_root_next(struct ast_node* head) {
+  switch (head->type) {
+    case AST_EXPR:
+    case AST_INDEX_LIST:
+    case AST_INDEX_SLICE:
+    case AST_RECURSE:
+    case AST_SELECTOR:
+    case AST_WILD_CARD:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool validate_parse_tree(struct ast_node* head) {
+  struct ast_node* cur = head;
+
+  while (cur != NULL) {
+    switch (cur->type) {
+      case AST_ROOT:
+        cur = cur->next;
+        if (cur == NULL) {
+          return true;
+        }
+        if (!validate_root_next(cur)) {
+          zend_throw_exception(spl_ce_RuntimeException,
+                               "$ must be followed by a child selector, filter or recurse element.", 0);
+          return false;
+        }
+        break;
+      default:
+        cur = cur->next;
         break;
     }
   }
@@ -507,6 +549,20 @@ int get_operator_precedence(struct ast_node* tok) {
       assert(0);
       return -1;
   }
+}
+
+bool sanity_check(lex_token lex_tok[], int lex_tok_count) {
+  if (lex_tok_count == 0) {
+    zend_throw_exception(spl_ce_RuntimeException, "The JSONpath contains no valid elements", 0);
+    return false;
+  }
+
+  if (lex_tok[0] != LEX_ROOT) {
+    zend_throw_exception(spl_ce_RuntimeException, "JSONpath must start with a root $", 0);
+    return false;
+  }
+
+  return check_parens_balance(lex_tok, lex_tok_count);
 }
 
 bool check_parens_balance(lex_token lex_tok[], int lex_tok_count) {

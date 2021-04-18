@@ -79,9 +79,8 @@ bool evaluate_subexpression(zval* array, enum ast_type operator_type, struct ast
 
 bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
                       int lex_tok_count, struct ast_node* head, parse_error* err);
-
-bool check_parens_balance(lex_token lex_tok[], int lex_tok_count);
-
+bool sanity_check(lex_token lex_tok[], int lex_tok_count);
 void free_ast_nodes(struct ast_node* head);
+bool validate_parse_tree(struct ast_node* head);
 
 #endif /* PARSER_H */

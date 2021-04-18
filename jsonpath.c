@@ -51,6 +51,10 @@ PHP_METHOD(JsonPath, find) {
     return;
   }
 
+  if (!sanity_check(lex_tok, lex_tok_count)) {
+    return;
+  }
+
 #ifdef JSONPATH_DEBUG
   print_lex_tokens(lex_tok, lex_tok_literals, lex_tok_count, "Lexer - Processed tokens");
 #endif
@@ -63,6 +67,11 @@ PHP_METHOD(JsonPath, find) {
 
   if (!build_parse_tree(lex_tok, lex_tok_literals, &i, lex_tok_count, &head, &p_err)) {
     zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0);
+  }
+
+  if (!validate_parse_tree(head.next)) {
+    free_ast_nodes(head.next);
+    return;
   }
 
 #ifdef JSONPATH_DEBUG
@@ -120,7 +129,7 @@ bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_
 
   *tok_count = i;
 
-  return check_parens_balance(tok, *tok_count);
+  return true;
 }
 
 #ifdef JSONPATH_DEBUG
