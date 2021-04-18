@@ -23,5 +23,3 @@ array(1) {
   [0]=>
   int(1)
 }
---XFAIL--
-Requires more work on the wildcard implementation

@@ -28,5 +28,3 @@ array(1) {
   [0]=>
   string(9) "forty-two"
 }
---XFAIL--
-Requires more work on the filter implementation

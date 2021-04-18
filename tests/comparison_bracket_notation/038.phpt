@@ -43,5 +43,3 @@ array(4) {
     int(1)
   }
 }
---XFAIL--
-Requires more work on the wildcard iteration

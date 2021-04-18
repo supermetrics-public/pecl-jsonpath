@@ -23,9 +23,7 @@ var_dump($result);
 ?>
 --EXPECT--
 Assertion 1
-array[1]{
+array(1) {
   [0]=>
   int(3)
 }
---XFAIL--
-Requires filter handling in wildcard iteration
