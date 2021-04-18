@@ -16,7 +16,7 @@ $data = [
         "key" => -1,
     ],
     "d" => [
-        "key": 41,
+        "key" => 41,
     ],
     "e" => [
         "key" => 43,
@@ -50,5 +50,3 @@ array(1) {
     int(42)
   }
 }
---XFAIL--
-Requires more work on filter expressions

@@ -23,4 +23,4 @@ var_dump($result);
 --EXPECT--
 PHP Fatal Error
 --XFAIL--
-Now returns false, would be better to error out due to invalid syntax
+Now results in a segfault, would be better to error out due to invalid syntax

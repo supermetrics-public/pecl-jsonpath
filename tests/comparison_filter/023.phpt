@@ -87,4 +87,4 @@ array(1) {
   }
 }
 --XFAIL--
-Requires more work on filter expressions
+Outcome depends on how values of different types are compared

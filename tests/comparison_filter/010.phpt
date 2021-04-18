@@ -50,4 +50,4 @@ var_dump($result);
 --EXPECT--
 PHP Fatal Error
 --XFAIL--
-Now returns false, would be better to error out due to invalid syntax
+Now returns a bunch of values, would be better to error out due to invalid syntax
