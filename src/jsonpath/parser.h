@@ -1,102 +1,86 @@
 #ifndef PARSER_H
 #define PARSER_H 1
 
-#include <string.h>
-#include <stdlib.h>
 #include <stdbool.h>
-#define MAX_NODE_DEPTH 5
+#include <stdlib.h>
+#include <string.h>
+
+#include "lexer.h"
+#include "php.h"
+
 #define PARSE_BUF_LEN 50
 
 typedef enum {
-    DEFAULT,
-    ROOT,
-    WILD_CARD,
-    DEEP_SCAN,
-    CHILD_KEY,
-    TYPE_OPERAND,
-    TYPE_OPERATOR,
-    TYPE_PAREN,
+  TYPE_OPERAND,
+  TYPE_OPERATOR,
+  TYPE_PAREN,
 } operator_type;
 
-typedef enum {
-    FLTR_RANGE,
-    FLTR_INDEX,
-    FLTR_WILD_CARD,
-    FLTR_NODE,
-    FLTR_EXPR
-} filter_type;
+enum ast_type {
+  AST_AND,
+  AST_BOOL,
+  AST_EQ,
+  AST_EXPR,
+  AST_GT,
+  AST_GTE,
+  AST_INDEX_LIST,
+  AST_INDEX_SLICE,
+  AST_ISSET,
+  AST_LITERAL_BOOL,
+  AST_LITERAL,
+  AST_LT,
+  AST_LTE,
+  AST_NE,
+  AST_OR,
+  AST_PAREN_LEFT,
+  AST_PAREN_RIGHT,
+  AST_RECURSE,
+  AST_RGXP,
+  AST_ROOT,
+  AST_SELECTOR,
+  AST_WILD_CARD,
+  AST_HEAD
+};
 
-typedef enum {
-    EXPR_EQ,           // 0
-    EXPR_NE,           // 1
-    EXPR_LT,           // 2
-    EXPR_LTE,          // 3
-    EXPR_GT,           // 4
-    EXPR_GTE,          // 5
-    EXPR_ISSET,        // 6
-    EXPR_OR,           // 7
-    EXPR_AND,          // 8
-    EXPR_PAREN_LEFT,   // 9
-    EXPR_PAREN_RIGHT,  // 10
-    EXPR_LITERAL,      // 11
-    EXPR_LITERAL_BOOL, // 12
-    EXPR_BOOL,         // 13
-    EXPR_NODE_NAME,    // 14
-    EXPR_RGXP          // 15
-} expr_op_type;
+extern const char* AST_STR[];
 
-typedef struct {
-    expr_op_type type;
+union ast_node_data {
+  struct {
+    struct ast_node* head;
+  } d_expression;
+  struct {
+    int count;
+    int indexes[10]; /* todo check for max */
+  } d_list;
+  struct {
     char value[PARSE_BUF_LEN];
     bool value_bool;
-    char* label[MAX_NODE_DEPTH];
-    int label_count;
-} expr_operator;
+  } d_literal;
+  struct {
+    char value[PARSE_BUF_LEN];
+    bool child_scope; /* @.selector if true, else $.selector */
+  } d_selector;
+};
+
+struct ast_node {
+  struct ast_node* next;
+  enum ast_type type;
+  union ast_node_data data;
+};
 
 typedef struct {
-    operator_type type;
-    char* node_value;
-    int node_value_len;
-    filter_type filter_type;
-    int index_count;
-    int indexes[PARSE_BUF_LEN];
-    expr_operator* expressions;
-    int expression_count;
-} operator;
-
-typedef struct {
-    char msg[PARSE_BUF_LEN];
+  char msg[PARSE_BUF_LEN];
 } parse_error;
 
-bool tokenize(char** input, operator * tok);
+bool evaluate_postfix_expression(zval* arr, struct ast_node* tok);
 
-typedef bool(*compare_cb) (expr_operator*, expr_operator*);
+bool evaluate_subexpression(zval* array, enum ast_type operator_type, struct ast_node* lh_operand,
+                            struct ast_node* rh_operand);
 
-void convert_to_postfix(expr_operator* expr_in, int in_count, expr_operator* expr_out, int* out_count);
-bool evaluate_postfix_expression(expr_operator* expr, int count);
-compare_cb exec_cb_by_token(expr_op_type);
-operator_type get_token_type(expr_op_type);
+bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
+                      int lex_tok_count, struct ast_node* head, parse_error* err);
+bool sanity_check(lex_token lex_tok[], int lex_tok_count);
+void free_ast_nodes(struct ast_node* head);
+bool validate_parse_tree(struct ast_node* head);
 
-bool compare_lt(expr_operator* lh, expr_operator* rh);
-bool compare_lte(expr_operator* lh, expr_operator* rh);
-bool compare_gt(expr_operator* lh, expr_operator* rh);
-bool compare_gte(expr_operator* lh, expr_operator* rh);
-bool compare_and(expr_operator* lh, expr_operator* rh);
-bool compare_or(expr_operator* lh, expr_operator* rh);
-bool compare_eq(expr_operator* lh, expr_operator* rh);
-bool compare_neq(expr_operator* lh, expr_operator* rh);
-bool compare_isset(expr_operator* lh, expr_operator* rh);	// lh = rh
-bool compare_rgxp(expr_operator* lh, expr_operator* rh);
-
-bool build_parse_tree(
-    lex_token lex_tok[PARSE_BUF_LEN],
-    char lex_tok_values[][PARSE_BUF_LEN],
-    int lex_tok_count,
-    operator * tok,
-    int* tok_count,
-    parse_error* err
-);
-
-void* jpath_malloc(size_t size);
-
-#endif				/* PARSER_H */
+#endif /* PARSER_H */

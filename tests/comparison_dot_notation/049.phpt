@@ -15,7 +15,9 @@ $result = $jsonPath->find($data, ".key");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now returns value, would be better to error out due to invalid syntax
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: JSONpath must start with a root $ in %s
+Stack trace:
+%s
+%s
+%s

@@ -12,6 +12,7 @@ JSONPATH_SOURCES="\
     src/jsonpath/stack.c \
     src/jsonpath/lexer.c \
     src/jsonpath/parser.c \
+    src/jsonpath/interpreter.c \
   ";
 
 if test "$PHP_JSONPATH" != "no"; then
