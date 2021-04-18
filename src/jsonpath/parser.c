@@ -366,20 +366,19 @@ bool validate_parse_tree(struct ast_node* head) {
   while (cur != NULL) {
     switch (cur->type) {
       case AST_ROOT:
-        cur = cur->next;
-        if (cur == NULL) {
+        if (cur->next == NULL) {
           return true;
         }
-        if (!validate_root_next(cur)) {
+        if (!validate_root_next(cur->next)) {
           zend_throw_exception(spl_ce_RuntimeException,
                                "$ must be followed by a child selector, filter or recurse element.", 0);
           return false;
         }
         break;
       default:
-        cur = cur->next;
         break;
     }
+    cur = cur->next;
   }
 
   return true;
