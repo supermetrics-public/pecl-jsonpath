@@ -7,10 +7,10 @@ Ensure exception is thrown for missing closing bracket
 
 $jsonPath = new JsonPath();
 
-try {
-    $jsonPath->find([], '$.book[');
-} catch(RuntimeException $e) {
-    echo get_class($e) . ": " . $e->getMessage();
-}
---EXPECT--
-RuntimeException: Missing filter end ]
+$jsonPath->find([], '$.book[');
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Query contains unbalanced parens/brackets in %s
+Stack trace:
+%s
+%s
+%s

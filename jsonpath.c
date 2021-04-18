@@ -3,29 +3,24 @@
 #include "config.h"
 #endif
 
+#include <ext/spl/spl_exceptions.h>
+
+#include "ext/standard/info.h"
 #include "php.h"
 #include "php_ini.h"
-#include "ext/standard/info.h"
+#include "php_jsonpath.h"
+#include "src/jsonpath/interpreter.h"
 #include "src/jsonpath/lexer.h"
 #include "src/jsonpath/parser.h"
-#include "php_jsonpath.h"
-#include "zend_operators.h"
-#include <limits.h>
-#include <stdbool.h>
 #include "zend_exceptions.h"
-#include <ext/spl/spl_exceptions.h>
-#include <ext/pcre/php_pcre.h>
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
 bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count);
-void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value);
-void recurse(zval* arr, operator * tok, operator * tok_last, zval* return_value);
-void resolvePropertySelectorValue(zval* arr, expr_operator* node);
-void resolveIssetSelector(zval* arr, expr_operator* node);
-void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* return_value);
-void iterateWildCard(zval* arr, operator * tok, operator * tok_last, zval* return_value);
-bool is_scalar(zval* arg);
+#ifdef JSONPATH_DEBUG
+void print_lex_tokens(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_literals[][PARSE_BUF_LEN], int lex_tok_count,
+                      const char* m);
+#endif
 
 zend_class_entry* jsonpath_ce;
 
@@ -35,615 +30,135 @@ zend_class_entry* jsonpath_ce;
 #include "jsonpath_arginfo.h"
 #endif
 
-PHP_METHOD(JsonPath, find)
-{
-    /* parse php method parameters */
+PHP_METHOD(JsonPath, find) {
+  /* parse php method parameters */
 
-    char* j_path;
-    size_t j_path_len;
-    zval* search_target;
+  char* j_path;
+  size_t j_path_len;
+  zval* search_target;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &search_target, &j_path, &j_path_len) == FAILURE) {
-        return;
-    }
-
-    /* tokenize JSON-path string */
-
-    lex_token lex_tok[PARSE_BUF_LEN];
-    char lex_tok_literals[PARSE_BUF_LEN][PARSE_BUF_LEN];
-    int lex_tok_count = 0;
-
-    if (!scanTokens(j_path, lex_tok, lex_tok_literals, &lex_tok_count)) {
-        return;
-    }
-
-    /* assemble an array of query execution instructions from parsed tokens */
-
-    operator tok[PARSE_BUF_LEN];
-    int tok_count = 0;
-    parse_error p_err;
-
-    if (!build_parse_tree(lex_tok, lex_tok_literals, lex_tok_count, tok, &tok_count, &p_err)) {
-        zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0);
-    }
-
-    /* execute the JSON-path query instructions against the search target (PHP object/array) */
-
-    operator * tok_ptr_start = &tok[0];
-    operator * tok_ptr_end = &tok[tok_count - 1];
-
-    array_init(return_value);
-
-    iterate(search_target, tok_ptr_start, tok_ptr_end, return_value);
-
-    /* free the memory allocated for filter expressions */
-
-    operator * fr = tok_ptr_start;
-
-    while (fr <= tok_ptr_end) {
-        if (fr->filter_type == FLTR_EXPR) {
-            efree((void*)fr->expressions);
-        }
-        fr++;
-    }
-
-    /* return false if no results were found by the JSON-path query */
-
-    if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
-        convert_to_boolean(return_value);
-        RETURN_FALSE;
-    }
-
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &search_target, &j_path, &j_path_len) == FAILURE) {
     return;
+  }
+
+  /* tokenize JSON-path string */
+
+  lex_token lex_tok[PARSE_BUF_LEN];
+  char lex_tok_literals[PARSE_BUF_LEN][PARSE_BUF_LEN];
+  int lex_tok_count = 0;
+
+  if (!scanTokens(j_path, lex_tok, lex_tok_literals, &lex_tok_count)) {
+    return;
+  }
+
+#ifdef JSONPATH_DEBUG
+  print_lex_tokens(lex_tok, lex_tok_literals, lex_tok_count, "Lexer - Processed tokens");
+#endif
+
+  /* assemble an array of query execution instructions from parsed tokens */
+
+  parse_error p_err;
+  struct ast_node head;
+  int i = 0;
+
+  if (!build_parse_tree(lex_tok, lex_tok_literals, &i, lex_tok_count, &head, &p_err)) {
+    zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0);
+  }
+
+#ifdef JSONPATH_DEBUG
+  print_ast(head.next, "Parser - AST sent to interpreter", 0);
+#endif
+
+  /* execute the JSON-path query instructions against the search target (PHP object/array) */
+
+  array_init(return_value);
+
+  eval_ast(search_target, head.next, return_value);
+
+  free_ast_nodes(head.next);
+
+  /* return false if no results were found by the JSON-path query */
+
+  if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
+    convert_to_boolean(return_value);
+    RETURN_FALSE;
+  }
 }
 
-bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count)
-{
-    lex_token cur_tok;
-    char* p = json_path;
-    char buffer[PARSE_BUF_LEN];
-    lex_error err;
+bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count) {
+  lex_token cur_tok;
+  char* p = json_path;
+  char buffer[PARSE_BUF_LEN];
+  lex_error err;
 
-    int i = 0;
+  int i = 0;
 
-    while ((cur_tok = scan(&p, buffer, sizeof(buffer), &err)) != LEX_NOT_FOUND) {
-
-        if (i >= PARSE_BUF_LEN) {
-            zend_throw_exception(spl_ce_RuntimeException,
-                "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
-            return false;
-        }
-
-        switch (cur_tok) {
-        case LEX_NODE:
-        case LEX_LITERAL:
-        case LEX_LITERAL_BOOL:
-            strcpy(tok_literals[i], buffer);
-            break;
-        case LEX_ERR:
-            snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - json_path));
-            zend_throw_exception(spl_ce_RuntimeException, err.msg, 0);
-            return false;
-        default:
-            tok_literals[i][0] = '\0';
-            break;
-        }
-
-        tok[i] = cur_tok;
-        i++;
+  while ((cur_tok = scan(&p, buffer, sizeof(buffer), &err)) != LEX_NOT_FOUND) {
+    if (i >= PARSE_BUF_LEN) {
+      zend_throw_exception(spl_ce_RuntimeException, "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
+      return false;
     }
 
-    *tok_count = i;
-
-    return true;
-}
-
-void iterate(zval* arr, operator * tok, operator * tok_last, zval* return_value)
-{
-    if (tok > tok_last) {
-        return;
-    }
-
-    switch (tok->type) {
-    case ROOT:
-        if (tok->filter_type == FLTR_RANGE || tok->filter_type == FLTR_INDEX) {
-            processChildKey(arr, tok, tok_last, return_value);
-        }
-        else {
-            iterate(arr, (tok + 1), tok_last, return_value);
-        }
+    switch (cur_tok) {
+      case LEX_NODE:
+      case LEX_LITERAL:
+      case LEX_LITERAL_BOOL:
+        strcpy(tok_literals[i], buffer);
         break;
-    case WILD_CARD:
-        iterateWildCard(arr, tok, tok_last, return_value);
-        return;
-    case DEEP_SCAN:
-        recurse(arr, tok, tok_last, return_value);
-        return;
-    case CHILD_KEY:
-        processChildKey(arr, tok, tok_last, return_value);
-        return;
-    }
-}
-
-void copyToReturnResult(zval* arr, zval* return_value)
-{
-    zval tmp;
-    ZVAL_COPY_VALUE(&tmp, arr);
-    zval_copy_ctor(&tmp);
-    add_next_index_zval(return_value, &tmp);
-}
-
-void processChildKey(zval* arr, operator * tok, operator * tok_last, zval* return_value)
-{
-    zval* data, * data2;
-
-    if (Z_TYPE_P(arr) != IS_ARRAY) {
-        return;
-    }
-
-    // Sometimes we want to loop through the whole array. Examples:
-    // $..[*]
-    // $[0:6]
-    if (tok->node_value_len == 0 && (tok->type == ROOT || tok->type == DEEP_SCAN)) {
-        data = arr;
-    }
-    // And sometimes we're interested only in a particular key. Examples:
-    // $['somekey']
-    // $.somekey
-    else if ((data = zend_hash_str_find(HASH_OF(arr), tok->node_value, tok->node_value_len)) == NULL) {
-        return;
-    }
-
-    int x;
-    zend_string* key;
-    zend_ulong num_key;
-    int range_start;
-    int range_end;
-    int range_step;
-    int data_length;
-
-    switch (tok->filter_type) {
-    case FLTR_RANGE:
-        data_length = zend_hash_num_elements(HASH_OF(data));
-
-        range_start = tok->indexes[0];
-        range_end = tok->index_count > 1 ? tok->indexes[1] : INT_MAX;
-        range_step = tok->index_count > 2 ? tok->indexes[2] : 1;
-
-        // Zero-steps are not allowed, abort
-        if (range_step == 0) {
-            return;
-        }
-
-        // Replace placeholder with actual value
-        if (range_start == INT_MAX) {
-            range_start = range_step > 0 ? 0 : data_length - 1;
-        }
-        // Indexing from the end of the list
-        else if (range_start < 0) {
-            range_start = data_length - abs(range_start);
-        }
-
-        // Replace placeholder with actual value
-        if (range_end == INT_MAX) {
-            range_end = range_step > 0 ? data_length : -1;
-        }
-        // Indexing from the end of the list
-        else if (range_end < 0) {
-            range_end = data_length - abs(range_end);
-        }
-
-        // Set suitable boundaries for start index
-        range_start = range_start < -1 ? -1 : range_start;
-        range_start = range_start > data_length ? data_length : range_start;
-
-        // Set suitable boundaries for end index
-        range_end = range_end < -1 ? -1 : range_end;
-        range_end = range_end > data_length ? data_length : range_end;
-
-        if (range_step > 0) {
-            // Make sure that the range is sane so we don't end up in an infinite loop
-            if (range_start >= range_end) {
-                return;
-            }
-
-            for (x = range_start; x < range_end; x += range_step) {
-                if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
-                    if (tok == tok_last) {
-                        copyToReturnResult(data2, return_value);
-                    }
-                    else {
-                        iterate(data2, (tok + 1), tok_last, return_value);
-                    }
-                }
-            }
-        }
-        else {
-            // Make sure that the range is sane so we don't end up in an infinite loop
-            if (range_start <= range_end) {
-                return;
-            }
-
-            for (x = range_start; x > range_end; x += range_step) {
-                if ((data2 = zend_hash_index_find(HASH_OF(data), x)) != NULL) {
-                    if (tok == tok_last) {
-                        copyToReturnResult(data2, return_value);
-                    }
-                    else {
-                        iterate(data2, (tok + 1), tok_last, return_value);
-                    }
-                }
-            }
-        }
-        return;
-    case FLTR_INDEX:
-        for (x = 0; x < tok->index_count; x++) {
-            if (tok->indexes[x] < 0) {
-                tok->indexes[x] = zend_hash_num_elements(HASH_OF(data)) - abs(tok->indexes[x]);
-            }
-            if ((data2 = zend_hash_index_find(HASH_OF(data), tok->indexes[x])) != NULL) {
-                if (tok == tok_last) {
-                    copyToReturnResult(data2, return_value);
-                }
-                else {
-                    iterate(data2, (tok + 1), tok_last, return_value);
-                }
-            }
-        }
-        return;
-    case FLTR_WILD_CARD:
-
-        ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
-            if (tok == tok_last) {
-                copyToReturnResult(data2, return_value);
-            }
-            else {
-                iterate(data2, (tok + 1), tok_last, return_value);
-            }
-        }
-        ZEND_HASH_FOREACH_END();
-
-        return;
-    case FLTR_NODE:
-        if (tok == tok_last) {
-            copyToReturnResult(data, return_value);
-        }
-        else {
-            iterate(data, (tok + 1), tok_last, return_value);
-        }
-        return;
-    case FLTR_EXPR:
-
-        ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(data), num_key, key, data2) {
-            // For each array entry, find the node names and populate their values
-            // Fill up expression NODE_NAME VALS
-            for (x = 0; x < tok->expression_count; x++) {
-                if (x < tok->expression_count - 1 && tok->expressions[x + 1].type == EXPR_ISSET) {
-                    resolveIssetSelector(data2, &tok->expressions[x]);
-                }
-                else if (tok->expressions[x].type == EXPR_NODE_NAME) {
-                    resolvePropertySelectorValue(data2, &tok->expressions[x]);
-                }
-            }
-
-            if (evaluate_postfix_expression(tok->expressions, tok->expression_count)) {
-                if (tok == tok_last) {
-                    copyToReturnResult(data2, return_value);
-                }
-                else {
-                    iterate(data2, (tok + 1), tok_last, return_value);
-                }
-            }
-
-            // Clean up node values to prevent incorrect node values during recursive wildcard iterations
-            for (x = 0; x < tok->expression_count; x++) {
-                if (tok->expressions[x].type == EXPR_NODE_NAME) {
-                    tok->expressions[x].value[0] = '\0';
-                }
-            }
-        }
-        ZEND_HASH_FOREACH_END();
-
-        break;
-    }
-}
-
-void iterateWildCard(zval* arr, operator * tok, operator * tok_last, zval* return_value)
-{
-    zval* data;
-    zval* zv_dest;
-    zend_string* key;
-    zend_ulong num_key;
-
-    ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-        if (tok == tok_last) {
-            copyToReturnResult(data, return_value);
-        }
-        else if (Z_TYPE_P(data) == IS_ARRAY) {
-            iterate(data, (tok + 1), tok_last, return_value);
-        }
-    }
-    ZEND_HASH_FOREACH_END();
-}
-
-void recurse(zval* arr, operator * tok, operator * tok_last, zval* return_value)
-{
-    if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
-        return;
-    }
-
-    processChildKey(arr, tok, tok_last, return_value);
-
-    zval* data;
-    zval* zv_dest;
-    zend_string* key;
-    zend_ulong num_key;
-
-    ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-        recurse(data, tok, tok_last, return_value);
-    }
-    ZEND_HASH_FOREACH_END();
-}
-
-/* populate the expression operator with the array value that */
-/* corresponds to the JSON-path object selector. */
-/* e.g. $.path.to.val -> $[path][to][val] */
-void resolvePropertySelectorValue(zval* arr, expr_operator* node)
-{
-    if (Z_TYPE_P(arr) != IS_ARRAY) {
-        return;
-    }
-
-    zval* data;
-
-    for (int i = 0; i < node->label_count; i++) {
-        if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) == NULL) {
-            return;
-        }
-        arr = data;
-    }
-
-    /* we can't compare strings/numbers to non-scalar values in JSON-path */
-    if (!is_scalar(data)) {
-        return;
-    }
-
-    if (Z_TYPE_P(data) == IS_TRUE) {
-        strncpy(node->value, "JP_LITERAL_TRUE", 15);
-        node->value[15] = '\0';
-    }
-    else if (Z_TYPE_P(data) == IS_FALSE) {
-        strncpy(node->value, "JP_LITERAL_FALSE", 16);
-        node->value[16] = '\0';
-    }
-    else if (Z_TYPE_P(data) != IS_STRING) {
-
-        zval zcopy;
-
-        int free_zcopy = zend_make_printable_zval(data, &zcopy);
-        if (free_zcopy) {
-            data = &zcopy;
-        }
-
-        size_t s_len = Z_STRLEN_P(data);
-        char* s = Z_STRVAL_P(data);
-
-        strncpy(node->value, s, s_len);
-        node->value[s_len] = '\0';
-
-        if (free_zcopy) {
-            zval_dtor(&zcopy);
-        }
-    }
-    else {
-        size_t s_len = Z_STRLEN_P(data);
-        char* s = Z_STRVAL_P(data);
-        strncpy(node->value, s, s_len);
-        node->value[s_len] = '\0';
-    }
-}
-
-/* assign the isset() operator a boolean value based on whether there is an */
-/* array key for the corresponding JSON-path object selector. */
-void resolveIssetSelector(zval* arr, expr_operator* node)
-{
-    zval* data;
-
-    for (int i = 0; i < node->label_count; i++) {
-        if ((data = zend_hash_str_find(HASH_OF(arr), node->label[i], strlen(node->label[i]))) == NULL) {
-            node->value_bool = false;
-            break;
-        }
-        else {
-            node->value_bool = true;
-            arr = data;
-        }
-    }
-}
-
-bool compare_lt(expr_operator* lh, expr_operator* rh)
-{
-    zval a, b, result;
-
-    ZVAL_STRING(&a, (*lh).value);
-    ZVAL_STRING(&b, (*rh).value);
-
-    compare_function(&result, &a, &b);
-    zval_ptr_dtor(&a);
-    zval_ptr_dtor(&b);
-
-    bool res = (Z_LVAL(result) < 0);
-
-    return res;
-}
-
-bool compare_gt(expr_operator* lh, expr_operator* rh)
-{
-    zval a, b, result;
-
-    ZVAL_STRING(&a, (*lh).value);
-    ZVAL_STRING(&b, (*rh).value);
-
-    compare_function(&result, &a, &b);
-    zval_ptr_dtor(&a);
-    zval_ptr_dtor(&b);
-
-    bool res = (Z_LVAL(result) > 0);
-
-    return res;
-}
-
-bool compare_lte(expr_operator* lh, expr_operator* rh)
-{
-    zval a, b, result;
-
-    ZVAL_STRING(&a, (*lh).value);
-    ZVAL_STRING(&b, (*rh).value);
-
-    compare_function(&result, &a, &b);
-    zval_ptr_dtor(&a);
-    zval_ptr_dtor(&b);
-
-    bool res = (Z_LVAL(result) <= 0);
-
-    return res;
-}
-
-bool compare_gte(expr_operator* lh, expr_operator* rh)
-{
-    zval a, b, result;
-
-    ZVAL_STRING(&a, (*lh).value);
-    ZVAL_STRING(&b, (*rh).value);
-
-    compare_function(&result, &a, &b);
-    zval_ptr_dtor(&a);
-    zval_ptr_dtor(&b);
-
-    bool res = (Z_LVAL(result) >= 0);
-
-    return res;
-}
-
-bool compare_and(expr_operator* lh, expr_operator* rh)
-{
-    return (*lh).value_bool && (*rh).value_bool;
-}
-
-bool compare_or(expr_operator* lh, expr_operator* rh)
-{
-    return (*lh).value_bool || (*rh).value_bool;
-}
-
-bool compare_eq(expr_operator* lh, expr_operator* rh)
-{
-    zval a, b, result;
-
-    ZVAL_STRING(&a, (*lh).value);
-    ZVAL_STRING(&b, (*rh).value);
-
-    compare_function(&result, &a, &b);
-    zval_ptr_dtor(&a);
-    zval_ptr_dtor(&b);
-
-    bool res = (Z_LVAL(result) == 0);
-
-    return res;
-}
-
-bool compare_neq(expr_operator* lh, expr_operator* rh)
-{
-    zval a, b, result;
-
-    ZVAL_STRING(&a, (*lh).value);
-    ZVAL_STRING(&b, (*rh).value);
-
-    compare_function(&result, &a, &b);
-    zval_ptr_dtor(&a);
-    zval_ptr_dtor(&b);
-
-    bool res = (Z_LVAL(result) != 0);
-
-    return res;
-}
-
-bool compare_isset(expr_operator* lh, expr_operator* rh)
-{
-    return (*lh).value_bool && (*rh).value_bool;
-}
-
-bool compare_rgxp(expr_operator* lh, expr_operator* rh)
-{
-    zval pattern;
-    pcre_cache_entry* pce;
-
-    ZVAL_STRING(&pattern, (*rh).value);
-
-    if ((pce = pcre_get_compiled_regex_cache(Z_STR(pattern))) == NULL) {
-        zval_ptr_dtor(&pattern);
+      case LEX_ERR:
+        snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - json_path));
+        zend_throw_exception(spl_ce_RuntimeException, err.msg, 0);
         return false;
-    }
-
-    zval retval;
-    zval subpats;
-
-    ZVAL_NULL(&retval);
-    ZVAL_NULL(&subpats);
-
-    zend_string* s_lh = zend_string_init((*lh).value, strlen((*lh).value), 0);
-
-    php_pcre_match_impl(pce, s_lh, &retval, &subpats, 0, 0, 0, 0);
-
-    zend_string_release_ex(s_lh, 0);
-    zval_ptr_dtor(&subpats);
-    zval_ptr_dtor(&pattern);
-
-    return Z_LVAL(retval) > 0;
-}
-
-bool is_scalar(zval* arg)
-{
-    switch (Z_TYPE_P(arg)) {
-    case IS_FALSE:
-    case IS_TRUE:
-    case IS_DOUBLE:
-    case IS_LONG:
-    case IS_STRING:
-        return true;
-        break;
-
-    default:
-        return false;
+      default:
+        tok_literals[i][0] = '\0';
         break;
     }
+
+    tok[i] = cur_tok;
+    i++;
+  }
+
+  *tok_count = i;
+
+  return check_parens_balance(tok, *tok_count);
 }
 
-void* jpath_malloc(size_t size) {
-    return emalloc(size);
+#ifdef JSONPATH_DEBUG
+void print_lex_tokens(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_literals[][PARSE_BUF_LEN], int lex_tok_count,
+                      const char* m) {
+  printf("--------------------------------------\n");
+  printf("%s\n\n", m);
+
+  for (int i = 0; i < lex_tok_count; i++) {
+    printf("\t• %s", LEX_STR[lex_tok[i]]);
+    if (strlen(lex_tok_literals[i]) > 0) {
+      printf(" [val=%s]", lex_tok_literals[i]);
+    }
+    printf("\n");
+  }
 }
+#endif
 
 /* {{{ PHP_MINIT_FUNCTION
  */
-PHP_MINIT_FUNCTION(jsonpath)
-{
-    zend_class_entry jsonpath_class_entry;
-    INIT_CLASS_ENTRY(jsonpath_class_entry, "JsonPath", class_JsonPath_methods);
+PHP_MINIT_FUNCTION(jsonpath) {
+  zend_class_entry jsonpath_class_entry;
+  INIT_CLASS_ENTRY(jsonpath_class_entry, "JsonPath", class_JsonPath_methods);
 
-    jsonpath_ce = zend_register_internal_class(&jsonpath_class_entry);
+  jsonpath_ce = zend_register_internal_class(&jsonpath_class_entry);
 
-    return SUCCESS;
+  return SUCCESS;
 }
 
 /* }}} */
 
 /* {{{ PHP_MSHUTDOWN_FUNCTION
  */
-PHP_MSHUTDOWN_FUNCTION(jsonpath)
-{
-    /* uncomment this line if you have INI entries
-       UNREGISTER_INI_ENTRIES();
-     */
-    return SUCCESS;
+PHP_MSHUTDOWN_FUNCTION(jsonpath) {
+  /* uncomment this line if you have INI entries
+     UNREGISTER_INI_ENTRIES();
+   */
+  return SUCCESS;
 }
 
 /* }}} */
@@ -651,35 +166,28 @@ PHP_MSHUTDOWN_FUNCTION(jsonpath)
 /* Remove if there's nothing to do at request start */
 /* {{{ PHP_RINIT_FUNCTION
  */
-PHP_RINIT_FUNCTION(jsonpath)
-{
-    return SUCCESS;
-}
+PHP_RINIT_FUNCTION(jsonpath) { return SUCCESS; }
 
 /* }}} */
 
 /* Remove if there's nothing to do at request end */
 /* {{{ PHP_RSHUTDOWN_FUNCTION
  */
-PHP_RSHUTDOWN_FUNCTION(jsonpath)
-{
-    return SUCCESS;
-}
+PHP_RSHUTDOWN_FUNCTION(jsonpath) { return SUCCESS; }
 
 /* }}} */
 
 /* {{{ PHP_MINFO_FUNCTION
  */
-PHP_MINFO_FUNCTION(jsonpath)
-{
-    php_info_print_table_start();
-    php_info_print_table_row(2, "jsonpath support", "enabled");
-    php_info_print_table_row(2, "jsonpath version", PHP_JSONPATH_VERSION);
-    php_info_print_table_end();
+PHP_MINFO_FUNCTION(jsonpath) {
+  php_info_print_table_start();
+  php_info_print_table_row(2, "jsonpath support", "enabled");
+  php_info_print_table_row(2, "jsonpath version", PHP_JSONPATH_VERSION);
+  php_info_print_table_end();
 
-    /* Remove comments if you have entries in php.ini
-       DISPLAY_INI_ENTRIES();
-     */
+  /* Remove comments if you have entries in php.ini
+     DISPLAY_INI_ENTRIES();
+   */
 }
 
 /* }}} */
@@ -689,7 +197,7 @@ PHP_MINFO_FUNCTION(jsonpath)
  * Every user visible function must have an entry in jsonpath_functions[].
  */
 const zend_function_entry jsonpath_functions[] = {
-    PHP_FE_END			/* Must be the last line in jsonpath_functions[] */
+    PHP_FE_END /* Must be the last line in jsonpath_functions[] */
 };
 
 /* }}} */
@@ -697,17 +205,10 @@ const zend_function_entry jsonpath_functions[] = {
 /* {{{ jsonpath_module_entry
  */
 zend_module_entry jsonpath_module_entry = {
-    STANDARD_MODULE_HEADER,
-    "jsonpath",
-    jsonpath_functions,
-    PHP_MINIT(jsonpath),
-    PHP_MSHUTDOWN(jsonpath),
-    PHP_RINIT(jsonpath),	/* Replace with NULL if there's nothing to do at request start */
-    PHP_RSHUTDOWN(jsonpath),	/* Replace with NULL if there's nothing to do at request end */
-    PHP_MINFO(jsonpath),
-    PHP_JSONPATH_VERSION,
-    STANDARD_MODULE_PROPERTIES
-};
+    STANDARD_MODULE_HEADER,  "jsonpath",           jsonpath_functions,        PHP_MINIT(jsonpath),
+    PHP_MSHUTDOWN(jsonpath), PHP_RINIT(jsonpath), /* Replace with NULL if there's nothing to do at request start */
+    PHP_RSHUTDOWN(jsonpath),                      /* Replace with NULL if there's nothing to do at request end */
+    PHP_MINFO(jsonpath),     PHP_JSONPATH_VERSION, STANDARD_MODULE_PROPERTIES};
 
 /* }}} */
 
