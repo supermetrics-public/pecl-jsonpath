@@ -27,5 +27,3 @@ array(3) {
   [2]=>
   int(42)
 }
---XFAIL--
-Requires more work on the wildcard iteration

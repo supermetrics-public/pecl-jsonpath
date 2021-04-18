@@ -26,16 +26,16 @@ var_dump($result);
 --EXPECT--
 Assertion 1
 array(4) {
-  ["some"]=>
+  [0]=>
   string(6) "string"
-  ["int"]=>
+  [1]=>
   int(42)
-  ["object"]=>
+  [2]=>
   array(1) {
     ["key"]=>
     string(5) "value"
   }
-  ["array"]=>
+  [3]=>
   array(2) {
     [0]=>
     int(0)
@@ -43,5 +43,3 @@ array(4) {
     int(1)
   }
 }
---XFAIL--
-Requires more work on the wildcard iteration
