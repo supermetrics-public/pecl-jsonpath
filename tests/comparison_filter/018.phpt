@@ -83,6 +83,3 @@ array(5) {
     bool(true)
   }
 }
-
---XFAIL--
-Requires more work on filter expressions

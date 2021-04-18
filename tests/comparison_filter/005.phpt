@@ -32,5 +32,3 @@ array(1) {
     int(43)
   }
 }
---XFAIL--
-Requires more work on filter expressions

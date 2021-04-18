@@ -26,5 +26,3 @@ array(1) {
     string(5) "value"
   }
 }
---XFAIL--
-Requires more work on filter expressions

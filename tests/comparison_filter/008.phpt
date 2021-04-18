@@ -37,5 +37,3 @@ array(2) {
     int(44)
   }
 }
---XFAIL--
-Requires more work on filter expressions

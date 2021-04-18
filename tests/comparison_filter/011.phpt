@@ -50,5 +50,3 @@ array(1) {
     int(42)
   }
 }
---XFAIL--
-Requires more work on filter expressions

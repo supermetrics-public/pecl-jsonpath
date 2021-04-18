@@ -67,6 +67,3 @@ array(3) {
     bool(true)
   }
 }
-
---XFAIL--
-Requires more work on filter expressions

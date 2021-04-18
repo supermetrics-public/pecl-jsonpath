@@ -61,5 +61,3 @@ array(4) {
     int(2)
   }
 }
---XFAIL--
-Requires more work on filter expressions
