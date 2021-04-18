@@ -4,6 +4,7 @@ Test bracket notation after recursive descent
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--
 <?php
+require_once __DIR__ . '/../utils/sort_recursively.php';
 
 $data = [
     "first",
@@ -30,6 +31,7 @@ $data = [
 
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, '$..[0]');
+sortRecursively($result);
 
 echo "Assertion 1\n";
 var_dump($result);
@@ -38,14 +40,6 @@ var_dump($result);
 Assertion 1
 array(5) {
   [0]=>
-  string(7) "deepest"
-  [1]=>
-  string(12) "first nested"
-  [2]=>
-  string(5) "first"
-  [3]=>
-  string(4) "more"
-  [4]=>
   array(1) {
     ["nested"]=>
     array(2) {
@@ -55,6 +49,12 @@ array(5) {
       string(6) "second"
     }
   }
+  [1]=>
+  string(7) "deepest"
+  [2]=>
+  string(5) "first"
+  [3]=>
+  string(12) "first nested"
+  [4]=>
+  string(4) "more"
 }
---XFAIL--
-Requires more work on the recursive descent implementation

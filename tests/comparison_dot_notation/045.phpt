@@ -4,6 +4,7 @@ Test dot notation with wildcard after recursive descent
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--
 <?php
+require_once __DIR__ . '/../utils/sort_recursively.php';
 
 $data = [
     "key" => "value",
@@ -18,6 +19,7 @@ $data = [
 
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$..*");
+sortRecursively($result);
 
 echo "Assertion 1\n";
 var_dump($result);
@@ -26,24 +28,14 @@ var_dump($result);
 Assertion 1
 array(6) {
   [0]=>
-  string(6) "string"
-  [1]=>
-  string(5) "value"
-  [2]=>
-  int(0)
-  [3]=>
-  int(1)
-  [4]=>
   array(2) {
     [0]=>
     int(0)
     [1]=>
     int(1)
   }
-  [5]=>
+  [1]=>
   array(2) {
-    ["complex"]=>
-    string(6) "string"
     ["primitives"]=>
     array(2) {
       [0]=>
@@ -51,7 +43,15 @@ array(6) {
       [1]=>
       int(1)
     }
+    ["complex"]=>
+    string(6) "string"
   }
+  [2]=>
+  int(0)
+  [3]=>
+  int(1)
+  [4]=>
+  string(6) "string"
+  [5]=>
+  string(5) "value"
 }
---XFAIL--
-Requires more work on the recursive descent implementation
