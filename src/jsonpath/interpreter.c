@@ -272,7 +272,10 @@ bool compare_rgxp(zval* lh, zval* rh) {
 
 zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr) {
   if (src->type == AST_SELECTOR) {
-    return exec_selector_iterative(arr, src);
+    zval* return_value;
+    array_init(return_value);
+    eval_ast(arr, src->data.d_operand.head, return_value);
+    return zend_hash_index_find(Z_ARRVAL_P(return_value), 0);
   } else if (src->type == AST_LITERAL) {
     ZVAL_STRING(tmp_dest, src->data.d_literal.value);
     return tmp_dest;

@@ -24,11 +24,11 @@ void print_ast(struct ast_node* head, const char* m, int level);
 bool check_parens_balance(lex_token lex_tok[], int lex_tok_count);
 bool validate_root_next(struct ast_node* head);
 
-const char* AST_STR[] = {"AST_AND",        "AST_BOOL",        "AST_EQ",          "AST_EXPR",  "AST_GT",
-                         "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_ISSET", "AST_LITERAL_BOOL",
-                         "AST_LITERAL",    "AST_LT",          "AST_LTE",         "AST_NE",    "AST_OR",
-                         "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",     "AST_RGXP",  "AST_ROOT",
-                         "AST_SELECTOR",   "AST_WILD_CARD",   "AST_HEAD"};
+const char* AST_STR[] = {"AST_AND",     "AST_BOOL",       "AST_EQ",          "AST_EXPR",    "AST_GT",
+                         "AST_GTE",     "AST_INDEX_LIST", "AST_INDEX_SLICE", "AST_ISSET",   "AST_LITERAL_BOOL",
+                         "AST_LITERAL", "AST_LT",         "AST_LTE",         "AST_NE",      "AST_OPERAND",
+                         "AST_OR",      "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE", "AST_RGXP",
+                         "AST_ROOT",    "AST_SELECTOR",   "AST_WILD_CARD",   "AST_HEAD"};
 
 struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type) {
   struct ast_node* next = emalloc(sizeof(struct ast_node));
@@ -71,6 +71,10 @@ void print_ast(struct ast_node* head, const char* m, int level) {
         printf("\n");
         print_ast(head->data.d_expression.head, m, level + 1);
         break;
+      case AST_OPERAND:
+        printf("\n");
+        print_ast(head->data.d_operand.head, m, level + 1);
+        break;
       case AST_SELECTOR:
         printf(" [val=%s]\n", head->data.d_selector.value);
         break;
@@ -100,17 +104,18 @@ bool convert_to_postfix(struct ast_node* expr_start) {
   while (cur != NULL) {
     switch (get_token_type(cur->type)) {
       case TYPE_OPERAND:
-        pfix->next = cur;
-        pfix = pfix->next;
-        cur = cur->next;
-        if (cur->type == AST_SELECTOR) {
-          /* TODO hack for now, place under value */
-          while (cur != NULL && cur->type == AST_SELECTOR) {
-            pfix->next = cur;
-            pfix = pfix->next;
-            cur = cur->next;
-          }
+
+        pfix = ast_alloc_node(pfix, AST_OPERAND);
+
+        pfix->data.d_operand.head = cur;
+
+        while (cur->next != NULL && get_token_type(cur->next->type) == TYPE_OPERAND) {
+          cur = cur->next;
         }
+
+        tmp = cur;
+        cur = cur->next;
+        tmp->next = NULL;
         break;
       case TYPE_OPERATOR:
         // TODO check missing operand on RHS
@@ -443,7 +448,7 @@ operator_type get_token_type(enum ast_type type) {
     case AST_LITERAL_BOOL:
     case AST_BOOL:
     case AST_SELECTOR:
-      /* make eval ast return strings? */
+    case AST_OPERAND:
       return TYPE_OPERAND;
     default:
       assert(0);
@@ -483,7 +488,7 @@ bool evaluate_postfix_expression(zval* arr, struct ast_node* tok) {
 
         stack_pop(&s);
 
-        if (evaluate_subexpression(arr, tok->type, expr_lh, expr_rh)) {
+        if (evaluate_subexpression(arr, tok->type, expr_lh->data.d_operand.head, expr_rh->data.d_operand.head)) {
           stack_push(&s, &op_true);
         } else {
           stack_push(&s, &op_false);
