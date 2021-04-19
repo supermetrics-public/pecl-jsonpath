@@ -621,6 +621,8 @@ void free_ast_nodes(struct ast_node* head) {
 
   if (head->type == AST_EXPR) {
     free_ast_nodes(head->data.d_expression.head);
+  } else if (head->type == AST_OPERAND) {
+    free_ast_nodes(head->data.d_operand.head);
   }
 
   efree((void*)head);
