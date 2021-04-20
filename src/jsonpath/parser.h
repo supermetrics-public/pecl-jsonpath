@@ -6,7 +6,6 @@
 #include <string.h>
 
 #include "lexer.h"
-#include "php.h"
 
 #define PARSE_BUF_LEN 50
 
@@ -76,15 +75,12 @@ typedef struct {
   char msg[PARSE_BUF_LEN];
 } parse_error;
 
-bool evaluate_postfix_expression(zval* arr, struct ast_node* tok);
-
-bool evaluate_subexpression(zval* array, enum ast_type operator_type, struct ast_node* lh_operand,
-                            struct ast_node* rh_operand);
-
 bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
                       int lex_tok_count, struct ast_node* head, parse_error* err);
 bool sanity_check(lex_token lex_tok[], int lex_tok_count);
 void free_ast_nodes(struct ast_node* head);
 bool validate_parse_tree(struct ast_node* head);
+operator_type get_token_type(enum ast_type);
+bool is_unary(enum ast_type type);
 
 #endif /* PARSER_H */

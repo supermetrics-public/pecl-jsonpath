@@ -13,7 +13,6 @@ bool convert_to_postfix(struct ast_node* expr_start);
 bool is_unary(enum ast_type);
 int get_operator_precedence(struct ast_node* tok);
 int get_operator_precedence(struct ast_node* tok);
-operator_type get_token_type(enum ast_type);
 struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
 void delete_expression_head_node(struct ast_node* expr);
 void parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* start,
@@ -449,66 +448,13 @@ operator_type get_token_type(enum ast_type type) {
     case AST_BOOL:
     case AST_SELECTOR:
     case AST_OPERAND:
+    case AST_ROOT:
+    case AST_INDEX_LIST:
       return TYPE_OPERAND;
     default:
       assert(0);
       return TYPE_OPERATOR;
   }
-}
-
-bool evaluate_postfix_expression(zval* arr, struct ast_node* tok) {
-  stack s;
-  stack_init(&s);
-  struct ast_node* expr_lh;
-  struct ast_node* expr_rh;
-
-  /* Temporary operators that store intermediate evaluations */
-  struct ast_node op_true;
-
-  op_true.type = AST_BOOL;
-  op_true.data.d_literal.value_bool = true;
-
-  struct ast_node op_false;
-
-  op_false.type = AST_BOOL;
-  op_false.data.d_literal.value_bool = false;
-
-  while (tok != NULL) {
-    switch (get_token_type(tok->type)) {
-      case TYPE_OPERATOR:
-
-        if (is_unary(tok->type)) {
-          expr_rh = NULL;
-          expr_lh = stack_top(&s);
-        } else {
-          expr_rh = stack_top(&s);
-          stack_pop(&s);
-          expr_lh = stack_top(&s);
-        }
-
-        stack_pop(&s);
-
-        if (evaluate_subexpression(arr, tok->type, expr_lh, expr_rh)) {
-          stack_push(&s, &op_true);
-        } else {
-          stack_push(&s, &op_false);
-        }
-
-        break;
-      case TYPE_OPERAND:
-        stack_push(&s, tok);
-        break;
-      case TYPE_PAREN:
-        /* there should be no parens in the postfix expression */
-        assert(0);
-    }
-
-    tok = tok->next;
-  }
-
-  expr_lh = stack_top(&s);
-
-  return expr_lh->data.d_literal.value_bool;
 }
 
 bool is_unary(enum ast_type type) { return type == AST_ISSET; }

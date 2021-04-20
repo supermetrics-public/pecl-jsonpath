@@ -3,10 +3,12 @@
 #include <ext/pcre/php_pcre.h>
 
 #include "lexer.h"
+#include "stack.h"
 
 int compare(zval* lh, zval* rh);
 bool compare_rgxp(zval* lh, zval* rh);
 void copy_result_to_return_value(zval* arr, zval* return_value);
+bool evaluate_postfix_expression(zval* arr, struct ast_node* tok);
 bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_node* lh_operand,
                             struct ast_node* rh_operand);
 void exec_expression(zval* arr, struct ast_node* tok, zval* return_value);
@@ -248,7 +250,7 @@ bool compare_rgxp(zval* lh, zval* rh) {
 }
 
 zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr) {
-  if (src->data.d_operand.head->type == AST_SELECTOR) {
+  if (src->data.d_operand.head->type == AST_SELECTOR || src->data.d_operand.head->type == AST_ROOT) {
     array_init(tmp_dest);
     eval_ast(arr, src->data.d_operand.head, tmp_dest);
     return zend_hash_index_find(Z_ARRVAL_P(tmp_dest), 0);
@@ -323,4 +325,59 @@ bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_n
   zval_ptr_dtor(val_rh);
 
   return ret;
+}
+
+bool evaluate_postfix_expression(zval* arr, struct ast_node* tok) {
+  stack s;
+  stack_init(&s);
+  struct ast_node* expr_lh;
+  struct ast_node* expr_rh;
+
+  /* Temporary operators that store intermediate evaluations */
+  struct ast_node op_true;
+
+  op_true.type = AST_BOOL;
+  op_true.data.d_literal.value_bool = true;
+
+  struct ast_node op_false;
+
+  op_false.type = AST_BOOL;
+  op_false.data.d_literal.value_bool = false;
+
+  while (tok != NULL) {
+    switch (get_token_type(tok->type)) {
+      case TYPE_OPERATOR:
+
+        if (is_unary(tok->type)) {
+          expr_rh = NULL;
+          expr_lh = stack_top(&s);
+        } else {
+          expr_rh = stack_top(&s);
+          stack_pop(&s);
+          expr_lh = stack_top(&s);
+        }
+
+        stack_pop(&s);
+
+        if (evaluate_subexpression(arr, tok->type, expr_lh, expr_rh)) {
+          stack_push(&s, &op_true);
+        } else {
+          stack_push(&s, &op_false);
+        }
+
+        break;
+      case TYPE_OPERAND:
+        stack_push(&s, tok);
+        break;
+      case TYPE_PAREN:
+        /* there should be no parens in the postfix expression */
+        assert(0);
+    }
+
+    tok = tok->next;
+  }
+
+  expr_lh = stack_top(&s);
+
+  return expr_lh->data.d_literal.value_bool;
 }
