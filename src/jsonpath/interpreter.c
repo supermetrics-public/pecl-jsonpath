@@ -8,41 +8,41 @@
 int compare(zval* lh, zval* rh);
 bool compare_rgxp(zval* lh, zval* rh);
 void copy_result_to_return_value(zval* arr, zval* return_value);
-bool evaluate_postfix_expression(zval* arr, struct ast_node* tok);
-bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_node* lh_operand,
+bool evaluate_postfix_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operator_type, struct ast_node* lh_operand,
                             struct ast_node* rh_operand);
-void exec_expression(zval* arr, struct ast_node* tok, zval* return_value);
-void exec_index_filter(zval* arr, struct ast_node* tok, zval* return_value);
-void exec_recursive_descent(zval* arr, struct ast_node* tok, zval* return_value);
-void exec_selector(zval* arr, struct ast_node* tok, zval* return_value);
-void exec_slice(zval* arr, struct ast_node* tok, zval* return_value);
-void exec_wildcard(zval* arr, struct ast_node* tok, zval* return_value);
-zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr);
+void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur);
 
-void eval_ast(zval* arr, struct ast_node* tok, zval* return_value) {
+void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   while (tok != NULL) {
     switch (tok->type) {
       case AST_INDEX_LIST:
-        exec_index_filter(arr, tok, return_value);
+        exec_index_filter(arr_head, arr_cur, tok, return_value);
         return;
       case AST_INDEX_SLICE:
-        exec_slice(arr, tok, return_value);
+        exec_slice(arr_head, arr_cur, tok, return_value);
         return;
       case AST_ROOT:
         tok = tok->next;
         break;
       case AST_RECURSE:
         tok = tok->next;
-        exec_recursive_descent(arr, tok, return_value);
+        exec_recursive_descent(arr_head, arr_cur, tok, return_value);
         return;
       case AST_SELECTOR:
-        exec_selector(arr, tok, return_value);
+        exec_selector(arr_head, arr_cur, tok, return_value);
         return;
       case AST_WILD_CARD:
-        exec_wildcard(arr, tok, return_value);
+        exec_wildcard(arr_head, arr_cur, tok, return_value);
         return;
       case AST_EXPR:
-        exec_expression(arr, tok, return_value);
+        exec_expression(arr_head, arr_cur, tok, return_value);
         return;
       default:
         assert(0);
@@ -58,25 +58,25 @@ void copy_result_to_return_value(zval* arr, zval* return_value) {
   add_next_index_zval(return_value, &tmp);
 }
 
-void exec_selector(zval* arr, struct ast_node* tok, zval* return_value) {
-  if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
+void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+  if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
 
-  if ((arr = zend_hash_str_find(HASH_OF(arr), tok->data.d_selector.value, strlen(tok->data.d_selector.value))) ==
-      NULL) {
+  if ((arr_cur = zend_hash_str_find(HASH_OF(arr_cur), tok->data.d_selector.value,
+                                    strlen(tok->data.d_selector.value))) == NULL) {
     return;
   }
 
   if (tok->next != NULL) {
-    eval_ast(arr, tok->next, return_value);
+    eval_ast(arr_head, arr_cur, tok->next, return_value);
   } else {
-    copy_result_to_return_value(arr, return_value);
+    copy_result_to_return_value(arr_cur, return_value);
   }
 }
 
-void exec_wildcard(zval* arr, struct ast_node* tok, zval* return_value) {
-  if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
+void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+  if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
 
@@ -85,18 +85,18 @@ void exec_wildcard(zval* arr, struct ast_node* tok, zval* return_value) {
   zend_string* key;
   zend_ulong num_key;
 
-  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
+  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr_cur), num_key, key, data) {
     if (tok->next == NULL) {
       copy_result_to_return_value(data, return_value);
     } else {
-      eval_ast(data, tok->next, return_value);
+      eval_ast(arr_head, data, tok->next, return_value);
     }
   }
   ZEND_HASH_FOREACH_END();
 }
 
-void exec_recursive_descent(zval* arr, struct ast_node* tok, zval* return_value) {
-  if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
+void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+  if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
 
@@ -105,32 +105,34 @@ void exec_recursive_descent(zval* arr, struct ast_node* tok, zval* return_value)
   zend_string* key;
   zend_ulong num_key;
 
-  eval_ast(arr, tok, return_value);
+  eval_ast(arr_head, arr_cur, tok, return_value);
 
-  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) { exec_recursive_descent(data, tok, return_value); }
+  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr_cur), num_key, key, data) {
+    exec_recursive_descent(arr_head, data, tok, return_value);
+  }
   ZEND_HASH_FOREACH_END();
 }
 
-void exec_index_filter(zval* arr, struct ast_node* tok, zval* return_value) {
+void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   for (int i = 0; i < tok->data.d_list.count; i++) {
     if (tok->data.d_list.indexes[i] < 0) {
-      tok->data.d_list.indexes[i] = zend_hash_num_elements(HASH_OF(arr)) - abs(tok->data.d_list.indexes[i]);
+      tok->data.d_list.indexes[i] = zend_hash_num_elements(HASH_OF(arr_cur)) - abs(tok->data.d_list.indexes[i]);
     }
     zval* data;
-    if ((data = zend_hash_index_find(HASH_OF(arr), tok->data.d_list.indexes[i])) != NULL) {
+    if ((data = zend_hash_index_find(HASH_OF(arr_cur), tok->data.d_list.indexes[i])) != NULL) {
       if (tok->next == NULL) {
         copy_result_to_return_value(data, return_value);
       } else {
-        eval_ast(data, tok->next, return_value);
+        eval_ast(arr_head, data, tok->next, return_value);
       }
     }
   }
 }
 
-void exec_slice(zval* arr, struct ast_node* tok, zval* return_value) {
+void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   zval* data;
 
-  int data_length = zend_hash_num_elements(HASH_OF(arr));
+  int data_length = zend_hash_num_elements(HASH_OF(arr_cur));
 
   int range_start = tok->data.d_list.indexes[0];
   int range_end = tok->data.d_list.count > 1 ? tok->data.d_list.indexes[1] : INT_MAX;
@@ -174,11 +176,11 @@ void exec_slice(zval* arr, struct ast_node* tok, zval* return_value) {
     }
 
     for (int i = range_start; i < range_end; i += range_step) {
-      if ((data = zend_hash_index_find(HASH_OF(arr), i)) != NULL) {
+      if ((data = zend_hash_index_find(HASH_OF(arr_cur), i)) != NULL) {
         if (tok->next == NULL) {
           copy_result_to_return_value(data, return_value);
         } else {
-          eval_ast(data, tok->next, return_value);
+          eval_ast(arr_head, data, tok->next, return_value);
         }
       }
     }
@@ -189,28 +191,28 @@ void exec_slice(zval* arr, struct ast_node* tok, zval* return_value) {
     }
 
     for (int i = range_start; i > range_end; i += range_step) {
-      if ((data = zend_hash_index_find(HASH_OF(arr), i)) != NULL) {
+      if ((data = zend_hash_index_find(HASH_OF(arr_cur), i)) != NULL) {
         if (tok->next == NULL) {
           copy_result_to_return_value(data, return_value);
         } else {
-          eval_ast(data, tok->next, return_value);
+          eval_ast(arr_head, data, tok->next, return_value);
         }
       }
     }
   }
 }
 
-void exec_expression(zval* arr, struct ast_node* tok, zval* return_value) {
+void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   zend_ulong num_key;
   zend_string* key;
   zval* data;
 
-  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr), num_key, key, data) {
-    if (evaluate_postfix_expression(data, tok->data.d_expression.head)) {
+  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr_cur), num_key, key, data) {
+    if (evaluate_postfix_expression(arr_head, data, tok->data.d_expression.head)) {
       if (tok->next == NULL) {
         copy_result_to_return_value(data, return_value);
       } else {
-        eval_ast(data, tok->next, return_value);
+        eval_ast(arr_head, data, tok->next, return_value);
       }
     }
   }
@@ -249,10 +251,14 @@ bool compare_rgxp(zval* lh, zval* rh) {
   return Z_LVAL(retval) > 0;
 }
 
-zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr) {
-  if (src->data.d_operand.head->type == AST_SELECTOR || src->data.d_operand.head->type == AST_ROOT) {
+zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur) {
+  if (src->data.d_operand.head->type == AST_SELECTOR) {
     array_init(tmp_dest);
-    eval_ast(arr, src->data.d_operand.head, tmp_dest);
+    eval_ast(arr_head, arr_cur, src->data.d_operand.head, tmp_dest);
+    return zend_hash_index_find(Z_ARRVAL_P(tmp_dest), 0);
+  } else if (src->data.d_operand.head->type == AST_ROOT) {
+    array_init(tmp_dest);
+    eval_ast(arr_head, arr_head, src->data.d_operand.head, tmp_dest);
     return zend_hash_index_find(Z_ARRVAL_P(tmp_dest), 0);
   } else if (src->data.d_operand.head->type == AST_LITERAL) {
     ZVAL_STRING(tmp_dest, src->data.d_operand.head->data.d_literal.value);
@@ -263,7 +269,7 @@ zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr) {
   }
 }
 
-bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_node* lh_operand,
+bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operator_type, struct ast_node* lh_operand,
                             struct ast_node* rh_operand) {
   switch (operator_type) {
     case AST_OR:
@@ -278,7 +284,7 @@ bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_n
   /* use stack-allocated zvals in order to avoid malloc, if possible */
   zval tmp_lh = {0}, tmp_rh = {0};
 
-  zval* val_lh = operand_to_zval(lh_operand, &tmp_lh, arr);
+  zval* val_lh = operand_to_zval(lh_operand, &tmp_lh, arr_head, arr_cur);
   if (val_lh == NULL) {
     return false;
   }
@@ -287,7 +293,7 @@ bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_n
     return val_lh != NULL;
   }
 
-  zval* val_rh = operand_to_zval(rh_operand, &tmp_rh, arr);
+  zval* val_rh = operand_to_zval(rh_operand, &tmp_rh, arr_head, arr_cur);
   if (val_rh == NULL) {
     return false;
   }
@@ -327,7 +333,7 @@ bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_n
   return ret;
 }
 
-bool evaluate_postfix_expression(zval* arr, struct ast_node* tok) {
+bool evaluate_postfix_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   stack s;
   stack_init(&s);
   struct ast_node* expr_lh;
@@ -359,7 +365,7 @@ bool evaluate_postfix_expression(zval* arr, struct ast_node* tok) {
 
         stack_pop(&s);
 
-        if (evaluate_subexpression(arr, tok->type, expr_lh, expr_rh)) {
+        if (evaluate_subexpression(arr_head, arr_cur, tok->type, expr_lh, expr_rh)) {
           stack_push(&s, &op_true);
         } else {
           stack_push(&s, &op_false);
