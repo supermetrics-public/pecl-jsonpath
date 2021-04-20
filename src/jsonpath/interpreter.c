@@ -13,7 +13,6 @@ void exec_expression(zval* arr, struct ast_node* tok, zval* return_value);
 void exec_index_filter(zval* arr, struct ast_node* tok, zval* return_value);
 void exec_recursive_descent(zval* arr, struct ast_node* tok, zval* return_value);
 void exec_selector(zval* arr, struct ast_node* tok, zval* return_value);
-zval* exec_selector_iterative(zval* arr, struct ast_node* tok);
 void exec_slice(zval* arr, struct ast_node* tok, zval* return_value);
 void exec_wildcard(zval* arr, struct ast_node* tok, zval* return_value);
 zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr);
@@ -216,28 +215,6 @@ void exec_expression(zval* arr, struct ast_node* tok, zval* return_value) {
   ZEND_HASH_FOREACH_END();
 }
 
-/* This does the same thing as exec_selector_iterative except we don't */
-/* continue recursing after a contiguous sequence of AST_SELECTOR has been */
-/* read. */
-zval* exec_selector_iterative(zval* arr, struct ast_node* tok) {
-  if (arr == NULL || Z_TYPE_P(arr) != IS_ARRAY) {
-    return NULL;
-  }
-
-  zval* data;
-
-  while (tok->type == AST_SELECTOR) {
-    if ((data = zend_hash_str_find(HASH_OF(arr), tok->data.d_selector.value, strlen(tok->data.d_selector.value))) ==
-        NULL) {
-      return NULL;
-    }
-    arr = data;
-    tok = tok->next;
-  }
-
-  return arr;
-}
-
 int compare(zval* lh, zval* rh) {
   zval result;
   ZVAL_NULL(&result);
@@ -271,12 +248,12 @@ bool compare_rgxp(zval* lh, zval* rh) {
 }
 
 zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr) {
-  if (src->type == AST_SELECTOR) {
+  if (src->data.d_operand.head->type == AST_SELECTOR) {
     array_init(tmp_dest);
-    eval_ast(arr, src, tmp_dest);
+    eval_ast(arr, src->data.d_operand.head, tmp_dest);
     return zend_hash_index_find(Z_ARRVAL_P(tmp_dest), 0);
-  } else if (src->type == AST_LITERAL) {
-    ZVAL_STRING(tmp_dest, src->data.d_literal.value);
+  } else if (src->data.d_operand.head->type == AST_LITERAL) {
+    ZVAL_STRING(tmp_dest, src->data.d_operand.head->data.d_literal.value);
     return tmp_dest;
   } else {
     /* todo: runtime error */
@@ -291,8 +268,6 @@ bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_n
       return lh_operand->data.d_literal.value_bool || rh_operand->data.d_literal.value_bool;
     case AST_AND:
       return lh_operand->data.d_literal.value_bool && rh_operand->data.d_literal.value_bool;
-    case AST_ISSET:
-      return exec_selector_iterative(arr, lh_operand) != NULL;
     default:
       /* noop */
       break;
@@ -304,6 +279,10 @@ bool evaluate_subexpression(zval* arr, enum ast_type operator_type, struct ast_n
   zval* val_lh = operand_to_zval(lh_operand, &tmp_lh, arr);
   if (val_lh == NULL) {
     return false;
+  }
+
+  if (operator_type == AST_ISSET) {
+    return val_lh != NULL;
   }
 
   zval* val_rh = operand_to_zval(rh_operand, &tmp_rh, arr);

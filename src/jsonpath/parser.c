@@ -488,7 +488,7 @@ bool evaluate_postfix_expression(zval* arr, struct ast_node* tok) {
 
         stack_pop(&s);
 
-        if (evaluate_subexpression(arr, tok->type, expr_lh->data.d_operand.head, expr_rh->data.d_operand.head)) {
+        if (evaluate_subexpression(arr, tok->type, expr_lh, expr_rh)) {
           stack_push(&s, &op_true);
         } else {
           stack_push(&s, &op_false);
@@ -497,13 +497,6 @@ bool evaluate_postfix_expression(zval* arr, struct ast_node* tok) {
         break;
       case TYPE_OPERAND:
         stack_push(&s, tok);
-        /* TODO hack for now, place under value */
-        if (tok->type == AST_SELECTOR) {
-          while (tok->next != NULL && tok->next->type == AST_SELECTOR) {
-            /* skip putting following selectors on stack */
-            tok = tok->next;
-          }
-        }
         break;
       case TYPE_PAREN:
         /* there should be no parens in the postfix expression */
