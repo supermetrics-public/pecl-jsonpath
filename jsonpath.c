@@ -82,7 +82,7 @@ PHP_METHOD(JsonPath, find) {
 
   array_init(return_value);
 
-  eval_ast(search_target, head.next, return_value);
+  eval_ast(search_target, search_target, head.next, return_value);
 
   free_ast_nodes(head.next);
 
