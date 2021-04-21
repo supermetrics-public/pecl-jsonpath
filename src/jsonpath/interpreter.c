@@ -287,16 +287,18 @@ bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operato
     return false;
   }
 
+  bool ret = false;
+
   if (operator_type == AST_ISSET) {
-    return val_lh != NULL;
+    ret = val_lh != NULL;
+    goto FREE_LHS;
   }
 
   zval* val_rh = operand_to_zval(rh_operand, &tmp_rh, arr_head, arr_cur);
   if (val_rh == NULL) {
-    return false;
+    ret = false;
+    goto FREE_LHS;
   }
-
-  bool ret;
 
   switch (operator_type) {
     case AST_EQ:
@@ -332,11 +334,14 @@ bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operato
   }
 
   /* clean up strings allocated in operand_to_zval() */
+
+  if (rh_operand->type == AST_LITERAL && val_rh != NULL) {
+    zval_ptr_dtor(val_rh);
+  }
+
+FREE_LHS:
   if (lh_operand->type == AST_LITERAL) {
     zval_ptr_dtor(val_lh);
-  }
-  if (rh_operand->type == AST_LITERAL) {
-    zval_ptr_dtor(val_rh);
   }
 
   return ret;
