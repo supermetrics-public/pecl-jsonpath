@@ -335,12 +335,12 @@ bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operato
 
   /* clean up strings allocated in operand_to_zval() */
 
-  if (rh_operand->type == AST_LITERAL && val_rh != NULL) {
+  if (rh_operand->data.d_value.head->type == AST_LITERAL) {
     zval_ptr_dtor(val_rh);
   }
 
 FREE_LHS:
-  if (lh_operand->type == AST_LITERAL) {
+  if (lh_operand->data.d_value.head->type == AST_LITERAL) {
     zval_ptr_dtor(val_lh);
   }
 
