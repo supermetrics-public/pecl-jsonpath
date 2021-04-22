@@ -22,6 +22,9 @@ void print_ast(struct ast_node* head, const char* m, int level);
 #endif
 bool check_parens_balance(lex_token lex_tok[], int lex_tok_count);
 bool validate_root_next(struct ast_node* head);
+void group_operands_under_value(struct ast_node* head);
+void insert_isset_nodes(struct ast_node* head);
+bool is_isset_operand(struct ast_node* prev, struct ast_node* cur);
 
 const char* AST_STR[] = {"AST_AND",        "AST_BOOL",        "AST_EQ",          "AST_EXPR",  "AST_GT",
                          "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_ISSET", "AST_LITERAL_BOOL",
@@ -92,6 +95,81 @@ void print_ast(struct ast_node* head, const char* m, int level) {
 }
 #endif
 
+bool is_isset_operand(struct ast_node* prev, struct ast_node* cur) {
+  return (prev->type == AST_AND || prev->type == AST_OR || prev->type == AST_PAREN_LEFT) &&
+         (cur->next == NULL || cur->next->type == AST_AND || cur->next->type == AST_OR ||
+          cur->next->type == AST_PAREN_RIGHT);
+}
+
+/* Insert ISSET operators next to selectors where needed.                    */
+/* Subexpressions consisting of only one selector operand are intended to    */
+/* test the existence of a field. A selector followed by an ISSET operator   */
+/* instructs to the interpreter to perform the field check. A selector is an */
+/* ISSET operand when both left and right neighbor nodes are parens, OR      */
+/* operators, or AND operators.                                              */
+/* -Example-                                                                 */
+/*  Before:                                                                  */
+/*   HEAD->AST_PAREN_LEFT->AST_VALUE->AST_PAREN_RIGHT                        */
+/*  After:                                                                   */
+/*   HEAD->AST_PAREN_LEFT->AST_VALUE->AST_ISSET->AST_PAREN_RIGHT             */
+void insert_isset_nodes(struct ast_node* head) {
+  struct ast_node* prev = head;
+  struct ast_node* cur = head->next;
+
+  while (cur != NULL) {
+    if (cur->type == AST_VALUE && cur->data.d_value.head->type == AST_SELECTOR) {
+      if (is_isset_operand(prev, cur)) {
+        struct ast_node* tmp = cur->next;
+        cur = ast_alloc_node(cur, AST_ISSET);
+        cur->next = tmp;
+      }
+    }
+    prev = cur;
+    cur = cur->next;
+  }
+}
+
+/* Consolidate contiguous groups of operands under value nodes. This         */
+/* simplifies evaluating expression values in the interpreter.               */
+/* -Example-                                                                 */
+/*  Before:                                                                  */
+/*   HEAD->OPERAND1->OPERAND2->OPERAND3->OPERATOR->...                       */
+/*  After:                                                                   */
+/*   HEAD->VALUE->OPERATOR->...                                              */
+/*          |                                                                */
+/*           \                                                               */
+/*         OPERAND1->OPERAND2->OPERAND3                                      */
+void group_operands_under_value(struct ast_node* head) {
+  struct ast_node* cur = head->next;
+
+  while (cur->next != NULL) {
+    if (get_token_type(cur->next->type) == TYPE_OPERAND) {
+      /* insert value node before operand */
+      struct ast_node* tmp = cur->next;
+      cur = ast_alloc_node(cur, AST_VALUE);
+
+      /* make the rest of the list a child of the value node */
+      cur->data.d_value.head = tmp;
+
+      /* keep a reference to the new value node */
+      struct ast_node* value = cur;
+
+      /* find the first paren or operator node */
+      cur = cur->data.d_value.head;
+      while (cur->next != NULL && get_token_type(cur->next->type) == TYPE_OPERAND) {
+        cur = cur->next;
+      }
+
+      /* assign everything following the operands back to top level */
+      value->next = cur->next;
+      cur->next = NULL;
+      cur = value->next;
+    } else {
+      cur = cur->next;
+    }
+  }
+}
+
 // See http://csis.pace.edu/~wolf/CS122/infix-postfix.htm
 bool convert_to_postfix(struct ast_node* expr_start) {
   stack s = {0};
@@ -103,18 +181,9 @@ bool convert_to_postfix(struct ast_node* expr_start) {
   while (cur != NULL) {
     switch (get_token_type(cur->type)) {
       case TYPE_OPERAND:
-
-        pfix = ast_alloc_node(pfix, AST_VALUE);
-
-        pfix->data.d_value.head = cur;
-
-        while (cur->next != NULL && get_token_type(cur->next->type) == TYPE_OPERAND) {
-          cur = cur->next;
-        }
-
-        tmp = cur;
+        pfix->next = cur;
+        pfix = pfix->next;
         cur = cur->next;
-        tmp->next = NULL;
         break;
       case TYPE_OPERATOR:
         // TODO check missing operand on RHS
@@ -208,21 +277,6 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
           cur->data.d_selector.child_scope = false;
         }
         strcpy(cur->data.d_selector.value, lex_tok_values[*lex_idx]);
-
-        if (*lex_idx < lex_tok_count - 1) { /* TODO next-node macro? */
-          switch (lex_tok[(*lex_idx) + 1]) {
-            case LEX_PAREN_CLOSE:
-              /* fall-through */
-            case LEX_OR:
-              /* fall-through */
-            case LEX_AND:
-              cur = ast_alloc_node(cur, AST_ISSET);
-              break;
-            default:
-              /* noop */
-              break;
-          }
-        }
         break;
       case LEX_FILTER_START:
 
@@ -330,10 +384,11 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
 
         build_parse_tree(lex_tok, lex_tok_values, lex_idx, lex_tok_count, cur->data.d_expression.head, err);
 
+        group_operands_under_value(cur->data.d_expression.head);
+        insert_isset_nodes(cur->data.d_expression.head);
 #ifdef JSONPATH_DEBUG
         print_ast(cur->data.d_expression.head, "Parser - Expression before infix-postfix conversion", 0);
 #endif
-
         convert_to_postfix(cur->data.d_expression.head);
         delete_expression_head_node(cur);
         break;
