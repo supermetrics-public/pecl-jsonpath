@@ -379,6 +379,12 @@ bool validate_parse_tree(struct ast_node* head) {
           return false;
         }
         break;
+      case AST_EXPR:
+        if (cur->data.d_expression.head == NULL) {
+          zend_throw_exception(spl_ce_RuntimeException, "Filter expressions may not be empty.", 0);
+          return false;
+        }
+        break;
       default:
         break;
     }
