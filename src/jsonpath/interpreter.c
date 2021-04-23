@@ -189,6 +189,10 @@ void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* retur
 }
 
 void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+  if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
+    return;
+  }
+
   zend_ulong num_key;
   zend_string* key;
   zval* data;

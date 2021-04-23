@@ -51,25 +51,23 @@ Assertion 1
 array(3) {
   [0]=>
   array(2) {
-    ["name"]=>
-    string(7) "another"
     ["id"]=>
     int(3)
+    ["name"]=>
+    string(7) "another"
   }
   [1]=>
   array(2) {
-    ["name"]=>
-    string(4) "more"
     ["id"]=>
     int(4)
+    ["name"]=>
+    string(4) "more"
   }
   [2]=>
   array(2) {
-    ["name"]=>
-    string(12) "next to last"
     ["id"]=>
     int(5)
+    ["name"]=>
+    string(12) "next to last"
   }
 }
---XFAIL--
-Requires more work on filter expressions
