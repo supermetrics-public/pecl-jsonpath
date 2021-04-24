@@ -1,5 +1,5 @@
 --TEST--
-Ensure order of operations are enforced
+Ensure selector name string length does not exceed buffer
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--
@@ -7,10 +7,10 @@ Ensure order of operations are enforced
 
 $jsonPath = new JsonPath();
 
-try {
-    var_dump($jsonPath->find([], '$.test[?(@.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa == "true")]'));
-} catch(RuntimeException $e) {
-    echo get_class($e) . ": " . $e->getMessage();
-}
---EXPECT--
-RuntimeException: String size exceeded 50 bytes at position 143
+var_dump($jsonPath->find([], '$.test[?(@.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa == "true")]'));
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: String exceeded buffer size at position 61 in %s
+Stack trace:
+%s
+%s
+%s

@@ -43,7 +43,9 @@ $result = $jsonPath->find($data, "$[?(2 in @.d)]");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Should error out due to invalid syntax, now returns the full input array
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Unrecognized token 'i' at position 6 in %s
+Stack trace:
+%s
+%s
+%s

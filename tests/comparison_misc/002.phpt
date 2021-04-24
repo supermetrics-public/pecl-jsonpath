@@ -18,7 +18,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: $ must be followed by a child selector, filter or recurse element. in %s
+Fatal error: Uncaught RuntimeException: Unrecognized token 'k' at position 2 in %s
 Stack trace:
 %s
 %s

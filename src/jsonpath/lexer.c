@@ -1,6 +1,11 @@
 #include "lexer.h"
 
 #include <string.h>
+
+#include <ext/spl/spl_exceptions.h>
+
+#include "php.h"
+#include "zend_exceptions.h"
 #ifndef S_SPLINT_S
 #include <ctype.h>
 #endif
@@ -9,10 +14,10 @@
 
 #include "safe_string.h"
 
-static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_error* err);
-static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, lex_error* err);
-static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, lex_error* err);
-static bool extract_boolean_literal(char* p, char* buffer, size_t bufSize, lex_error* err);
+static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, char* json_path);
+static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, char* json_path);
+static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, char* json_path);
+static bool extract_boolean_literal(char* p, char* buffer, size_t bufSize, char* json_path);
 
 const char* LEX_STR[] = {
     "LEX_NOT_FOUND",    /* Token not found */
@@ -42,7 +47,11 @@ const char* LEX_STR[] = {
     "LEX_ERR"           /* Signals lexing error */
 };
 
-lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
+void raise_error(const char* msg, char* json_path, char* cur_pos) {
+  zend_throw_exception_ex(spl_ce_RuntimeException, 0, "%s at position %ld", msg, (cur_pos - json_path));
+}
+
+lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
   char* start = *p;
   lex_token found_token = LEX_NOT_FOUND;
 
@@ -69,7 +78,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
         if (found_token == LEX_NODE) {
           (*p)++;
 
-          if (!extract_unbounded_literal(*p, buffer, bufSize, err)) {
+          if (!extract_unbounded_literal(*p, buffer, bufSize, json_path)) {
             return LEX_ERR;
           }
 
@@ -85,7 +94,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
 
         switch (**p) {
           case '\'':
-            if (!extract_quoted_literal(*p, buffer, bufSize, err)) {
+            if (!extract_quoted_literal(*p, buffer, bufSize, json_path)) {
               return LEX_ERR;
             }
             *p += strlen(buffer) + 2;
@@ -94,14 +103,13 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
               ;
 
             if (**p != ']') {
-              err->pos = *p;
-              strcpy(err->msg, "Missing closing ] bracket");
+              raise_error("Missing closing ] bracket", json_path, *p);
               return LEX_ERR;
             }
             found_token = LEX_NODE;
             break;
           case '"':
-            if (!extract_quoted_literal(*p, buffer, bufSize, err)) {
+            if (!extract_quoted_literal(*p, buffer, bufSize, json_path)) {
               return LEX_ERR;
             }
             *p += strlen(buffer) + 2;
@@ -110,8 +118,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
               ;
 
             if (**p != ']') {
-              err->pos = *p;
-              strcpy(err->msg, "Missing closing ] bracket");
+              raise_error("Missing closing ] bracket", json_path, *p);
               return LEX_ERR;
             }
             found_token = LEX_NODE;
@@ -152,8 +159,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
         (*p)++;
 
         if (**p != '=') {
-          err->pos = *p;
-          strcpy(err->msg, "! operator missing =");
+          raise_error("! operator missing =", json_path, *p);
           return LEX_ERR;
         }
 
@@ -179,8 +185,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
         (*p)++;
 
         if (**p != '&') {
-          err->pos = *p;
-          strcpy(err->msg, "'And' operator must be double &&");
+          raise_error("'And' operator must be double &&", json_path, *p);
           return LEX_ERR;
         }
 
@@ -190,8 +195,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
         (*p)++;
 
         if (**p != '|') {
-          err->pos = *p;
-          strcpy(err->msg, "'Or' operator must be double ||");
+          raise_error("'Or' operator must be double ||", json_path, *p);
           return LEX_ERR;
         }
 
@@ -204,14 +208,14 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
         found_token = LEX_PAREN_CLOSE;
         break;
       case '\'':
-        if (!extract_quoted_literal(*p, buffer, bufSize, err)) {
+        if (!extract_quoted_literal(*p, buffer, bufSize, json_path)) {
           return LEX_ERR;
         }
         *p += strlen(buffer) + 1;
         found_token = LEX_LITERAL;
         break;
       case '"':
-        if (!extract_quoted_literal(*p, buffer, bufSize, err)) {
+        if (!extract_quoted_literal(*p, buffer, bufSize, json_path)) {
           return LEX_ERR;
         }
         *p += strlen(buffer) + 1;
@@ -222,7 +226,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
         break;
       case 't':
       case 'f':
-        if (!extract_boolean_literal(*p, buffer, bufSize, err)) {
+        if (!extract_boolean_literal(*p, buffer, bufSize, json_path)) {
           return LEX_ERR;
         }
         *p += strlen(buffer) - 1;
@@ -232,7 +236,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
         if (!isdigit(*(*p + 1))) {
           return LEX_ERR;
         }
-        if (!extract_unbounded_numeric_literal(*p, buffer, bufSize, err)) {
+        if (!extract_unbounded_numeric_literal(*p, buffer, bufSize, json_path)) {
           return LEX_ERR;
         }
         *p += strlen(buffer) - 1;
@@ -248,12 +252,17 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
       case '7':
       case '8':
       case '9':
-        if (!extract_unbounded_numeric_literal(*p, buffer, bufSize, err)) {
+        if (!extract_unbounded_numeric_literal(*p, buffer, bufSize, json_path)) {
           return LEX_ERR;
         }
         *p += strlen(buffer) - 1;
         found_token = LEX_LITERAL;
         break;
+      case ' ':
+        break;
+      default:
+        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unrecognized token '%c' at position %ld", **p, (*p - json_path));
+        return LEX_ERR;
     }
 
     (*p)++;
@@ -263,7 +272,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err) {
 }
 
 /* Extract contents of string bounded by either single or double quotes */
-static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_error* err) {
+static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
   char* start;
   char quote_type;
   bool quote_found = false;
@@ -280,8 +289,7 @@ static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_er
   }
 
   if (quote_found == false) {
-    err->pos = p;
-    strcpy(err->msg, "Missing opening quote in string literal");
+    raise_error("Missing opening quote in string literal", json_path, start);
     return false;
   }
 
@@ -293,8 +301,7 @@ static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_er
   cpy_len = (size_t)(p - start);
 
   if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
-    err->pos = p;
-    sprintf(err->msg, "String size exceeded %zu bytes", bufSize);
+    raise_error("String exceeded buffer size", json_path, start + bufSize);
     return false;
   }
 
@@ -302,7 +309,7 @@ static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, lex_er
 }
 
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
-static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, lex_error* err) {
+static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
   char* start;
   size_t cpy_len;
 
@@ -317,8 +324,7 @@ static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, lex
   cpy_len = (size_t)(p - start);
 
   if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
-    err->pos = p;
-    sprintf(err->msg, "String size exceeded %zu bytes", bufSize);
+    raise_error("String exceeded buffer size", json_path, start + bufSize);
     return false;
   }
 
@@ -326,7 +332,7 @@ static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, lex
 }
 
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
-static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, lex_error* err) {
+static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
   char* start;
   size_t cpy_len;
 
@@ -353,8 +359,7 @@ static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufS
   cpy_len = (size_t)(p - start);
 
   if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
-    err->pos = p;
-    sprintf(err->msg, "String size exceeded %zu bytes", bufSize);
+    raise_error("String exceeded buffer size", json_path, start + bufSize);
     return false;
   }
 
@@ -362,7 +367,7 @@ static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufS
 }
 
 /* Extract boolean */
-static bool extract_boolean_literal(char* p, char* buffer, size_t bufSize, lex_error* err) {
+static bool extract_boolean_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
   char* start;
   size_t cpy_len;
 
@@ -377,8 +382,7 @@ static bool extract_boolean_literal(char* p, char* buffer, size_t bufSize, lex_e
   cpy_len = (size_t)(p - start);
 
   if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
-    err->pos = p;
-    sprintf(err->msg, "String size exceeded %zu bytes", bufSize);
+    raise_error("String exceeded buffer size", json_path, start + bufSize);
     return false;
   }
 

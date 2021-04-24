@@ -7,10 +7,10 @@ Ensure exception is thrown for missing equals sign for != operator
 
 $jsonPath = new JsonPath();
 
-try {
-    $jsonPath->find([], '$.book[?(@.id.isbn ! "684832674" || @.author == "Herman Melville")]');
-} catch(RuntimeException $e) {
-    echo get_class($e) . ": " . $e->getMessage();
-}
---EXPECT--
-RuntimeException: ! operator missing = at position 20
+$jsonPath->find([], '$.book[?(@.id.isbn ! "684832674" || @.author == "Herman Melville")]');
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: ! operator missing = at position 20 in %s
+Stack trace:
+%s
+%s
+%s

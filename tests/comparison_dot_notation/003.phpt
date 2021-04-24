@@ -21,8 +21,8 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Filter must not be empty in %s003.php:%d
+Fatal error: Uncaught RuntimeException: Unrecognized token 'k' at position 3 in %s
 Stack trace:
-#0 %s003.php(%d): JsonPath->find(Array, '$.[key]')
-#1 {main}
-  thrown in %s003.php on line %d
+%s
+%s
+%s

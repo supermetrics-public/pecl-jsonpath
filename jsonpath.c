@@ -98,11 +98,10 @@ bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_
   lex_token cur_tok;
   char* p = json_path;
   char buffer[PARSE_BUF_LEN];
-  lex_error err;
 
   int i = 0;
 
-  while ((cur_tok = scan(&p, buffer, sizeof(buffer), &err)) != LEX_NOT_FOUND) {
+  while ((cur_tok = scan(&p, buffer, sizeof(buffer), json_path)) != LEX_NOT_FOUND) {
     if (i >= PARSE_BUF_LEN) {
       zend_throw_exception(spl_ce_RuntimeException, "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
       return false;
@@ -115,8 +114,6 @@ bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_
         strcpy(tok_literals[i], buffer);
         break;
       case LEX_ERR:
-        snprintf(err.msg, sizeof(err.msg), "%s at position %ld", err.msg, (err.pos - json_path));
-        zend_throw_exception(spl_ce_RuntimeException, err.msg, 0);
         return false;
       default:
         tok_literals[i][0] = '\0';

@@ -16,7 +16,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: The JSONpath contains no valid elements in %s
+Fatal error: Uncaught RuntimeException: Unrecognized token 'k' at position 0 in %s
 Stack trace:
 %s
 %s

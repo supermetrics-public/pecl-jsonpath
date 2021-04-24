@@ -33,11 +33,6 @@ typedef enum {
 
 extern const char* LEX_STR[];
 
-typedef struct {
-  char* pos; /* The position where lexing stopped */
-  char msg[100];
-} lex_error;
-
-lex_token scan(char** p, char* buffer, size_t bufSize, lex_error* err);
+lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path);
 
 #endif /* LEXER_H */
