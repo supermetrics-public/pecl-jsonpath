@@ -60,6 +60,7 @@ jobs:
             -   name: Generate code coverage report
                 run: |
                     COVERAGE=$(make lcov-summary |& grep 'lines...' | grep -Eo ' [0-9.]+' | xargs | awk '{print $1}' | xargs printf "%.*f\n" 0)
+                    COVERAGE="${COVERAGE}%"
                     echo "Code coverage (lines): $COVERAGE"
                     echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
             
