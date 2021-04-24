@@ -440,6 +440,13 @@ bool validate_parse_tree(struct ast_node* head) {
           return false;
         }
         break;
+      case AST_RECURSE:
+        if (cur->next == NULL || (cur->next->type == AST_SELECTOR && cur->next->data.d_selector.value[0] == '\0')) {
+          zend_throw_exception(spl_ce_RuntimeException,
+                               "Recursive descent operator (..) must be followed by a child selector, filter or wildcard.", 0);
+          return false;
+        }
+        break;
       default:
         break;
     }
