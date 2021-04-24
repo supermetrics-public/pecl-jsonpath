@@ -57,12 +57,20 @@ void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* re
     return;
   }
 
-  if ((arr_cur = zend_hash_str_find(HASH_OF(arr_cur), tok->data.d_selector.value,
-                                    strlen(tok->data.d_selector.value))) == NULL) {
-    return;
+  zend_ulong idx;
+  int len = strlen(tok->data.d_selector.value);
+
+  if (ZEND_HANDLE_NUMERIC_STR(tok->data.d_selector.value, len, idx)) {
+    /* look up numeric index */
+    arr_cur = zend_hash_index_find(HASH_OF(arr_cur), idx);
+  } else {
+    /* look up string index */
+    arr_cur = zend_hash_str_find(HASH_OF(arr_cur), tok->data.d_selector.value, len);
   }
 
-  copy_result_or_continue(arr_head, arr_cur, tok, return_value);
+  if (arr_cur != NULL) {
+    copy_result_or_continue(arr_head, arr_cur, tok, return_value);
+  }
 }
 
 void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {

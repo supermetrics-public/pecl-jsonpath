@@ -21,5 +21,3 @@ array(1) {
   [0]=>
   string(5) "value"
 }
---XFAIL--
-Numbers as strings need to be converted to integers in index lookups

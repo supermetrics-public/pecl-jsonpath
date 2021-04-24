@@ -23,5 +23,3 @@ array(1) {
   [0]=>
   string(6) "second"
 }
---XFAIL--
-Requires support for numeric node names
