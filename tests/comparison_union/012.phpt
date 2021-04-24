@@ -24,7 +24,9 @@ $result = $jsonPath->find($data, "$.*[0,:5]");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now returns a bunch of values, would be better to error out due to invalid syntax
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Multiple filter list separators found [,:], only one type is allowed. in %s
+Stack trace:
+%s
+%s
+%s

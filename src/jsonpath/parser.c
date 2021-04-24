@@ -461,6 +461,8 @@ bool parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][P
   /* ambiguity of a filter containing no separators. */
   /* example: treat level4[0] as an index filter, not a slice. */
   tok->type = AST_INDEX_LIST;
+  /* used to determine if different separator types are present, default value is arbitrary */
+  enum ast_type sep_found = AST_AND;
 
   for (; *lex_idx < lex_tok_count; (*lex_idx)++) {
     if (lex_tok[*lex_idx] == LEX_EXPR_END) {
@@ -468,9 +470,20 @@ bool parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][P
       (*lex_idx)--;
       break;
     } else if (lex_tok[*lex_idx] == LEX_CHILD_SEP) {
-      tok->type = AST_INDEX_LIST;
+      if (sep_found == AST_INDEX_SLICE) {
+        zend_throw_exception(spl_ce_RuntimeException,
+                             "Multiple filter list separators found [,:], only one type is allowed.", 0);
+        return false;
+      }
+      tok->type = sep_found = AST_INDEX_LIST;
     } else if (lex_tok[*lex_idx] == LEX_SLICE) {
-      tok->type = AST_INDEX_SLICE;
+      if (sep_found == AST_INDEX_LIST) {
+        zend_throw_exception(spl_ce_RuntimeException,
+                             "Multiple filter list separators found [,:], only one type is allowed.", 0);
+        return false;
+      }
+
+      tok->type = sep_found = AST_INDEX_SLICE;
 
       slice_count++;
       // [:a] => [0:a]
