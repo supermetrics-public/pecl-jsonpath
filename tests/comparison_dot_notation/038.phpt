@@ -21,4 +21,4 @@ var_dump($result);
 --EXPECT--
 PHP Fatal Error
 --XFAIL--
-Now returns 2, would be better to error out due to invalid syntax
+Now returns unrecognized token 'a' at position 3, would be better to identify the whitespace as the culprit

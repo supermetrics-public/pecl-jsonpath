@@ -190,4 +190,4 @@ array(19) {
   }
 }
 --XFAIL--
-Leads to recursion
+Outcome depends on how values of different types are compared (string "42"), fails to include item with missing `key` property
