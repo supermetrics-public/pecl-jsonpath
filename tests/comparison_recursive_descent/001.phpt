@@ -23,7 +23,9 @@ $result = $jsonPath->find($data, "$..");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now returns false, would be better to error out due to invalid syntax
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Recursive descent operator (..) must be followed by a child selector, filter or wildcard. in %s
+Stack trace:
+%s
+%s
+%s
