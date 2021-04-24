@@ -29,7 +29,9 @@ $result = $jsonPath->find($data, "$[?(@.d in [2, 3])]");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Should error out due to invalid syntax, now get_token_type: Assertion `0' failed
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Unrecognized token 'i' at position 8 in %s
+Stack trace:
+%s
+%s
+%s

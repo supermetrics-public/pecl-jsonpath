@@ -7,10 +7,10 @@ Ensure exception is thrown for missing double &&
 
 $jsonPath = new JsonPath();
 
-try {
-    $jsonPath->find([], '$.book[?(@.id.isbn == "684832674" & @.author == "Herman Melville")]');
-} catch(RuntimeException $e) {
-    echo get_class($e) . ": " . $e->getMessage();
-}
---EXPECT--
-RuntimeException: 'And' operator must be double && at position 35
+$jsonPath->find([], '$.book[?(@.id.isbn == "684832674" & @.author == "Herman Melville")]');
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: 'And' operator must be double && at position 35 in %s
+Stack trace:
+%s
+%s
+%s

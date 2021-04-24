@@ -7,10 +7,10 @@ Ensure exception is thrown for missing closing bracket
 
 $jsonPath = new JsonPath();
 
-try {
-    $jsonPath->find([], '$.testl["test"');
-} catch(RuntimeException $e) {
-    echo get_class($e) . ": " . $e->getMessage();
-}
---EXPECT--
-RuntimeException: Missing closing ] bracket at position 14
+$jsonPath->find([], '$.testl["test"');
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Missing closing ] bracket at position 14 in %s
+Stack trace:
+%s
+%s
+%s

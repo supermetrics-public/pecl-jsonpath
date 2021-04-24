@@ -25,7 +25,9 @@ $result = $jsonPath->find($data, "$[?(null)]");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now results in a segfault, would be better to error out due to invalid syntax
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Unrecognized token 'n' at position 4 in %s
+Stack trace:
+%s
+%s
+%s

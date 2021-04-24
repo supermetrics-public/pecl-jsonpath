@@ -32,7 +32,9 @@ $result = $jsonPath->find($data, "$[?(@.name=~/@.pattern/)]");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now results in a segfault, would be better to error out due to invalid syntax
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Unrecognized token '/' at position 12 in %s
+Stack trace:
+%s
+%s
+%s

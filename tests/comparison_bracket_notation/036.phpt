@@ -24,8 +24,8 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing closing ] bracket at position 7 in %s036.php:%d
+Fatal error: Uncaught RuntimeException: Missing closing ] bracket at position 7 in %s
 Stack trace:
-#0 %s036.php(%d): JsonPath->find(Array, '$['two'.'some']')
-#1 {main}
-  thrown in %s036.php on line %d
+%s
+%s
+%s

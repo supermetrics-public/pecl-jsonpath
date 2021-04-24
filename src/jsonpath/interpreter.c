@@ -47,7 +47,7 @@ void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_
         return;
       default:
         assert(0);
-        break;
+        return;
     }
   }
 }

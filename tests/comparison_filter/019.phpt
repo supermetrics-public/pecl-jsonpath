@@ -29,7 +29,9 @@ $result = $jsonPath->find($data, "$[?(@.key/10==5)]");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now returns false, would be better to error out due to invalid syntax
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Unrecognized token '/' at position 9 in %s
+Stack trace:
+%s
+%s
+%s
