@@ -15,7 +15,7 @@ int get_operator_precedence(struct ast_node* tok);
 int get_operator_precedence(struct ast_node* tok);
 struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
 void delete_expression_head_node(struct ast_node* expr);
-void parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* start,
+bool parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* start,
                        int lex_tok_count, struct ast_node* tok);
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level);
@@ -251,7 +251,7 @@ bool convert_to_postfix(struct ast_node* expr_start) {
 }
 
 bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
-                      int lex_tok_count, struct ast_node* head, parse_error* err) {
+                      int lex_tok_count, struct ast_node* head) {
   struct ast_node* cur = head;
 
   for (; *lex_idx < lex_tok_count; (*lex_idx)++) {
@@ -281,7 +281,7 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
       case LEX_FILTER_START:
 
         if (*lex_idx == lex_tok_count - 1) { /* last token */
-          strncpy(err->msg, "Missing filter end ]", sizeof(err->msg));
+          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end ]");
           return false;
         }
 
@@ -294,13 +294,15 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
             /* fall-through */
           case LEX_CHILD_SEP:
             cur = ast_alloc_node(cur, AST_INDEX_LIST);
-            parse_filter_list(lex_tok, lex_tok_values, lex_idx, lex_tok_count, cur);
+            if (!parse_filter_list(lex_tok, lex_tok_values, lex_idx, lex_tok_count, cur)) {
+              return false;
+            }
             break;
           case LEX_WILD_CARD:
             cur = ast_alloc_node(cur, AST_WILD_CARD);
             break;
           case LEX_EXPR_END:
-            strncpy(err->msg, "Filter must not be empty", sizeof(err->msg));
+            zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter must not be empty");
             return false;
           default:
             /* noop */
@@ -308,7 +310,7 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
         }
 
         if (*lex_idx == lex_tok_count - 1 || lex_tok[(*lex_idx) + 1] != LEX_EXPR_END) { /* last token */
-          strncpy(err->msg, "Missing filter end ]", sizeof(err->msg));
+          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end ]");
           return false;
         }
 
@@ -326,7 +328,7 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
 
         if (jp_str_cpy(cur->data.d_literal.value, PARSE_BUF_LEN, lex_tok_values[*lex_idx],
                        strlen(lex_tok_values[*lex_idx])) > 0) {
-          strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));
+          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Buffer size exceeded");
           return false;
         }
 
@@ -336,7 +338,7 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
 
         if (jp_str_cpy(cur->data.d_literal.value, PARSE_BUF_LEN, lex_tok_values[*lex_idx],
                        strlen(lex_tok_values[*lex_idx])) > 0) {
-          strncpy(err->msg, "Buffer size exceeded", sizeof(err->msg));
+          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Buffer size exceeded");
           return false;
         }
 
@@ -382,7 +384,9 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
         cur->data.d_expression.head = emalloc(sizeof(struct ast_node));
         cur->data.d_expression.head->type = AST_HEAD;
 
-        build_parse_tree(lex_tok, lex_tok_values, lex_idx, lex_tok_count, cur->data.d_expression.head, err);
+        if (!build_parse_tree(lex_tok, lex_tok_values, lex_idx, lex_tok_count, cur->data.d_expression.head)) {
+          return false;
+        }
 
         group_operands_under_value(cur->data.d_expression.head);
         insert_isset_nodes(cur->data.d_expression.head);
@@ -449,7 +453,7 @@ bool validate_parse_tree(struct ast_node* head) {
   return true;
 }
 
-void parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
+bool parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
                        int lex_tok_count, struct ast_node* tok) {
   int slice_count = 0;
 
@@ -462,7 +466,7 @@ void parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][P
     if (lex_tok[*lex_idx] == LEX_EXPR_END) {
       /* lex_idx must point to LEX_EXPR_END after function returns */
       (*lex_idx)--;
-      return;
+      break;
     } else if (lex_tok[*lex_idx] == LEX_CHILD_SEP) {
       tok->type = AST_INDEX_LIST;
     } else if (lex_tok[*lex_idx] == LEX_SLICE) {
@@ -483,9 +487,11 @@ void parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][P
       tok->data.d_list.indexes[tok->data.d_list.count] = atoi(lex_tok_values[*lex_idx]);
       tok->data.d_list.count++;
     } else {
-      // todo error
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token in filter: %s", LEX_STR[lex_tok[*lex_idx]]);
+      return false;
     }
   }
+  return true;
 }
 
 operator_type get_token_type(enum ast_type type) {
