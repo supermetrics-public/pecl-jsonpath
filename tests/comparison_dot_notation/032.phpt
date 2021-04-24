@@ -21,4 +21,7 @@ var_dump($result);
 ?>
 --EXPECT--
 Assertion 1
-bool(false)
+array(1) {
+  [0]=>
+  string(5) "third"
+}
