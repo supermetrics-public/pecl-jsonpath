@@ -1,6 +1,7 @@
 # JsonPath-PHP - extension for PHP 5.x/7.x
 
 [![Build status](https://github.com/supermetrics/php-ext-jsonpath/workflows/Build/badge.svg)](https://github.com/supermetrics/php-ext-jsonpath/actions?query=workflow%3ABuild)
+![Code coverage](https://gist.githubusercontent.com/crocodele/5ceb08845fe95635fc41af2f4c86c631/raw/php-ext-jsonpath__main.json)
 
 ![wrk Benchmark Results](https://cloud.githubusercontent.com/assets/2894330/16245444/e95992be-37ce-11e6-82f9-ad59495fc510.png)
 
