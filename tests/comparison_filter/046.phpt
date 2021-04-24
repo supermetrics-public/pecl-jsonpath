@@ -35,5 +35,3 @@ array(1) {
     int(42)
   }
 }
---XFAIL--
-This kind of root reference is not currently supported
