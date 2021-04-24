@@ -48,6 +48,38 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-PHP Fatal Error
---XFAIL--
-Should error out due to invalid syntax, now get_token_type: Assertion `0' failed
+Assertion 1
+array(2) {
+  [0]=>
+  array(1) {
+    ["a"]=>
+    array(1) {
+      [0]=>
+      array(1) {
+        ["price"]=>
+        int(11)
+      }
+    }
+  }
+  [1]=>
+  array(1) {
+    ["a"]=>
+    array(3) {
+      [0]=>
+      array(1) {
+        ["price"]=>
+        int(8)
+      }
+      [1]=>
+      array(1) {
+        ["price"]=>
+        int(12)
+      }
+      [2]=>
+      array(1) {
+        ["price"]=>
+        int(3)
+      }
+    }
+  }
+}

@@ -16,7 +16,9 @@ $result = $jsonPath->find($data, "\$a");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now returns false, would be better to error out due to invalid syntax
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Unrecognized token 'a' at position 1 in %s
+Stack trace:
+%s
+%s
+%s
