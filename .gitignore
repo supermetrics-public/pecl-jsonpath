@@ -1,3 +1,4 @@
+# Build
 .deps
 *.lo
 *.la
@@ -14,8 +15,8 @@ config.nice
 config.status
 config.sub
 configure
+configure.ac
 configure.in
-.idea/
 include
 install-sh
 libtool
@@ -27,6 +28,11 @@ Makefile.objects
 missing
 mkinstalldirs
 modules
+
+# Project
+.idea/
+
+# Tests
 run-tests.php
 tests/*/*.diff
 tests/*/*.out
@@ -35,3 +41,7 @@ tests/*/*.exp
 tests/*/*.log
 tests/*/*.sh
 !tests/utils/*.php
+
+# Code coverage
+jsonpath_lcov.info
+lcov_html/

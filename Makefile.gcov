@@ -1,0 +1,39 @@
+#
+# GCOV
+#
+
+LTP = lcov
+LTP_GENHTML = genhtml
+
+lcov: lcov-html
+
+jsonpath_lcov.info:
+	@echo "Generating lcov data for $@"
+	$(LTP) --capture --no-external --directory . --output-file $@
+
+lcov-html: jsonpath_lcov.info
+	@echo "Generating lcov HTML"
+	$(LTP_GENHTML) --legend --output-directory lcov_html/ --title "JSONPath PHP extension code coverage" jsonpath_lcov.info
+
+lcov-summary: jsonpath_lcov.info
+	$(LTP) --summary jsonpath_lcov.info
+
+lcov-clean:
+	rm -f jsonpath_lcov.info
+	rm -rf lcov_html/
+
+lcov-clean-data:
+	@find . -name \*.gcda -o -name \*.da -o -name \*.bbg? | xargs rm -f
+
+gcovr-html:
+	@echo "Generating gcovr HTML"
+	@rm -rf gcovr_html/
+	@mkdir gcovr_html
+	gcovr -sr . -o gcovr_html/index.html --html --html-details
+
+gcovr-xml:
+	@echo "Generating gcovr XML"
+	@rm -f gcovr.xml
+	gcovr -sr . -o gcovr.xml --xml
+
+.PHONY: gcovr-html lcov-html jsonpath_lcov.info

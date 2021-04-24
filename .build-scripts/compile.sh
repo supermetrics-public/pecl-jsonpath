@@ -1,4 +1,4 @@
 #!/bin/bash
 phpize
-./configure --with-jsonpath
+./configure --enable-jsonpath
 make

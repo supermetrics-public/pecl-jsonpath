@@ -1,0 +1,74 @@
+name: Calculate code coverage
+
+on:
+    push:
+        branches: [main]
+
+jobs:
+    tests:
+        runs-on: ubuntu-latest
+        name: Build, run tests with code coverage, create badge
+        strategy:
+            fail-fast: false
+            matrix:
+                php: [8.0]
+
+        steps:
+            -   uses: actions/checkout@v2
+
+            -   name: Get branch name (merge)
+                if: github.event_name != 'pull_request'
+                shell: bash
+                run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+            -   name: Get branch name (pull request)
+                if: github.event_name == 'pull_request'
+                shell: bash
+                run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+            -   name: Install lcov
+                run: sudo apt-get -y install lcov
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: "${{ matrix.php }}"
+                    coverage: none
+                    tools: pecl
+
+            -   name: Compile with code coverage support
+                run: ./.build-scripts/compile-coverage.sh
+
+            -   name: Find PHP
+                run: |
+                    TEST_PHP_EXECUTABLE=`make findphp`
+                    echo "Found PHP in: $TEST_PHP_EXECUTABLE"
+                    echo "TEST_PHP_EXECUTABLE=$TEST_PHP_EXECUTABLE" >> $GITHUB_ENV
+          
+            -   name: Define PHP arguments
+                run: |
+                    TEST_PHP_ARGS="-n"
+                    TEST_PHP_ARGS="$TEST_PHP_ARGS -d extension=$PWD/modules/jsonpath.so"
+                    echo "Test PHP arguments: $TEST_PHP_ARGS"
+                    echo "TEST_PHP_ARGS=$TEST_PHP_ARGS" >> $GITHUB_ENV
+          
+            -   name: Run tests
+                run: |
+                    $TEST_PHP_EXECUTABLE $TEST_PHP_ARGS -v
+                    $TEST_PHP_EXECUTABLE -n run-tests.php -q -x --show-diff
+
+            -   name: Generate code coverage report
+                run: |
+                    COVERAGE=$(make lcov-summary |& grep 'lines...' | grep -Eo ' [0-9.]+' | xargs | awk '{print $1}' | xargs printf "%.*f\n" 0)
+                    echo "Code coverage (lines): $COVERAGE"
+                    echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+            
+            -   name: Create the badge
+                uses: schneegans/dynamic-badges-action@v1.0.0
+                with:
+                    auth: ${{ secrets.GIST_SECRET }}
+                    gistID: 5ceb08845fe95635fc41af2f4c86c631
+                    filename: php-ext-jsonpath__${{ env.BRANCH_NAME }}.json
+                    label: Coverage
+                    message: ${{ env.COVERAGE }}
+                    color: green

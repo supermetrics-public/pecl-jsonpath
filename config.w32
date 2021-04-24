@@ -1,6 +1,6 @@
-ARG_ENABLE('jsonpath', 'enable jsonpath support', 'no');
+ARG_ENABLE('jsonpath', 'enable JSONPath support', 'no');
 
 if (PHP_JSONPATH != 'no') {
-	AC_DEFINE('HAVE_JSONPATH', 1, 'jsonpath support enabled')
+	AC_DEFINE('HAVE_JSONPATH', 1, 'JSONPath support enabled')
 	EXTENSION('jsonpath', 'jsonpath.c', null, '/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1');
 }
