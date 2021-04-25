@@ -61,12 +61,12 @@ PHP_METHOD(JsonPath, find) {
 
   /* assemble an array of query execution instructions from parsed tokens */
 
-  parse_error p_err;
   struct ast_node head;
   int i = 0;
 
-  if (!build_parse_tree(lex_tok, lex_tok_literals, &i, lex_tok_count, &head, &p_err)) {
-    zend_throw_exception(spl_ce_RuntimeException, p_err.msg, 0);
+  if (!build_parse_tree(lex_tok, lex_tok_literals, &i, lex_tok_count, &head)) {
+    free_ast_nodes(head.next);
+    return;
   }
 
   if (!validate_parse_tree(head.next)) {

@@ -261,7 +261,8 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
       case ' ':
         break;
       default:
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unrecognized token '%c' at position %ld", **p, (*p - json_path));
+        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unrecognized token '%c' at position %ld", **p,
+                                (*p - json_path));
         return LEX_ERR;
     }
 
