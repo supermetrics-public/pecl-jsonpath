@@ -38,5 +38,3 @@ array(1) {
     int(10)
   }
 }
---XFAIL--
-Requires more work on filter expressions

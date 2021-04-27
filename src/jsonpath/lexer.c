@@ -14,37 +14,39 @@
 
 #include "safe_string.h"
 
+static int count_numeric_str_len(char* p);
 static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, char* json_path);
 static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, char* json_path);
 static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, char* json_path);
 static bool extract_boolean_literal(char* p, char* buffer, size_t bufSize, char* json_path);
 
 const char* LEX_STR[] = {
-    "LEX_NOT_FOUND",    /* Token not found */
-    "LEX_ROOT",         /* $ */
-    "LEX_CUR_NODE",     /* @ */
-    "LEX_WILD_CARD",    /* * */
-    "LEX_DEEP_SCAN",    /* .. */
-    "LEX_NODE",         /* .child, ['child'] */
-    "LEX_EXPR_END",     /* ] */
-    "LEX_SLICE",        /* : */
-    "LEX_CHILD_SEP",    /* , */
-    "LEX_EXPR_START",   /* ? */
-    "LEX_EQ",           /* == */
-    "LEX_NEQ",          /* != */
-    "LEX_LT",           /* < */
-    "LEX_LTE",          /* <= */
-    "LEX_GT",           /* > */
-    "LEX_GTE",          /* >= */
-    "LEX_RGXP",         /* =~ */
-    "LEX_PAREN_OPEN",   /* ( */
-    "LEX_PAREN_CLOSE",  /* ) */
-    "LEX_LITERAL",      /* "some string" 'some string' */
-    "LEX_LITERAL_BOOL", /* true, false */
-    "LEX_FILTER_START", /* [ */
-    "LEX_AND",          /* && */
-    "LEX_OR",           /* || */
-    "LEX_ERR"           /* Signals lexing error */
+    "LEX_NOT_FOUND",       /* Token not found */
+    "LEX_ROOT",            /* $ */
+    "LEX_CUR_NODE",        /* @ */
+    "LEX_WILD_CARD",       /* * */
+    "LEX_DEEP_SCAN",       /* .. */
+    "LEX_NODE",            /* .child, ['child'] */
+    "LEX_EXPR_END",        /* ] */
+    "LEX_SLICE",           /* : */
+    "LEX_CHILD_SEP",       /* , */
+    "LEX_EXPR_START",      /* ? */
+    "LEX_EQ",              /* == */
+    "LEX_NEQ",             /* != */
+    "LEX_LT",              /* < */
+    "LEX_LTE",             /* <= */
+    "LEX_GT",              /* > */
+    "LEX_GTE",             /* >= */
+    "LEX_RGXP",            /* =~ */
+    "LEX_PAREN_OPEN",      /* ( */
+    "LEX_PAREN_CLOSE",     /* ) */
+    "LEX_LITERAL",         /* "some string" 'some string' */
+    "LEX_LITERAL_BOOL",    /* true, false */
+    "LEX_LITERAL_NUMERIC", /* long, double */
+    "LEX_FILTER_START",    /* [ */
+    "LEX_AND",             /* && */
+    "LEX_OR",              /* || */
+    "LEX_ERR"              /* Signals lexing error */
 };
 
 void raise_error(const char* msg, char* json_path, char* cur_pos) {
@@ -225,7 +227,9 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
         found_token = LEX_WILD_CARD;
         break;
       case 't':
+      case 'T':
       case 'f':
+      case 'F':
         if (!extract_boolean_literal(*p, buffer, bufSize, json_path)) {
           return LEX_ERR;
         }
@@ -233,15 +237,6 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
         found_token = LEX_LITERAL_BOOL;
         break;
       case '-':
-        if (!isdigit(*(*p + 1))) {
-          return LEX_ERR;
-        }
-        if (!extract_unbounded_numeric_literal(*p, buffer, bufSize, json_path)) {
-          return LEX_ERR;
-        }
-        *p += strlen(buffer) - 1;
-        found_token = LEX_LITERAL;
-        break;
       case '0':
       case '1':
       case '2':
@@ -256,7 +251,7 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
           return LEX_ERR;
         }
         *p += strlen(buffer) - 1;
-        found_token = LEX_LITERAL;
+        found_token = LEX_LITERAL_NUMERIC;
         break;
       case ' ':
         break;
@@ -332,38 +327,30 @@ static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, cha
   return true;
 }
 
+/* Count the number of leading contiguous characters that are valid in PHP numeric strings. */
+static int count_numeric_str_len(char* p) {
+  int count = 0;
+
+  while (*p != '\0') {
+    if ((*p >= '0' && *p <= '9') || *p == '.' || *p == '-' || *p == 'e' || *p == 'E') {
+      count++;
+    } else {
+      break;
+    }
+    p++;
+  }
+
+  return count;
+}
+
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
 static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
-  char* start;
-  size_t cpy_len;
+  int len = count_numeric_str_len(p);
 
-  for (; *p == ' '; p++)
-    ;
-
-  start = p;
-
-  if (*p == '-') {
-    p++;
-  }
-
-  for (; isdigit(*p); p++)
-    ;
-
-  // Optional decimal separator and fraction part
-  if (*p != '\0' && *(p + 1) != '\0' && *p == '.' && isdigit(*(p + 1))) {
-    p++;
-
-    for (; isdigit(*p); p++)
-      ;
-  }
-
-  cpy_len = (size_t)(p - start);
-
-  if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
-    raise_error("String exceeded buffer size", json_path, start + bufSize);
+  if (jp_str_cpy(buffer, bufSize, p, len) > 0) {
+    raise_error("String exceeded buffer size", json_path, p + bufSize);
     return false;
   }
-
   return true;
 }
 

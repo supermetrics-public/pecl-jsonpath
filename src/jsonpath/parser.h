@@ -18,6 +18,7 @@ typedef enum {
 enum ast_type {
   AST_AND,
   AST_BOOL,
+  AST_DOUBLE,
   AST_EQ,
   AST_EXPR,
   AST_GT,
@@ -25,8 +26,8 @@ enum ast_type {
   AST_INDEX_LIST,
   AST_INDEX_SLICE,
   AST_ISSET,
-  AST_LITERAL_BOOL,
   AST_LITERAL,
+  AST_LONG,
   AST_LT,
   AST_LTE,
   AST_NE,
@@ -63,6 +64,12 @@ union ast_node_data {
   struct {
     struct ast_node* head;
   } d_value;
+  struct {
+    double value;
+  } d_double;
+  struct {
+    long value;
+  } d_long;
 };
 
 struct ast_node {

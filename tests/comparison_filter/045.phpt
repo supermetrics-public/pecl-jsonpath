@@ -59,5 +59,3 @@ array(1) {
     bool(true)
   }
 }
---XFAIL--
-Outcome depends on how values of different types are compared
