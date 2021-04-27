@@ -41,5 +41,3 @@ array(1) {
     float(-12.3)
   }
 }
---XFAIL--
-Requires more work on filter expressions

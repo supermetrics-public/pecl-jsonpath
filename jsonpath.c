@@ -111,6 +111,7 @@ bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_
       case LEX_NODE:
       case LEX_LITERAL:
       case LEX_LITERAL_BOOL:
+      case LEX_LITERAL_NUMERIC:
         strcpy(tok_literals[i], buffer);
         break;
       case LEX_ERR:

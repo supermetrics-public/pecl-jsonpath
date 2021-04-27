@@ -25,12 +25,13 @@ bool validate_root_next(struct ast_node* head);
 void group_operands_under_value(struct ast_node* head);
 void insert_isset_nodes(struct ast_node* head);
 bool is_isset_operand(struct ast_node* prev, struct ast_node* cur);
+bool numeric_to_long(char* str, int str_len, long* dest);
 
-const char* AST_STR[] = {"AST_AND",        "AST_BOOL",        "AST_EQ",          "AST_EXPR",  "AST_GT",
-                         "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_ISSET", "AST_LITERAL_BOOL",
-                         "AST_LITERAL",    "AST_LT",          "AST_LTE",         "AST_NE",    "AST_OR",
-                         "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",     "AST_RGXP",  "AST_ROOT",
-                         "AST_SELECTOR",   "AST_WILD_CARD",   "AST_HEAD",        "AST_VALUE"};
+const char* AST_STR[] = {"AST_AND",     "AST_BOOL",       "AST_DOUBLE",      "AST_EQ",          "AST_EXPR",
+                         "AST_GT",      "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_ISSET",
+                         "AST_LITERAL", "AST_LONG",       "AST_LT",          "AST_LTE",         "AST_NE",
+                         "AST_OR",      "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",     "AST_RGXP",
+                         "AST_ROOT",    "AST_SELECTOR",   "AST_WILD_CARD",   "AST_HEAD",        "AST_VALUE"};
 
 struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type) {
   struct ast_node* next = emalloc(sizeof(struct ast_node));
@@ -69,9 +70,18 @@ void print_ast(struct ast_node* head, const char* m, int level) {
     }
     printf("➔ %s", AST_STR[head->type]);
     switch (head->type) {
+      case AST_BOOL:
+        printf(" [val=%d]\n", head->data.d_literal.value_bool);
+        break;
       case AST_EXPR:
         printf("\n");
         print_ast(head->data.d_expression.head, m, level + 1);
+        break;
+      case AST_LONG:
+        printf(" [val=%ld]\n", head->data.d_long.value);
+        break;
+      case AST_DOUBLE:
+        printf(" [val=%f]\n", head->data.d_double.value);
         break;
       case AST_VALUE:
         printf("\n");
@@ -250,6 +260,37 @@ bool convert_to_postfix(struct ast_node* expr_start) {
   return true;
 }
 
+bool make_numeric_node(struct ast_node* tok, char* str, int str_len) {
+  zend_long lval;
+  double dval;
+  int oflow_info;
+  zend_uchar res;
+
+#if PHP_MAJOR_VERSION >= 8
+  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info, NULL);
+#else
+  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info);
+#endif
+
+  /* did the conversion overflow? */
+  if (oflow_info != 0) {
+    return false;
+  }
+
+  switch (res) {
+    case IS_LONG:
+      tok->type = AST_LONG;
+      tok->data.d_long.value = lval;
+      return true;
+    case IS_DOUBLE:
+      tok->type = AST_DOUBLE;
+      tok->data.d_double.value = dval;
+      return true;
+  }
+
+  return false;
+}
+
 bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
                       int lex_tok_count, struct ast_node* head) {
   struct ast_node* cur = head;
@@ -288,6 +329,8 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
         (*lex_idx)++;
 
         switch (lex_tok[*lex_idx]) {
+          case LEX_LITERAL_NUMERIC:
+            /* fall-through */
           case LEX_LITERAL:
             /* fall-through */
           case LEX_SLICE:
@@ -333,19 +376,23 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
         }
 
         break;
-      case LEX_LITERAL_BOOL:
-        cur = ast_alloc_node(cur, AST_LITERAL_BOOL);
-
-        if (jp_str_cpy(cur->data.d_literal.value, PARSE_BUF_LEN, lex_tok_values[*lex_idx],
-                       strlen(lex_tok_values[*lex_idx])) > 0) {
-          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Buffer size exceeded");
+      case LEX_LITERAL_NUMERIC:
+        cur = ast_alloc_node(cur, AST_DOUBLE);
+        if (!make_numeric_node(cur, lex_tok_values[*lex_idx], strlen(lex_tok_values[*lex_idx]))) {
+          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric.");
           return false;
         }
+        break;
+      case LEX_LITERAL_BOOL:
+        cur = ast_alloc_node(cur, AST_BOOL);
 
-        if (strcmp(cur->data.d_literal.value, "true") == 0) {
-          jp_str_cpy(cur->data.d_literal.value, PARSE_BUF_LEN, "JP_LITERAL_TRUE", 15);
-        } else if (strcmp(cur->data.d_literal.value, "false") == 0) {
-          jp_str_cpy(cur->data.d_literal.value, PARSE_BUF_LEN, "JP_LITERAL_FALSE", 16);
+        if (strncasecmp("true", lex_tok_values[*lex_idx], 4) == 0) {
+          cur->data.d_literal.value_bool = true;
+        } else if (strncasecmp("false", lex_tok_values[*lex_idx], 5) == 0) {
+          cur->data.d_literal.value_bool = false;
+        } else {
+          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Expected `true` or `false` for boolean token.");
+          return false;
         }
         break;
       case LEX_LT:
@@ -446,8 +493,9 @@ bool validate_parse_tree(struct ast_node* head) {
         break;
       case AST_RECURSE:
         if (cur->next == NULL || (cur->next->type == AST_SELECTOR && cur->next->data.d_selector.value[0] == '\0')) {
-          zend_throw_exception(spl_ce_RuntimeException,
-                               "Recursive descent operator (..) must be followed by a child selector, filter or wildcard.", 0);
+          zend_throw_exception(
+              spl_ce_RuntimeException,
+              "Recursive descent operator (..) must be followed by a child selector, filter or wildcard.", 0);
           return false;
         }
         break;
@@ -456,6 +504,32 @@ bool validate_parse_tree(struct ast_node* head) {
     }
     cur = cur->next;
   }
+
+  return true;
+}
+
+bool numeric_to_long(char* str, int str_len, long* dest) {
+  zend_long lval;
+  double dval;
+  int oflow_info;
+  zend_uchar res;
+
+#if PHP_MAJOR_VERSION >= 8
+  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info, NULL);
+#else
+  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info);
+#endif
+
+  /* did the conversion overflow? */
+  if (oflow_info != 0) {
+    return false;
+  }
+
+  if (res != IS_LONG) {
+    return false;
+  }
+
+  *dest = lval;
 
   return true;
 }
@@ -503,8 +577,15 @@ bool parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][P
         }
         tok->data.d_list.count++;
       }
-    } else if (lex_tok[*lex_idx] == LEX_LITERAL) {
-      tok->data.d_list.indexes[tok->data.d_list.count] = atoi(lex_tok_values[*lex_idx]);
+    } else if (lex_tok[*lex_idx] == LEX_LITERAL_NUMERIC) {
+      long idx = 0;
+
+      if (!numeric_to_long(lex_tok_values[*lex_idx], strlen(lex_tok_values[*lex_idx]), &idx)) {
+        zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value.", 0);
+        return false;
+      }
+
+      tok->data.d_list.indexes[tok->data.d_list.count] = idx;
       tok->data.d_list.count++;
     } else {
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token in filter: %s", LEX_STR[lex_tok[*lex_idx]]);
@@ -564,7 +645,6 @@ int get_operator_precedence(struct ast_node* tok) {
     case AST_PAREN_LEFT:
     case AST_PAREN_RIGHT:
     case AST_LITERAL:
-    case AST_LITERAL_BOOL:
     case AST_BOOL:
     default:
       assert(0);

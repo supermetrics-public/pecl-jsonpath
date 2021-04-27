@@ -59,5 +59,3 @@ array(1) {
     bool(false)
   }
 }
---XFAIL--
-Requires more work on filter expressions

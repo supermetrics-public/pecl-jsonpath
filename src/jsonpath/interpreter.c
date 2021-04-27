@@ -253,8 +253,14 @@ zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval
     case AST_BOOL:
       ZVAL_BOOL(tmp_dest, src->data.d_value.head->data.d_literal.value_bool);
       return tmp_dest;
+    case AST_DOUBLE:
+      ZVAL_DOUBLE(tmp_dest, src->data.d_value.head->data.d_double.value);
+      return tmp_dest;
     case AST_LITERAL:
       ZVAL_STRING(tmp_dest, src->data.d_value.head->data.d_literal.value);
+      return tmp_dest;
+    case AST_LONG:
+      ZVAL_LONG(tmp_dest, src->data.d_value.head->data.d_long.value);
       return tmp_dest;
     case AST_ROOT:
       ZVAL_INDIRECT(tmp_dest, NULL);
@@ -314,7 +320,7 @@ bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operato
 
   switch (operator_type) {
     case AST_EQ:
-      ret = compare(val_lh, val_rh) == 0;
+      ret = fast_is_identical_function(val_lh, val_rh);
       break;
     case AST_NE:
       ret = compare(val_lh, val_rh) != 0;
