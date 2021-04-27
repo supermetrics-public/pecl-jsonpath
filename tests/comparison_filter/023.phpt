@@ -82,9 +82,7 @@ Assertion 1
 array(1) {
   [0]=>
   array(1) {
-    [0]=>
+    ["key"]=>
     int(42)
   }
 }
---XFAIL--
-Outcome depends on how values of different types are compared
