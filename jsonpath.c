@@ -69,14 +69,14 @@ PHP_METHOD(JsonPath, find) {
     return;
   }
 
+#ifdef JSONPATH_DEBUG
+  print_ast(head.next, "Parser - AST sent to interpreter", 0);
+#endif
+
   if (!validate_parse_tree(head.next)) {
     free_ast_nodes(head.next);
     return;
   }
-
-#ifdef JSONPATH_DEBUG
-  print_ast(head.next, "Parser - AST sent to interpreter", 0);
-#endif
 
   /* execute the JSON-path query instructions against the search target (PHP object/array) */
 

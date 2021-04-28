@@ -307,8 +307,12 @@ bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operato
 
   bool ret = false;
 
+  /* handle unary operators */
   if (operator_type == AST_ISSET) {
     ret = val_lh != NULL;
+    goto FREE_LHS;
+  } else if (operator_type == AST_NEGATION) {
+    ret = !(Z_TYPE_P(val_lh) == IS_TRUE);
     goto FREE_LHS;
   }
 

@@ -32,6 +32,7 @@ enum ast_type {
   AST_LT,
   AST_LTE,
   AST_NE,
+  AST_NEGATION,
   AST_OR,
   AST_PAREN_LEFT,
   AST_PAREN_RIGHT,

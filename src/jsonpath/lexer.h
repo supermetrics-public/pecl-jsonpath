@@ -20,6 +20,7 @@ typedef enum {
   LEX_LITERAL,         /* "some string" 'some string' */
   LEX_LT,              /* < */
   LEX_LTE,             /* <= */
+  LEX_NEGATION,        /* !@.value */
   LEX_NEQ,             /* != */
   LEX_NODE,            /* .child, ['child'] */
   LEX_NOT_FOUND,       /* Token not found */

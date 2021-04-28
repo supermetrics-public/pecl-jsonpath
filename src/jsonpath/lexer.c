@@ -37,6 +37,7 @@ const char* LEX_STR[] = {
     "LEX_LITERAL",         /* "some string" 'some string' */
     "LEX_LT",              /* < */
     "LEX_LTE",             /* <= */
+    "LEX_NEGATION",        /* !@.value */
     "LEX_NEQ",             /* != */
     "LEX_NODE",            /* .child, ['child'] */
     "LEX_NOT_FOUND",       /* Token not found */
@@ -158,14 +159,12 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
 
         break;
       case '!':
-        (*p)++;
-
-        if (**p != '=') {
-          raise_error("! operator missing =", json_path, *p);
-          return LEX_ERR;
+        if (*(*p + 1) == '=') {
+          found_token = LEX_NEQ;
+          (*p)++;
+        } else {
+          found_token = LEX_NEGATION;
         }
-
-        found_token = LEX_NEQ;
         break;
       case '>':
         if (*(*p + 1) == '=') {

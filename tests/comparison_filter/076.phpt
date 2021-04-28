@@ -1,5 +1,5 @@
 --TEST--
-Test filter expression without value
+Test filter expression with misplaced negation operator
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--
@@ -45,17 +45,13 @@ $data = [
 ];
 
 $jsonPath = new JsonPath();
-$result = $jsonPath->find($data, "$[?(!@.key)]");
+$result = $jsonPath->find($data, "$[?(@.key!)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-Assertion 1
-array(1) {
-  [0]=>
-  array(1) {
-    ["some"]=>
-    string(10) "some value"
-  }
-}
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: The negation operator (!) must be followed by an expression or isset. in %s
+Stack trace:
+%s
+%s
+%s

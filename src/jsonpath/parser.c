@@ -44,6 +44,7 @@ const char* AST_STR[] = {
     "AST_LT",           //
     "AST_LTE",          //
     "AST_NE",           //
+    "AST_NEGATION",     //
     "AST_OR",           //
     "AST_PAREN_LEFT",   //
     "AST_PAREN_RIGHT",  //
@@ -128,7 +129,8 @@ void print_ast(struct ast_node* head, const char* m, int level) {
 #endif
 
 bool is_isset_operand(struct ast_node* prev, struct ast_node* cur) {
-  return (prev->type == AST_AND || prev->type == AST_OR || prev->type == AST_PAREN_LEFT) &&
+  return (prev->type == AST_AND || prev->type == AST_OR || prev->type == AST_PAREN_LEFT ||
+          prev->type == AST_NEGATION) &&
          (cur->next == NULL || cur->next->type == AST_AND || cur->next->type == AST_OR ||
           cur->next->type == AST_PAREN_RIGHT);
 }
@@ -465,6 +467,9 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
         convert_to_postfix(cur->data.d_expression.head);
         delete_expression_head_node(cur);
         break;
+      case LEX_NEGATION:
+        cur = ast_alloc_node(cur, AST_NEGATION);
+        break;
       case LEX_EXPR_END:
         /* return call initiated by LEX_EXPR_START */
         return true;
@@ -494,6 +499,7 @@ bool validate_root_next(struct ast_node* head) {
 
 bool validate_parse_tree(struct ast_node* head) {
   struct ast_node* cur = head;
+  struct ast_node* prev = NULL;
 
   while (cur != NULL) {
     switch (cur->type) {
@@ -512,6 +518,9 @@ bool validate_parse_tree(struct ast_node* head) {
           zend_throw_exception(spl_ce_RuntimeException, "Filter expressions may not be empty.", 0);
           return false;
         }
+        if (!validate_parse_tree(cur->data.d_expression.head)) {
+          return false;
+        }
         break;
       case AST_RECURSE:
         if (cur->next == NULL || (cur->next->type == AST_SELECTOR && cur->next->data.d_selector.value[0] == '\0')) {
@@ -521,9 +530,18 @@ bool validate_parse_tree(struct ast_node* head) {
           return false;
         }
         break;
+      case AST_NEGATION:
+        /* check prev since expressions are in postfix notation */
+        if (prev == NULL || (get_token_type(prev->type) != TYPE_OPERATOR)) {
+          zend_throw_exception(spl_ce_RuntimeException,
+                               "The negation operator (!) must be followed by an expression or isset.", 0);
+          return false;
+        }
+        break;
       default:
         break;
     }
+    prev = cur;
     cur = cur->next;
   }
 
@@ -619,15 +637,16 @@ bool parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][P
 
 operator_type get_token_type(enum ast_type type) {
   switch (type) {
+    case AST_AND:
     case AST_EQ:
-    case AST_NE:
-    case AST_LT:
-    case AST_LTE:
     case AST_GT:
     case AST_GTE:
-    case AST_OR:
-    case AST_AND:
     case AST_ISSET:
+    case AST_LT:
+    case AST_LTE:
+    case AST_NE:
+    case AST_NEGATION:
+    case AST_OR:
     case AST_RGXP:
       return TYPE_OPERATOR;
     case AST_PAREN_LEFT:
@@ -638,13 +657,15 @@ operator_type get_token_type(enum ast_type type) {
   }
 }
 
-bool is_unary(enum ast_type type) { return type == AST_ISSET; }
+bool is_unary(enum ast_type type) { return type == AST_ISSET || type == AST_NEGATION; }
 
 // TODO: Distinguish between operator and token?
 int get_operator_precedence(struct ast_node* tok) {
   switch (tok->type) {
     case AST_ISSET:
       return 10000;
+    case AST_NEGATION:
+      return 1000;
     case AST_LT:
       return 1000;
     case AST_LTE:
