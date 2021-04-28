@@ -23,6 +23,7 @@ enum ast_type {
   AST_EXPR,
   AST_GT,
   AST_GTE,
+  AST_HEAD,
   AST_INDEX_LIST,
   AST_INDEX_SLICE,
   AST_ISSET,
@@ -38,9 +39,8 @@ enum ast_type {
   AST_RGXP,
   AST_ROOT,
   AST_SELECTOR,
+  AST_VALUE,
   AST_WILD_CARD,
-  AST_HEAD,
-  AST_VALUE
 };
 
 extern const char* AST_STR[];

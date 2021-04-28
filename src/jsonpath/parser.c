@@ -27,11 +27,33 @@ void insert_isset_nodes(struct ast_node* head);
 bool is_isset_operand(struct ast_node* prev, struct ast_node* cur);
 bool numeric_to_long(char* str, int str_len, long* dest);
 
-const char* AST_STR[] = {"AST_AND",     "AST_BOOL",       "AST_DOUBLE",      "AST_EQ",          "AST_EXPR",
-                         "AST_GT",      "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_ISSET",
-                         "AST_LITERAL", "AST_LONG",       "AST_LT",          "AST_LTE",         "AST_NE",
-                         "AST_OR",      "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",     "AST_RGXP",
-                         "AST_ROOT",    "AST_SELECTOR",   "AST_WILD_CARD",   "AST_HEAD",        "AST_VALUE"};
+const char* AST_STR[] = {
+    "AST_AND",          //
+    "AST_BOOL",         //
+    "AST_DOUBLE",       //
+    "AST_EQ",           //
+    "AST_EXPR",         //
+    "AST_GT",           //
+    "AST_GTE",          //
+    "AST_HEAD",         //
+    "AST_INDEX_LIST",   //
+    "AST_INDEX_SLICE",  //
+    "AST_ISSET",        //
+    "AST_LITERAL",      //
+    "AST_LONG",         //
+    "AST_LT",           //
+    "AST_LTE",          //
+    "AST_NE",           //
+    "AST_OR",           //
+    "AST_PAREN_LEFT",   //
+    "AST_PAREN_RIGHT",  //
+    "AST_RECURSE",      //
+    "AST_RGXP",         //
+    "AST_ROOT",         //
+    "AST_SELECTOR",     //
+    "AST_VALUE",        //
+    "AST_WILD_CARD",    //
+};
 
 struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type) {
   struct ast_node* next = emalloc(sizeof(struct ast_node));
