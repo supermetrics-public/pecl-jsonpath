@@ -59,5 +59,3 @@ array(1) {
     NULL
   }
 }
---XFAIL--
-Requires more work on filter expressions

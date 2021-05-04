@@ -260,6 +260,9 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
     case AST_LONG:
       ZVAL_LONG(tmp_dest, src->data.d_long.value);
       return tmp_dest;
+    case AST_NULL:
+      ZVAL_NULL(tmp_dest);
+      return tmp_dest;
     case AST_ROOT:
       ZVAL_INDIRECT(tmp_dest, NULL);
       eval_ast(arr_head, arr_head, src, tmp_dest);
@@ -293,23 +296,6 @@ void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok
   }
 }
 
-bool is_binary(enum ast_type type) {
-  switch (type) {
-    case AST_AND:
-    case AST_EQ:
-    case AST_GT:
-    case AST_GTE:
-    case AST_LT:
-    case AST_LTE:
-    case AST_NE:
-    case AST_OR:
-    case AST_RGXP:
-      return true;
-    default:
-      return false;
-  }
-}
-
 bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   if (is_binary(tok->type)) {
     return evaluate_binary(arr_head, arr_cur, tok);
@@ -320,7 +306,7 @@ bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
     return evaluate_primary(tok, &tmp, arr_head, arr_cur) != NULL;
   }
 
-  // TODO throw exception
+  /* Validating the parse tree should ensure that we never end up here */
   return false;
 }
 
