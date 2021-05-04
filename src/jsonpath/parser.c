@@ -367,6 +367,12 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       }
       strcpy(tail->data.d_selector.value, CUR_TOKEN_LITERAL());
       CONSUME_TOKEN();
+
+      if (CUR_TOKEN() == LEX_WILD_CARD) {
+        free_ast_nodes(ret);
+        zend_throw_exception(spl_ce_RuntimeException, "Multiplying node values is not supported.", 0);
+        return NULL;
+      }
     }
 
     /* handle @.node[?(...)] */
@@ -387,6 +393,12 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   if (CUR_TOKEN() == LEX_PAREN_OPEN) {
     CONSUME_TOKEN();
     struct ast_node* expr = parse_or(PARSER_ARGS);
+
+    // Abort if parsing the expression resulted in an exception
+    if (expr == NULL) {
+      return NULL;
+    }
+
     if (CUR_TOKEN() == LEX_PAREN_CLOSE) {
       CONSUME_TOKEN();
       return expr;
