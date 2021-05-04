@@ -46,6 +46,7 @@ const char* LEX_STR[] = {
     "LEX_FILTER_START",    /* [ */
     "LEX_AND",             /* && */
     "LEX_OR",              /* || */
+    "LEX_NEGATION",        /* !@.value */
     "LEX_ERR"              /* Signals lexing error */
 };
 
@@ -154,18 +155,19 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
           found_token = LEX_EQ;
         } else if (**p == '~') {
           found_token = LEX_RGXP;
+        } else {
+          raise_error("Invalid character after '='. Valid values: '==', '!~'.", json_path, *p);
+          return LEX_ERR;
         }
 
         break;
       case '!':
-        (*p)++;
-
-        if (**p != '=') {
-          raise_error("! operator missing =", json_path, *p);
-          return LEX_ERR;
+        if (*(*p + 1) == '=') {
+          found_token = LEX_NEQ;
+          (*p)++;
+        } else {
+          found_token = LEX_NEGATION;
         }
-
-        found_token = LEX_NEQ;
         break;
       case '>':
         if (*(*p + 1) == '=') {

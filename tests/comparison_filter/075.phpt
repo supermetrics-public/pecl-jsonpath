@@ -59,5 +59,3 @@ array(1) {
     string(10) "some value"
   }
 }
---XFAIL--
-This syntax is not currently supported
