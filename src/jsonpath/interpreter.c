@@ -3,22 +3,20 @@
 #include <ext/pcre/php_pcre.h>
 
 #include "lexer.h"
-#include "stack.h"
 
 int compare(zval* lh, zval* rh);
 bool compare_rgxp(zval* lh, zval* rh);
-bool evaluate_postfix_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
-bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operator_type, struct ast_node* lh_operand,
-                            struct ast_node* rh_operand);
 void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur);
+zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur);
 bool break_if_result_found(zval* return_value);
 void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 
 void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   while (tok != NULL) {
@@ -206,7 +204,7 @@ void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* 
   zval* data;
 
   ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr_cur), num_key, key, data) {
-    if (evaluate_postfix_expression(arr_head, data, tok->data.d_expression.head)) {
+    if (evaluate_expression(arr_head, data, tok->data.d_expression.head)) {
       copy_result_or_continue(arr_head, data, tok, return_value);
       if (break_if_result_found(return_value)) {
         break;
@@ -248,27 +246,27 @@ bool compare_rgxp(zval* lh, zval* rh) {
   return Z_LVAL(retval) > 0;
 }
 
-zval* operand_to_zval(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur) {
-  switch (src->data.d_value.head->type) {
+zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur) {
+  switch (src->type) {
     case AST_BOOL:
-      ZVAL_BOOL(tmp_dest, src->data.d_value.head->data.d_literal.value_bool);
+      ZVAL_BOOL(tmp_dest, src->data.d_literal.value_bool);
       return tmp_dest;
     case AST_DOUBLE:
-      ZVAL_DOUBLE(tmp_dest, src->data.d_value.head->data.d_double.value);
+      ZVAL_DOUBLE(tmp_dest, src->data.d_double.value);
       return tmp_dest;
     case AST_LITERAL:
-      ZVAL_STRING(tmp_dest, src->data.d_value.head->data.d_literal.value);
+      ZVAL_STRING(tmp_dest, src->data.d_literal.value);
       return tmp_dest;
     case AST_LONG:
-      ZVAL_LONG(tmp_dest, src->data.d_value.head->data.d_long.value);
+      ZVAL_LONG(tmp_dest, src->data.d_long.value);
       return tmp_dest;
     case AST_ROOT:
       ZVAL_INDIRECT(tmp_dest, NULL);
-      eval_ast(arr_head, arr_head, src->data.d_value.head, tmp_dest);
+      eval_ast(arr_head, arr_head, src, tmp_dest);
       return Z_INDIRECT_P(tmp_dest);
     case AST_SELECTOR:
       ZVAL_INDIRECT(tmp_dest, NULL);
-      eval_ast(arr_head, arr_cur, src->data.d_value.head, tmp_dest);
+      eval_ast(arr_head, arr_cur, src, tmp_dest);
       return Z_INDIRECT_P(tmp_dest);
     default:
       assert(0);
@@ -295,30 +293,77 @@ void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok
   }
 }
 
-bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operator_type, struct ast_node* lh_operand,
-                            struct ast_node* rh_operand) {
+bool is_binary(enum ast_type type) {
+  switch (type) {
+    case AST_AND:
+    case AST_EQ:
+    case AST_GT:
+    case AST_GTE:
+    case AST_LT:
+    case AST_LTE:
+    case AST_NE:
+    case AST_OR:
+    case AST_RGXP:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
+  if (is_binary(tok->type)) {
+    return evaluate_binary(arr_head, arr_cur, tok);
+  }
+
+  if (tok->type == AST_SELECTOR) {
+    zval tmp = {0};
+    return evaluate_primary(tok, &tmp, arr_head, arr_cur) != NULL;
+  }
+
+  // TODO throw exception
+  return false;
+}
+
+bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   /* use stack-allocated zvals in order to avoid malloc, if possible */
   zval tmp_lh = {0}, tmp_rh = {0};
+  zval *val_lh = &tmp_lh, *val_rh = &tmp_rh;
+  struct ast_node *lh_operand = tok->data.d_binary.left, *rh_operand = tok->data.d_binary.right;
 
-  zval* val_lh = operand_to_zval(lh_operand, &tmp_lh, arr_head, arr_cur);
+  if (is_binary(lh_operand->type)) {
+    bool result = evaluate_binary(arr_head, arr_cur, lh_operand);
+    ZVAL_BOOL(val_lh, result);
+  } else if (lh_operand->type == AST_SELECTOR && (tok->type == AST_OR || tok->type == AST_AND)) {
+    /* ?(@.selector <or|and> [operand]) */
+    bool exists = (evaluate_primary(lh_operand, &tmp_lh, arr_head, arr_cur) != NULL);
+    ZVAL_BOOL(val_lh, exists);
+  } else {
+    val_lh = evaluate_primary(lh_operand, &tmp_lh, arr_head, arr_cur);
+  }
+
   if (val_lh == NULL) {
     return false;
   }
 
-  bool ret = false;
-
-  if (operator_type == AST_ISSET) {
-    ret = val_lh != NULL;
-    goto FREE_LHS;
+  if (is_binary(rh_operand->type)) {
+    bool result = evaluate_binary(arr_head, arr_cur, rh_operand);
+    ZVAL_BOOL(val_rh, result);
+  } else if (rh_operand->type == AST_SELECTOR && (tok->type == AST_OR || tok->type == AST_AND)) {
+    /* ?([operand] <or|and> @.selector) */
+    bool exists = evaluate_primary(rh_operand, &tmp_rh, arr_head, arr_cur) != NULL;
+    ZVAL_BOOL(val_rh, exists);
+  } else {
+    val_rh = evaluate_primary(rh_operand, &tmp_rh, arr_head, arr_cur);
   }
 
-  zval* val_rh = operand_to_zval(rh_operand, &tmp_rh, arr_head, arr_cur);
+  bool ret = false;
+
   if (val_rh == NULL) {
     ret = false;
     goto FREE_LHS;
   }
 
-  switch (operator_type) {
+  switch (tok->type) {
     case AST_EQ:
       ret = fast_is_identical_function(val_lh, val_rh);
       break;
@@ -351,75 +396,16 @@ bool evaluate_subexpression(zval* arr_head, zval* arr_cur, enum ast_type operato
       break;
   }
 
-  /* clean up strings allocated in operand_to_zval() */
+  /* clean up strings allocated in evaluate_primary() */
 
-  if (rh_operand->data.d_value.head->type == AST_LITERAL) {
+  if (rh_operand->type == AST_LITERAL) {
     zval_ptr_dtor(val_rh);
   }
 
 FREE_LHS:
-  if (lh_operand->data.d_value.head->type == AST_LITERAL) {
+  if (lh_operand->type == AST_LITERAL) {
     zval_ptr_dtor(val_lh);
   }
 
   return ret;
-}
-
-bool evaluate_postfix_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
-  stack s;
-  stack_init(&s);
-  struct ast_node* expr_lh;
-  struct ast_node* expr_rh;
-
-  /* op_true & op_false temporarily store subexpressions results on the stack */
-  struct ast_node op_true = {0}, bool_true = {0};
-
-  op_true.type = AST_VALUE;
-  op_true.data.d_value.head = &bool_true;
-  op_true.data.d_value.head->type = AST_BOOL;
-  op_true.data.d_value.head->data.d_literal.value_bool = true;
-
-  struct ast_node op_false = {0}, bool_false = {0};
-
-  op_false.type = AST_VALUE;
-  op_false.data.d_value.head = &bool_false;
-  op_false.data.d_value.head->type = AST_BOOL;
-  op_false.data.d_value.head->data.d_literal.value_bool = false;
-
-  while (tok != NULL) {
-    switch (get_token_type(tok->type)) {
-      case TYPE_OPERATOR:
-
-        if (is_unary(tok->type)) {
-          expr_rh = NULL;
-          expr_lh = stack_top(&s);
-        } else {
-          expr_rh = stack_top(&s);
-          stack_pop(&s);
-          expr_lh = stack_top(&s);
-        }
-
-        stack_pop(&s);
-
-        if (evaluate_subexpression(arr_head, arr_cur, tok->type, expr_lh, expr_rh)) {
-          stack_push(&s, &op_true);
-        } else {
-          stack_push(&s, &op_false);
-        }
-
-        break;
-      case TYPE_OPERAND:
-        stack_push(&s, tok);
-        break;
-      case TYPE_PAREN:
-        /* there should be no parens in the postfix expression */
-        assert(0);
-    }
-
-    tok = tok->next;
-  }
-
-  expr_lh = stack_top(&s);
-
-  return expr_lh->data.d_value.head->data.d_literal.value_bool;
 }
