@@ -9,7 +9,7 @@ $jsonPath = new JsonPath();
 
 $jsonPath->find([], '$.store.book[?(@.author == "Evelyn Waugh"');
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Query contains unbalanced parens/brackets in %s
+Fatal error: Uncaught RuntimeException: Missing closing paren ) in %s
 Stack trace:
 %s
 %s

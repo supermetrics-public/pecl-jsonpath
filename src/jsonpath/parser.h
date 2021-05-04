@@ -38,14 +38,16 @@ enum ast_type {
   AST_RGXP,
   AST_ROOT,
   AST_SELECTOR,
-  AST_WILD_CARD,
-  AST_HEAD,
-  AST_VALUE
+  AST_WILD_CARD
 };
 
 extern const char* AST_STR[];
 
 union ast_node_data {
+  struct {
+    struct ast_node* left;
+    struct ast_node* right;
+  } d_binary;
   struct {
     struct ast_node* head;
   } d_expression;
@@ -59,7 +61,6 @@ union ast_node_data {
   } d_literal;
   struct {
     char value[PARSE_BUF_LEN];
-    bool child_scope; /* @.selector if true, else $.selector */
   } d_selector;
   struct {
     struct ast_node* head;
@@ -83,7 +84,9 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
 bool sanity_check(lex_token lex_tok[], int lex_tok_count);
 void free_ast_nodes(struct ast_node* head);
 bool validate_parse_tree(struct ast_node* head);
-operator_type get_token_type(enum ast_type);
-bool is_unary(enum ast_type type);
+
+#ifdef JSONPATH_DEBUG
+void print_ast(struct ast_node* head, const char* m, int level);
+#endif
 
 #endif /* PARSER_H */

@@ -9,7 +9,7 @@ $jsonPath = new JsonPath();
 
 $jsonPath->find([], '$.book[');
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Query contains unbalanced parens/brackets in %s
+Fatal error: Uncaught RuntimeException: Missing filter end ] in %s
 Stack trace:
 %s
 %s
