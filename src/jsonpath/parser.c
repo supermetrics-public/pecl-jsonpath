@@ -6,297 +6,68 @@
 #include <ext/spl/spl_exceptions.h>
 
 #include "safe_string.h"
-#include "stack.h"
 #include "zend_exceptions.h"
 
-bool convert_to_postfix(struct ast_node* expr_start);
-bool is_unary(enum ast_type);
-int get_operator_precedence(struct ast_node* tok);
-int get_operator_precedence(struct ast_node* tok);
-struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
-void delete_expression_head_node(struct ast_node* expr);
-bool parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* start,
-                       int lex_tok_count, struct ast_node* tok);
-#ifdef JSONPATH_DEBUG
-void print_ast(struct ast_node* head, const char* m, int level);
-#endif
-bool check_parens_balance(lex_token lex_tok[], int lex_tok_count);
-bool validate_root_next(struct ast_node* head);
-void group_operands_under_value(struct ast_node* head);
-void insert_isset_nodes(struct ast_node* head);
-bool is_isset_operand(struct ast_node* prev, struct ast_node* cur);
-bool numeric_to_long(char* str, int str_len, long* dest);
+#define CONSUME_TOKEN() (*lex_idx)++
+#define CUR_POS() *lex_idx
+#define CUR_TOKEN_LITERAL() lex_tok_values[*lex_idx]
+#define CUR_TOKEN() lex_token[*lex_idx]
+#define HAS_TOKEN() *lex_idx < lex_tok_count
+#define PARSER_ARGS lex_token, lex_tok_values, lex_idx, lex_tok_count
+#define PARSER_PARAMS \
+  lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int *lex_idx, int lex_tok_count
 
-const char* AST_STR[] = {"AST_AND",     "AST_BOOL",       "AST_DOUBLE",      "AST_EQ",          "AST_EXPR",
-                         "AST_GT",      "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_ISSET",
-                         "AST_LITERAL", "AST_LONG",       "AST_LT",          "AST_LTE",         "AST_NE",
-                         "AST_OR",      "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",     "AST_RGXP",
-                         "AST_ROOT",    "AST_SELECTOR",   "AST_WILD_CARD",   "AST_HEAD",        "AST_VALUE"};
+static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right);
+static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
 
-struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type) {
-  struct ast_node* next = emalloc(sizeof(struct ast_node));
-  memset(next, 0, sizeof(struct ast_node));
+static struct ast_node* parse_expression(PARSER_PARAMS);
+static struct ast_node* parse_and(PARSER_PARAMS);
+static struct ast_node* parse_comparison(PARSER_PARAMS);
+static struct ast_node* parse_equality(PARSER_PARAMS);
+static struct ast_node* parse_or(PARSER_PARAMS);
+static struct ast_node* parse_primary(PARSER_PARAMS);
 
-  next->type = type;
-  prev->next = next;
+static bool parse_filter_list(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* start,
+                              int lex_tok_count, struct ast_node* tok);
+static bool validate_root_next(struct ast_node* head);
 
-  return next;
+static bool numeric_to_long(char* str, int str_len, long* dest);
+static bool is_operator(lex_token type);
+static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
+
+const char* AST_STR[] = {"AST_AND",        "AST_BOOL",        "AST_DOUBLE",     "AST_EQ",          "AST_EXPR",
+                         "AST_GT",         "AST_GTE",         "AST_INDEX_LIST", "AST_INDEX_SLICE", "AST_LITERAL",
+                         "AST_LONG",       "AST_LT",          "AST_LTE",        "AST_NE",          "AST_OR",
+                         "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",    "AST_RGXP",        "AST_ROOT",
+                         "AST_SELECTOR",   "AST_WILD_CARD"};
+
+static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right) {
+  struct ast_node* node = ast_alloc_node(NULL, type);
+
+  node->data.d_binary.left = left;
+  node->data.d_binary.right = right;
+
+  return node;
 }
 
-void delete_expression_head_node(struct ast_node* expr) {
-  struct ast_node* tmp = expr->data.d_expression.head;
+static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type) {
+  struct ast_node* node = emalloc(sizeof(struct ast_node));
+  memset(node, 0, sizeof(struct ast_node));
 
-  if (tmp == NULL) {
-    return;
+  node->type = type;
+  if (prev != NULL) {
+    prev->next = node;
   }
 
-  expr->data.d_expression.head = expr->data.d_expression.head->next;
-
-  efree((void*)tmp);
+  return node;
 }
 
-#ifdef JSONPATH_DEBUG
-void print_ast(struct ast_node* head, const char* m, int level) {
-  if (level == 0) {
-    printf("--------------------------------------\n");
-    printf("%s\n\n", m);
-    print_ast(head, m, level + 1);
-    return;
-  }
-
-  while (head != NULL) {
-    for (int i = 0; i < level; i++) {
-      printf("\t");
-    }
-    printf("➔ %s", AST_STR[head->type]);
-    switch (head->type) {
-      case AST_BOOL:
-        printf(" [val=%d]\n", head->data.d_literal.value_bool);
-        break;
-      case AST_EXPR:
-        printf("\n");
-        print_ast(head->data.d_expression.head, m, level + 1);
-        break;
-      case AST_LONG:
-        printf(" [val=%ld]\n", head->data.d_long.value);
-        break;
-      case AST_DOUBLE:
-        printf(" [val=%f]\n", head->data.d_double.value);
-        break;
-      case AST_VALUE:
-        printf("\n");
-        print_ast(head->data.d_value.head, m, level + 1);
-        break;
-      case AST_SELECTOR:
-        printf(" [val=%s]\n", head->data.d_selector.value);
-        break;
-      case AST_LITERAL:
-        printf(" [val=%s]\n", head->data.d_literal.value);
-        break;
-      case AST_INDEX_SLICE:
-        printf(" [start=%d end=%d step=%d]\n", head->data.d_list.indexes[0], head->data.d_list.indexes[1],
-               head->data.d_list.indexes[2]);
-        break;
-      default:
-        printf("\n");
-    }
-    head = head->next;
-  }
-}
-#endif
-
-bool is_isset_operand(struct ast_node* prev, struct ast_node* cur) {
-  return (prev->type == AST_AND || prev->type == AST_OR || prev->type == AST_PAREN_LEFT) &&
-         (cur->next == NULL || cur->next->type == AST_AND || cur->next->type == AST_OR ||
-          cur->next->type == AST_PAREN_RIGHT);
-}
-
-/* Insert ISSET operators next to selectors where needed.                    */
-/* Subexpressions consisting of only one selector operand are intended to    */
-/* test the existence of a field. A selector followed by an ISSET operator   */
-/* instructs to the interpreter to perform the field check. A selector is an */
-/* ISSET operand when both left and right neighbor nodes are parens, OR      */
-/* operators, or AND operators.                                              */
-/* -Example-                                                                 */
-/*  Before:                                                                  */
-/*   HEAD->AST_PAREN_LEFT->AST_VALUE->AST_PAREN_RIGHT                        */
-/*  After:                                                                   */
-/*   HEAD->AST_PAREN_LEFT->AST_VALUE->AST_ISSET->AST_PAREN_RIGHT             */
-void insert_isset_nodes(struct ast_node* head) {
-  struct ast_node* prev = head;
-  struct ast_node* cur = head->next;
-
-  while (cur != NULL) {
-    if (cur->type == AST_VALUE && cur->data.d_value.head->type == AST_SELECTOR) {
-      if (is_isset_operand(prev, cur)) {
-        struct ast_node* tmp = cur->next;
-        cur = ast_alloc_node(cur, AST_ISSET);
-        cur->next = tmp;
-      }
-    }
-    prev = cur;
-    cur = cur->next;
-  }
-}
-
-/* Consolidate contiguous groups of operands under value nodes. This         */
-/* simplifies evaluating expression values in the interpreter.               */
-/* -Example-                                                                 */
-/*  Before:                                                                  */
-/*   HEAD->OPERAND1->OPERAND2->OPERAND3->OPERATOR->...                       */
-/*  After:                                                                   */
-/*   HEAD->VALUE->OPERATOR->...                                              */
-/*          |                                                                */
-/*           \                                                               */
-/*         OPERAND1->OPERAND2->OPERAND3                                      */
-void group_operands_under_value(struct ast_node* head) {
-  struct ast_node* cur = head->next;
-
-  while (cur->next != NULL) {
-    if (get_token_type(cur->next->type) == TYPE_OPERAND) {
-      /* insert value node before operand */
-      struct ast_node* tmp = cur->next;
-      cur = ast_alloc_node(cur, AST_VALUE);
-
-      /* make the rest of the list a child of the value node */
-      cur->data.d_value.head = tmp;
-
-      /* keep a reference to the new value node */
-      struct ast_node* value = cur;
-
-      /* find the first paren or operator node */
-      cur = cur->data.d_value.head;
-      while (cur->next != NULL && get_token_type(cur->next->type) == TYPE_OPERAND) {
-        cur = cur->next;
-      }
-
-      /* assign everything following the operands back to top level */
-      value->next = cur->next;
-      cur->next = NULL;
-      cur = value->next;
-    } else {
-      cur = cur->next;
-    }
-  }
-}
-
-// See http://csis.pace.edu/~wolf/CS122/infix-postfix.htm
-bool convert_to_postfix(struct ast_node* expr_start) {
-  stack s = {0};
-  stack_init(&s);
-  struct ast_node* cur = expr_start->next;
-  struct ast_node* tmp = NULL;
-  struct ast_node* pfix = expr_start;
-
-  while (cur != NULL) {
-    switch (get_token_type(cur->type)) {
-      case TYPE_OPERAND:
-        pfix->next = cur;
-        pfix = pfix->next;
-        cur = cur->next;
-        break;
-      case TYPE_OPERATOR:
-        // TODO check missing operand on RHS
-        // if cur == NULL || (cur->next == NULL && !is_unary(cur->type)) {
-        // }
-        if (!s.size || ((struct ast_node*)stack_top(&s))->type == AST_PAREN_LEFT) {
-          stack_push(&s, cur);
-          cur = cur->next;
-        } else {
-          tmp = stack_top(&s);
-
-          // TODO compare macro or assign to var?
-          if (get_operator_precedence(cur) > get_operator_precedence(tmp)) {
-            stack_push(&s, cur);
-            cur = cur->next;
-          } else if (get_operator_precedence(cur) < get_operator_precedence(tmp)) {
-            pfix->next = tmp;
-            pfix = pfix->next;
-            stack_pop(&s);
-          } else {
-            pfix->next = tmp;
-            pfix = pfix->next;
-
-            stack_pop(&s);
-            stack_push(&s, cur);
-            cur = cur->next;
-          }
-        }
-        break;
-      case TYPE_PAREN:
-        if (cur->type == AST_PAREN_LEFT) {
-          stack_push(&s, cur);
-          cur = cur->next;
-        } else {
-          while (s.size > 0) {
-            tmp = stack_top(&s);
-            stack_pop(&s);
-            if (tmp->type == AST_PAREN_LEFT) {
-              efree(tmp);
-              break;
-            }
-            pfix->next = tmp;
-            pfix = pfix->next;
-          }
-          /* free right paren */
-          tmp = cur;
-          cur = cur->next;
-          efree(tmp);
-        }
-        break;
-    }
-  }
-
-  /* remove remaining elements */
-  while (s.size > 0) {
-    tmp = stack_top(&s);
-    pfix->next = tmp;
-    pfix = pfix->next;
-    stack_pop(&s);
-  }
-
-  pfix->next = cur;
-
-  return true;
-}
-
-bool make_numeric_node(struct ast_node* tok, char* str, int str_len) {
-  zend_long lval;
-  double dval;
-  int oflow_info;
-  zend_uchar res;
-
-#if PHP_MAJOR_VERSION >= 8
-  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info, NULL);
-#else
-  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info);
-#endif
-
-  /* did the conversion overflow? */
-  if (oflow_info != 0) {
-    return false;
-  }
-
-  switch (res) {
-    case IS_LONG:
-      tok->type = AST_LONG;
-      tok->data.d_long.value = lval;
-      return true;
-    case IS_DOUBLE:
-      tok->type = AST_DOUBLE;
-      tok->data.d_double.value = dval;
-      return true;
-  }
-
-  return false;
-}
-
-bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
+bool build_parse_tree(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
                       int lex_tok_count, struct ast_node* head) {
   struct ast_node* cur = head;
 
   for (; *lex_idx < lex_tok_count; (*lex_idx)++) {
-    switch (lex_tok[*lex_idx]) {
+    switch (CUR_TOKEN()) {
       case LEX_WILD_CARD:
         cur = ast_alloc_node(cur, AST_WILD_CARD);
         break;
@@ -312,12 +83,7 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
       case LEX_NODE:
         // fall-through
         cur = ast_alloc_node(cur, AST_SELECTOR);
-        if (lex_tok[*lex_idx] == LEX_CUR_NODE) {
-          cur->data.d_selector.child_scope = true;
-        } else {
-          cur->data.d_selector.child_scope = false;
-        }
-        strcpy(cur->data.d_selector.value, lex_tok_values[*lex_idx]);
+        strcpy(cur->data.d_selector.value, CUR_TOKEN_LITERAL());
         break;
       case LEX_FILTER_START:
 
@@ -326,9 +92,9 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
           return false;
         }
 
-        (*lex_idx)++;
+        CONSUME_TOKEN();
 
-        switch (lex_tok[*lex_idx]) {
+        switch (CUR_TOKEN()) {
           case LEX_LITERAL_NUMERIC:
             /* fall-through */
           case LEX_LITERAL:
@@ -337,7 +103,7 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
             /* fall-through */
           case LEX_CHILD_SEP:
             cur = ast_alloc_node(cur, AST_INDEX_LIST);
-            if (!parse_filter_list(lex_tok, lex_tok_values, lex_idx, lex_tok_count, cur)) {
+            if (!parse_filter_list(lex_token, lex_tok_values, lex_idx, lex_tok_count, cur)) {
               return false;
             }
             break;
@@ -352,100 +118,26 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
             break;
         }
 
-        if (*lex_idx == lex_tok_count - 1 || lex_tok[(*lex_idx) + 1] != LEX_EXPR_END) { /* last token */
+        if (*lex_idx == lex_tok_count - 1 || lex_token[(*lex_idx) + 1] != LEX_EXPR_END) { /* last token */
           zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end ]");
           return false;
         }
 
-        (*lex_idx)++;
+        CONSUME_TOKEN();
 
-        break;
-      case LEX_PAREN_OPEN:
-        cur = ast_alloc_node(cur, AST_PAREN_LEFT);
-        break;
-      case LEX_PAREN_CLOSE:
-        cur = ast_alloc_node(cur, AST_PAREN_RIGHT);
-        break;
-      case LEX_LITERAL:
-        cur = ast_alloc_node(cur, AST_LITERAL);
-
-        if (jp_str_cpy(cur->data.d_literal.value, PARSE_BUF_LEN, lex_tok_values[*lex_idx],
-                       strlen(lex_tok_values[*lex_idx])) > 0) {
-          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Buffer size exceeded");
-          return false;
-        }
-
-        break;
-      case LEX_LITERAL_NUMERIC:
-        cur = ast_alloc_node(cur, AST_DOUBLE);
-        if (!make_numeric_node(cur, lex_tok_values[*lex_idx], strlen(lex_tok_values[*lex_idx]))) {
-          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric.");
-          return false;
-        }
-        break;
-      case LEX_LITERAL_BOOL:
-        cur = ast_alloc_node(cur, AST_BOOL);
-
-        if (strncasecmp("true", lex_tok_values[*lex_idx], 4) == 0) {
-          cur->data.d_literal.value_bool = true;
-        } else if (strncasecmp("false", lex_tok_values[*lex_idx], 5) == 0) {
-          cur->data.d_literal.value_bool = false;
-        } else {
-          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Expected `true` or `false` for boolean token.");
-          return false;
-        }
-        break;
-      case LEX_LT:
-        cur = ast_alloc_node(cur, AST_LT);
-        break;
-      case LEX_LTE:
-        cur = ast_alloc_node(cur, AST_LTE);
-        break;
-      case LEX_GT:
-        cur = ast_alloc_node(cur, AST_GT);
-        break;
-      case LEX_GTE:
-        cur = ast_alloc_node(cur, AST_GTE);
-        break;
-      case LEX_NEQ:
-        cur = ast_alloc_node(cur, AST_NE);
-        break;
-      case LEX_EQ:
-        cur = ast_alloc_node(cur, AST_EQ);
-        break;
-      case LEX_OR:
-        cur = ast_alloc_node(cur, AST_OR);
-        break;
-      case LEX_AND:
-        cur = ast_alloc_node(cur, AST_AND);
-        break;
-      case LEX_RGXP:
-        cur = ast_alloc_node(cur, AST_RGXP);
         break;
       case LEX_EXPR_START:
-        (*lex_idx)++;
+        cur->next = parse_expression(PARSER_ARGS);
+        cur = cur->next;
 
-        /** allocate dummy head.. **/
-        /* I don't really love allocating a dummy head node, maybe we can do better */
-        cur = ast_alloc_node(cur, AST_EXPR);
-        cur->data.d_expression.head = emalloc(sizeof(struct ast_node));
-        cur->data.d_expression.head->type = AST_HEAD;
-
-        if (!build_parse_tree(lex_tok, lex_tok_values, lex_idx, lex_tok_count, cur->data.d_expression.head)) {
+        if (cur->data.d_expression.head == NULL) {
           return false;
         }
 
-        group_operands_under_value(cur->data.d_expression.head);
-        insert_isset_nodes(cur->data.d_expression.head);
 #ifdef JSONPATH_DEBUG
         print_ast(cur->data.d_expression.head, "Parser - Expression before infix-postfix conversion", 0);
 #endif
-        convert_to_postfix(cur->data.d_expression.head);
-        delete_expression_head_node(cur);
         break;
-      case LEX_EXPR_END:
-        /* return call initiated by LEX_EXPR_START */
-        return true;
       default:
         /* this token is probably in an invalid position. the problem should */
         /* be caught later by validate_parse_tree. */
@@ -456,7 +148,276 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
   return true;
 }
 
-bool validate_root_next(struct ast_node* head) {
+static bool parse_filter_list(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
+                              int lex_tok_count, struct ast_node* tok) {
+  int slice_count = 0;
+
+  /* assume filter type is an index list by default. this resolves type */
+  /* ambiguity of a filter containing no separators. */
+  /* example: treat level4[0] as an index filter, not a slice. */
+  tok->type = AST_INDEX_LIST;
+  /* used to determine if different separator types are present, default value is arbitrary */
+  enum ast_type sep_found = AST_AND;
+
+  for (; *lex_idx < lex_tok_count; (*lex_idx)++) {
+    if (CUR_TOKEN() == LEX_EXPR_END) {
+      /* lex_idx must point to LEX_EXPR_END after function returns */
+      (*lex_idx)--;
+      break;
+    } else if (CUR_TOKEN() == LEX_CHILD_SEP) {
+      if (sep_found == AST_INDEX_SLICE) {
+        zend_throw_exception(spl_ce_RuntimeException,
+                             "Multiple filter list separators found [,:], only one type is allowed.", 0);
+        return false;
+      }
+      tok->type = sep_found = AST_INDEX_LIST;
+    } else if (CUR_TOKEN() == LEX_SLICE) {
+      if (sep_found == AST_INDEX_LIST) {
+        zend_throw_exception(spl_ce_RuntimeException,
+                             "Multiple filter list separators found [,:], only one type is allowed.", 0);
+        return false;
+      }
+
+      tok->type = sep_found = AST_INDEX_SLICE;
+
+      slice_count++;
+      // [:a] => [0:a]
+      // [a::] => [a:0:]
+      if (slice_count > tok->data.d_list.count) {
+        if (slice_count == 1) {
+          tok->data.d_list.indexes[tok->data.d_list.count] = INT_MAX;
+        } else if (slice_count == 2) {
+          tok->data.d_list.indexes[tok->data.d_list.count] = INT_MAX;
+        }
+        tok->data.d_list.count++;
+      }
+    } else if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
+      long idx = 0;
+
+      if (!numeric_to_long(CUR_TOKEN_LITERAL(), strlen(CUR_TOKEN_LITERAL()), &idx)) {
+        zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value.", 0);
+        return false;
+      }
+
+      tok->data.d_list.indexes[tok->data.d_list.count] = idx;
+      tok->data.d_list.count++;
+    } else {
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token in filter: %s", LEX_STR[CUR_TOKEN()]);
+      return false;
+    }
+  }
+  return true;
+}
+
+static struct ast_node* parse_expression(PARSER_PARAMS) {
+  CONSUME_TOKEN(); /* LEX_EXPR_START */
+
+  struct ast_node* expr = ast_alloc_node(NULL, AST_EXPR);
+  expr->data.d_expression.head = parse_or(lex_token, lex_tok_values, lex_idx, lex_tok_count);
+
+  return expr;
+}
+
+static struct ast_node* parse_or(PARSER_PARAMS) {
+  struct ast_node* expr = parse_and(PARSER_ARGS);
+
+  while (CUR_TOKEN() == LEX_OR) {
+    CONSUME_TOKEN();
+
+    struct ast_node* right = parse_and(PARSER_ARGS);
+
+    expr = ast_alloc_binary(AST_OR, expr, right);
+  }
+
+  return expr;
+}
+
+static struct ast_node* parse_and(PARSER_PARAMS) {
+  struct ast_node* expr = parse_equality(PARSER_ARGS);
+
+  while (CUR_TOKEN() == LEX_AND) {
+    CONSUME_TOKEN();
+
+    struct ast_node* right = parse_equality(PARSER_ARGS);
+
+    expr = ast_alloc_binary(AST_AND, expr, right);
+  }
+
+  return expr;
+}
+
+static struct ast_node* parse_equality(PARSER_PARAMS) {
+  struct ast_node* expr = parse_comparison(PARSER_ARGS);
+
+  while (HAS_TOKEN()) {
+    enum ast_type type;
+
+    if (CUR_TOKEN() == LEX_EQ) {
+      type = AST_EQ;
+    } else if (CUR_TOKEN() == LEX_NEQ) {
+      type = AST_NE;
+    } else {
+      break;
+    }
+
+    CONSUME_TOKEN();
+
+    struct ast_node* right = parse_comparison(PARSER_ARGS);
+
+    expr = ast_alloc_binary(type, expr, right);
+  }
+
+  return expr;
+}
+
+static struct ast_node* parse_comparison(PARSER_PARAMS) {
+  struct ast_node* expr = parse_primary(PARSER_ARGS);
+
+  while (HAS_TOKEN()) {
+    enum ast_type type;
+
+    if (CUR_TOKEN() == LEX_GT) {
+      type = AST_GT;
+    } else if (CUR_TOKEN() == LEX_GTE) {
+      type = AST_GTE;
+    } else if (CUR_TOKEN() == LEX_LT) {
+      type = AST_LT;
+    } else if (CUR_TOKEN() == LEX_LTE) {
+      type = AST_LTE;
+    } else if (CUR_TOKEN() == LEX_RGXP) {
+      type = AST_RGXP;
+    } else {
+      break;
+    }
+
+    CONSUME_TOKEN();
+
+    struct ast_node* right = parse_primary(PARSER_ARGS);
+
+    expr = ast_alloc_binary(type, expr, right);
+  }
+
+  return expr;
+}
+
+static struct ast_node* parse_primary(PARSER_PARAMS) {
+  if (CUR_TOKEN() == LEX_CUR_NODE) {
+    CONSUME_TOKEN();
+  }
+
+  if (CUR_TOKEN() == LEX_LITERAL) {
+    struct ast_node* ret = ast_alloc_node(NULL, AST_LITERAL);
+
+    if (jp_str_cpy(ret->data.d_literal.value, PARSE_BUF_LEN, CUR_TOKEN_LITERAL(), strlen(CUR_TOKEN_LITERAL())) > 0) {
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Buffer size exceeded");
+      return NULL;
+    }
+    CONSUME_TOKEN();
+    return ret;
+  }
+
+  if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
+    struct ast_node* ret = ast_alloc_node(NULL, AST_DOUBLE);
+    if (!make_numeric_node(ret, CUR_TOKEN_LITERAL(), strlen(CUR_TOKEN_LITERAL()))) {
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric.");
+      return NULL;
+    }
+    CONSUME_TOKEN();
+    return ret;
+  }
+
+  if (CUR_TOKEN() == LEX_LITERAL_BOOL) {
+    struct ast_node* ret = ast_alloc_node(NULL, AST_BOOL);
+
+    if (strncasecmp("true", CUR_TOKEN_LITERAL(), 4) == 0) {
+      ret->data.d_literal.value_bool = true;
+    } else if (strncasecmp("false", CUR_TOKEN_LITERAL(), 5) == 0) {
+      ret->data.d_literal.value_bool = false;
+    } else {
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Expected `true` or `false` for boolean token.");
+      return NULL;
+    }
+    CONSUME_TOKEN();
+    return ret;
+  }
+
+  if (CUR_TOKEN() == LEX_NODE) {
+    struct ast_node* ret = NULL;
+    struct ast_node* tail = NULL;
+
+    /* handle @.node */
+    while (CUR_TOKEN() == LEX_NODE) {
+      if (ret == NULL) {
+        ret = ast_alloc_node(NULL, AST_SELECTOR);
+        tail = ret;
+      } else {
+        tail = ast_alloc_node(tail, AST_SELECTOR);
+      }
+      strcpy(tail->data.d_selector.value, CUR_TOKEN_LITERAL());
+      CONSUME_TOKEN();
+    }
+
+    /* handle @.node[?(...)] */
+    if (CUR_TOKEN() == LEX_EXPR_START) {
+      tail->next = parse_expression(PARSER_ARGS);
+      tail = tail->next;
+
+      CONSUME_TOKEN();
+
+      if (tail->data.d_expression.head == NULL) {
+        return NULL;
+      }
+    }
+
+    return ret;
+  }
+
+  if (CUR_TOKEN() == LEX_PAREN_OPEN) {
+    CONSUME_TOKEN();
+    struct ast_node* expr = parse_or(PARSER_ARGS);
+    if (CUR_TOKEN() == LEX_PAREN_CLOSE) {
+      CONSUME_TOKEN();
+      return expr;
+    } else {
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing closing paren )");
+      return NULL;
+    }
+  }
+
+  /* JSONPaths inside filter expressions may not contain operators or */
+  /* parens because otherwise the boundary between parent/child JSONPaths */
+  /* would be ambiguous. */
+  if (CUR_TOKEN() == LEX_ROOT) {
+    int start = CUR_POS();
+    int stop = 0;
+
+    /* Find the boundary of the JSONPath */
+    while (HAS_TOKEN()) {
+      if (is_operator(CUR_TOKEN()) || CUR_TOKEN() == LEX_PAREN_CLOSE) {
+        stop = CUR_POS();
+        break;
+      }
+      CONSUME_TOKEN();
+    }
+
+    struct ast_node head = {0};
+    struct ast_node* ptr = &head;
+
+    /* Run build_parse_tree on a subset of the lex stream, until the */
+    /* boundary of the sub-JSONPath */
+    if (!build_parse_tree(lex_token, lex_tok_values, &start, stop, ptr)) {
+      return NULL;
+    }
+
+    return head.next;
+  }
+
+  zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter expressions may not be empty.");
+
+  return NULL;
+}
+
+static bool validate_root_next(struct ast_node* head) {
   switch (head->type) {
     case AST_EXPR:
     case AST_INDEX_LIST:
@@ -508,7 +469,38 @@ bool validate_parse_tree(struct ast_node* head) {
   return true;
 }
 
-bool numeric_to_long(char* str, int str_len, long* dest) {
+static bool make_numeric_node(struct ast_node* tok, char* str, int str_len) {
+  zend_long lval;
+  double dval;
+  int oflow_info;
+  zend_uchar res;
+
+#if PHP_MAJOR_VERSION >= 8
+  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info, NULL);
+#else
+  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info);
+#endif
+
+  /* did the conversion overflow? */
+  if (oflow_info != 0) {
+    return false;
+  }
+
+  switch (res) {
+    case IS_LONG:
+      tok->type = AST_LONG;
+      tok->data.d_long.value = lval;
+      return true;
+    case IS_DOUBLE:
+      tok->type = AST_DOUBLE;
+      tok->data.d_double.value = dval;
+      return true;
+  }
+
+  return false;
+}
+
+static bool numeric_to_long(char* str, int str_len, long* dest) {
   zend_long lval;
   double dval;
   int oflow_info;
@@ -534,175 +526,31 @@ bool numeric_to_long(char* str, int str_len, long* dest) {
   return true;
 }
 
-bool parse_filter_list(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
-                       int lex_tok_count, struct ast_node* tok) {
-  int slice_count = 0;
-
-  /* assume filter type is an index list by default. this resolves type */
-  /* ambiguity of a filter containing no separators. */
-  /* example: treat level4[0] as an index filter, not a slice. */
-  tok->type = AST_INDEX_LIST;
-  /* used to determine if different separator types are present, default value is arbitrary */
-  enum ast_type sep_found = AST_AND;
-
-  for (; *lex_idx < lex_tok_count; (*lex_idx)++) {
-    if (lex_tok[*lex_idx] == LEX_EXPR_END) {
-      /* lex_idx must point to LEX_EXPR_END after function returns */
-      (*lex_idx)--;
-      break;
-    } else if (lex_tok[*lex_idx] == LEX_CHILD_SEP) {
-      if (sep_found == AST_INDEX_SLICE) {
-        zend_throw_exception(spl_ce_RuntimeException,
-                             "Multiple filter list separators found [,:], only one type is allowed.", 0);
-        return false;
-      }
-      tok->type = sep_found = AST_INDEX_LIST;
-    } else if (lex_tok[*lex_idx] == LEX_SLICE) {
-      if (sep_found == AST_INDEX_LIST) {
-        zend_throw_exception(spl_ce_RuntimeException,
-                             "Multiple filter list separators found [,:], only one type is allowed.", 0);
-        return false;
-      }
-
-      tok->type = sep_found = AST_INDEX_SLICE;
-
-      slice_count++;
-      // [:a] => [0:a]
-      // [a::] => [a:0:]
-      if (slice_count > tok->data.d_list.count) {
-        if (slice_count == 1) {
-          tok->data.d_list.indexes[tok->data.d_list.count] = INT_MAX;
-        } else if (slice_count == 2) {
-          tok->data.d_list.indexes[tok->data.d_list.count] = INT_MAX;
-        }
-        tok->data.d_list.count++;
-      }
-    } else if (lex_tok[*lex_idx] == LEX_LITERAL_NUMERIC) {
-      long idx = 0;
-
-      if (!numeric_to_long(lex_tok_values[*lex_idx], strlen(lex_tok_values[*lex_idx]), &idx)) {
-        zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value.", 0);
-        return false;
-      }
-
-      tok->data.d_list.indexes[tok->data.d_list.count] = idx;
-      tok->data.d_list.count++;
-    } else {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token in filter: %s", LEX_STR[lex_tok[*lex_idx]]);
-      return false;
-    }
-  }
-  return true;
-}
-
-operator_type get_token_type(enum ast_type type) {
+static bool is_operator(lex_token type) {
   switch (type) {
-    case AST_EQ:
-    case AST_NE:
-    case AST_LT:
-    case AST_LTE:
-    case AST_GT:
-    case AST_GTE:
-    case AST_OR:
-    case AST_AND:
-    case AST_ISSET:
-    case AST_RGXP:
-      return TYPE_OPERATOR;
-    case AST_PAREN_LEFT:
-    case AST_PAREN_RIGHT:
-      return TYPE_PAREN;
+    case LEX_AND:
+    case LEX_EQ:
+    case LEX_GT:
+    case LEX_GTE:
+    case LEX_LT:
+    case LEX_LTE:
+    case LEX_NEQ:
+    case LEX_OR:
+    case LEX_RGXP:
+      return true;
     default:
-      return TYPE_OPERAND;
+      return false;
   }
 }
 
-bool is_unary(enum ast_type type) { return type == AST_ISSET; }
-
-// TODO: Distinguish between operator and token?
-int get_operator_precedence(struct ast_node* tok) {
-  switch (tok->type) {
-    case AST_ISSET:
-      return 10000;
-    case AST_LT:
-      return 1000;
-    case AST_LTE:
-      return 1000;
-      break;
-    case AST_GT:
-      return 1000;
-    case AST_GTE:
-      return 1000;
-    case AST_RGXP:
-      return 1000;
-    case AST_NE:
-      return 900;
-    case AST_EQ:
-      return 900;
-    case AST_AND:
-      return 800;
-    case AST_OR:
-      return 700;
-    case AST_PAREN_LEFT:
-    case AST_PAREN_RIGHT:
-    case AST_LITERAL:
-    case AST_BOOL:
-    default:
-      assert(0);
-      return -1;
-  }
-}
-
-bool sanity_check(lex_token lex_tok[], int lex_tok_count) {
+bool sanity_check(lex_token lex_token[], int lex_tok_count) {
   if (lex_tok_count == 0) {
     zend_throw_exception(spl_ce_RuntimeException, "The JSONpath contains no valid elements", 0);
     return false;
   }
 
-  if (lex_tok[0] != LEX_ROOT) {
+  if (lex_token[0] != LEX_ROOT) {
     zend_throw_exception(spl_ce_RuntimeException, "JSONpath must start with a root $", 0);
-    return false;
-  }
-
-  return check_parens_balance(lex_tok, lex_tok_count);
-}
-
-bool check_parens_balance(lex_token lex_tok[], int lex_tok_count) {
-  stack s = {0};
-  stack_init(&s);
-  bool ret = true;
-
-  for (int i = 0; i < lex_tok_count; i++) {
-    switch (lex_tok[i]) {
-      case LEX_EXPR_START:
-      case LEX_PAREN_OPEN:
-      case LEX_FILTER_START:
-        /* todo: stack capacity check */
-        stack_push(&s, &lex_tok[i]);
-        break;
-      case LEX_EXPR_END:
-      case LEX_PAREN_CLOSE:
-        if (s.size == 0) {
-          ret = false;
-          break;
-        }
-
-        lex_token* top = stack_top(&s);
-        lex_token expected = (*top == LEX_PAREN_OPEN) ? LEX_PAREN_CLOSE : LEX_EXPR_END;
-        if (lex_tok[i] != expected) {
-          ret = false;
-          break;
-        }
-
-        stack_pop(&s);
-        break;
-      default:
-        /* not a paren, skip */
-        break;
-    }
-  }
-
-  if (!ret || s.size > 0) {
-    zend_throw_exception(spl_ce_RuntimeException, "Query contains unbalanced parens/brackets", 0);
     return false;
   }
 
@@ -714,13 +562,95 @@ void free_ast_nodes(struct ast_node* head) {
     return;
   }
 
-  free_ast_nodes(head->next);
-
-  if (head->type == AST_EXPR) {
-    free_ast_nodes(head->data.d_expression.head);
-  } else if (head->type == AST_VALUE) {
-    free_ast_nodes(head->data.d_value.head);
+  switch (head->type) {
+    case AST_AND:
+    case AST_EQ:
+    case AST_GT:
+    case AST_GTE:
+    case AST_LT:
+    case AST_LTE:
+    case AST_NE:
+    case AST_OR:
+    case AST_RGXP:
+      free_ast_nodes(head->data.d_binary.left);
+      free_ast_nodes(head->data.d_binary.right);
+      break;
+    case AST_EXPR:
+      free_ast_nodes(head->data.d_expression.head);
+      break;
+    default:
+      /* noop */
+      break;
   }
+
+  free_ast_nodes(head->next);
 
   efree((void*)head);
 }
+
+#ifdef JSONPATH_DEBUG
+void print_ast(struct ast_node* head, const char* m, int level) {
+  if (level == 0) {
+    printf("--------------------------------------\n");
+    printf("%s\n\n", m);
+    print_ast(head, m, level + 1);
+    return;
+  }
+
+  while (head != NULL) {
+    for (int i = 0; i < level; i++) {
+      printf("\t");
+    }
+    printf("➔ %s", AST_STR[head->type]);
+    switch (head->type) {
+      case AST_AND:
+      case AST_EQ:
+      case AST_GT:
+      case AST_GTE:
+      case AST_LT:
+      case AST_LTE:
+      case AST_NE:
+      case AST_OR:
+      case AST_RGXP:
+        printf("\n");
+        print_ast(head->data.d_binary.left, m, level + 1);
+        print_ast(head->data.d_binary.right, m, level + 1);
+        break;
+      case AST_BOOL:
+        printf(" [val=%d]\n", head->data.d_literal.value_bool);
+        break;
+      case AST_EXPR:
+        printf("\n");
+        print_ast(head->data.d_expression.head, m, level + 1);
+        break;
+      case AST_LONG:
+        printf(" [val=%ld]\n", head->data.d_long.value);
+        break;
+      case AST_DOUBLE:
+        printf(" [val=%f]\n", head->data.d_double.value);
+        break;
+      case AST_SELECTOR:
+        while (head->type == AST_SELECTOR) {
+          printf(" [val=%s]", head->data.d_selector.value);
+          if (head->next != NULL && head->next->type == AST_SELECTOR) {
+            head = head->next;
+          } else {
+            break;
+          }
+        }
+        printf("\n");
+        break;
+      case AST_LITERAL:
+        printf(" [val=%s]\n", head->data.d_literal.value);
+        break;
+      case AST_INDEX_SLICE:
+        printf(" [start=%d end=%d step=%d]\n", head->data.d_list.indexes[0], head->data.d_list.indexes[1],
+               head->data.d_list.indexes[2]);
+        break;
+      default:
+        printf("\n");
+    }
+    head = head->next;
+  }
+}
+#endif
