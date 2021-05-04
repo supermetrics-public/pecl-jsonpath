@@ -358,7 +358,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       CONSUME_TOKEN();
 
       if (CUR_TOKEN() == LEX_WILD_CARD) {
-        free_ast_nodes(tail);
+        free_ast_nodes(ret);
         zend_throw_exception(spl_ce_RuntimeException, "Multiplying node values is not supported.", 0);
         return NULL;
       }
