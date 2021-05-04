@@ -4,13 +4,13 @@ dnl config.m4 for extension jsonpath
 PHP_ARG_ENABLE([jsonpath],
   [whether to enable JSONPath support],
   [AS_HELP_STRING([--enable-jsonpath],
-    [Enable JSONPath support])]
-  [no])
+    [Enable JSONPath support])])
 
 PHP_ARG_ENABLE([code-coverage],
   [whether to enable code coverage (relevant for extension development only!)],
   [AS_HELP_STRING([--enable-code-coverage],
-    [Enable code coverage])]
+    [Enable code coverage])],
+  [no],
   [no])
 
 JSONPATH_SOURCES="\
