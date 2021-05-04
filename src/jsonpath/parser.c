@@ -23,7 +23,6 @@ static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type
 static struct ast_node* parse_expression(PARSER_PARAMS);
 static struct ast_node* parse_and(PARSER_PARAMS);
 static struct ast_node* parse_comparison(PARSER_PARAMS);
-static struct ast_node* parse_comparison(PARSER_PARAMS);
 static struct ast_node* parse_equality(PARSER_PARAMS);
 static struct ast_node* parse_or(PARSER_PARAMS);
 static struct ast_node* parse_primary(PARSER_PARAMS);
