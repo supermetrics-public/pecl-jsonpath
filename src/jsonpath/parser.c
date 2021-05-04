@@ -21,11 +21,12 @@ static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* le
 static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
 
 static struct ast_node* parse_expression(PARSER_PARAMS);
-static struct ast_node* parse_and(PARSER_PARAMS);
-static struct ast_node* parse_comparison(PARSER_PARAMS);
-static struct ast_node* parse_equality(PARSER_PARAMS);
 static struct ast_node* parse_or(PARSER_PARAMS);
+static struct ast_node* parse_and(PARSER_PARAMS);
+static struct ast_node* parse_equality(PARSER_PARAMS);
+static struct ast_node* parse_comparison(PARSER_PARAMS);
 static struct ast_node* parse_primary(PARSER_PARAMS);
+static struct ast_node* parse_unary(PARSER_PARAMS);
 
 static bool parse_filter_list(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* start,
                               int lex_tok_count, struct ast_node* tok);
@@ -35,11 +36,11 @@ static bool numeric_to_long(char* str, int str_len, long* dest);
 static bool is_operator(lex_token type);
 static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
 
-const char* AST_STR[] = {"AST_AND",        "AST_BOOL",        "AST_DOUBLE",     "AST_EQ",          "AST_EXPR",
-                         "AST_GT",         "AST_GTE",         "AST_INDEX_LIST", "AST_INDEX_SLICE", "AST_LITERAL",
-                         "AST_LONG",       "AST_LT",          "AST_LTE",        "AST_NE",          "AST_OR",
-                         "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",    "AST_RGXP",        "AST_ROOT",
-                         "AST_SELECTOR",   "AST_WILD_CARD"};
+const char* AST_STR[] = {"AST_AND",  "AST_BOOL",       "AST_DOUBLE",      "AST_EQ",          "AST_EXPR",
+                         "AST_GT",   "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_LITERAL",
+                         "AST_LONG", "AST_LT",         "AST_LTE",         "AST_NE",          "AST_NEGATION",
+                         "AST_OR",   "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",     "AST_RGXP",
+                         "AST_ROOT", "AST_SELECTOR",   "AST_WILD_CARD"};
 
 static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right) {
   struct ast_node* node = ast_alloc_node(NULL, type);
@@ -271,7 +272,7 @@ static struct ast_node* parse_equality(PARSER_PARAMS) {
 }
 
 static struct ast_node* parse_comparison(PARSER_PARAMS) {
-  struct ast_node* expr = parse_primary(PARSER_ARGS);
+  struct ast_node* expr = parse_unary(PARSER_ARGS);
 
   while (HAS_TOKEN()) {
     enum ast_type type;
@@ -292,12 +293,23 @@ static struct ast_node* parse_comparison(PARSER_PARAMS) {
 
     CONSUME_TOKEN();
 
-    struct ast_node* right = parse_primary(PARSER_ARGS);
+    struct ast_node* right = parse_unary(PARSER_ARGS);
 
     expr = ast_alloc_binary(type, expr, right);
   }
 
   return expr;
+}
+
+static struct ast_node* parse_unary(PARSER_PARAMS) {
+  if (CUR_TOKEN() == LEX_NEGATION) {
+    CONSUME_TOKEN();
+    struct ast_node* expr = ast_alloc_node(NULL, AST_NEGATION);
+    expr->data.d_unary.right = parse_unary(PARSER_ARGS);
+    return expr;
+  }
+
+  return parse_primary(PARSER_ARGS);
 }
 
 static struct ast_node* parse_primary(PARSER_PARAMS) {
@@ -578,6 +590,9 @@ void free_ast_nodes(struct ast_node* head) {
     case AST_EXPR:
       free_ast_nodes(head->data.d_expression.head);
       break;
+    case AST_NEGATION:
+      free_ast_nodes(head->data.d_unary.right);
+      break;
     default:
       /* noop */
       break;
@@ -646,6 +661,10 @@ void print_ast(struct ast_node* head, const char* m, int level) {
       case AST_INDEX_SLICE:
         printf(" [start=%d end=%d step=%d]\n", head->data.d_list.indexes[0], head->data.d_list.indexes[1],
                head->data.d_list.indexes[2]);
+        break;
+      case AST_NEGATION:
+        printf("\n");
+        print_ast(head->data.d_unary.right, m, level + 1);
         break;
       default:
         printf("\n");

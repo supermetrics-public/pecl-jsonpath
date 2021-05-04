@@ -15,6 +15,7 @@ void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* re
 zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur);
 bool break_if_result_found(zval* return_value);
 void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+bool evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 
@@ -310,9 +311,22 @@ bool is_binary(enum ast_type type) {
   }
 }
 
+bool is_unary(enum ast_type type) {
+  switch (type) {
+    case AST_NEGATION:
+      return true;
+    default:
+      return false;
+  }
+}
+
 bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   if (is_binary(tok->type)) {
     return evaluate_binary(arr_head, arr_cur, tok);
+  }
+
+  if (is_unary(tok->type)) {
+    return evaluate_unary(arr_head, arr_cur, tok);
   }
 
   if (tok->type == AST_SELECTOR) {
@@ -320,7 +334,34 @@ bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
     return evaluate_primary(tok, &tmp, arr_head, arr_cur) != NULL;
   }
 
-  // TODO throw exception
+  zval tmp = {0};
+  zval* val = evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur);
+
+  if (Z_TYPE_P(val) == IS_FALSE) {
+    return true;
+  }
+
+  return false;
+}
+
+bool evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
+  zval tmp = {0};
+
+  if (is_unary(tok->data.d_unary.right->type)) {
+    return !evaluate_unary(arr_head, arr_cur, tok->data.d_unary.right);
+  } else if (is_binary(tok->data.d_unary.right->type)) {
+    return !evaluate_binary(arr_head, arr_cur, tok->data.d_unary.right);
+  } else if (tok->data.d_unary.right->type == AST_SELECTOR) {
+    /* ?(!@.selector) */
+    return evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur) == NULL;
+  }
+
+  zval* val = evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur);
+
+  if (Z_TYPE_P(val) == IS_FALSE) {
+    return true;
+  }
+
   return false;
 }
 
@@ -332,6 +373,9 @@ bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
 
   if (is_binary(lh_operand->type)) {
     bool result = evaluate_binary(arr_head, arr_cur, lh_operand);
+    ZVAL_BOOL(val_lh, result);
+  } else if (is_unary(tok->type)) {
+    bool result = evaluate_unary(arr_head, arr_cur, lh_operand);
     ZVAL_BOOL(val_lh, result);
   } else if (lh_operand->type == AST_SELECTOR && (tok->type == AST_OR || tok->type == AST_AND)) {
     /* ?(@.selector <or|and> [operand]) */
@@ -347,6 +391,9 @@ bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
 
   if (is_binary(rh_operand->type)) {
     bool result = evaluate_binary(arr_head, arr_cur, rh_operand);
+    ZVAL_BOOL(val_rh, result);
+  } else if (is_unary(tok->type)) {
+    bool result = evaluate_unary(arr_head, arr_cur, rh_operand);
     ZVAL_BOOL(val_rh, result);
   } else if (rh_operand->type == AST_SELECTOR && (tok->type == AST_OR || tok->type == AST_AND)) {
     /* ?([operand] <or|and> @.selector) */

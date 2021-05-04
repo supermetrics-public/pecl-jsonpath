@@ -29,6 +29,7 @@ typedef enum {
   LEX_FILTER_START,    /* [ */
   LEX_AND,             /* && */
   LEX_OR,              /* || */
+  LEX_NEGATION,        /* !@.value */
   LEX_ERR              /* Signals lexing error */
 } lex_token;
 
