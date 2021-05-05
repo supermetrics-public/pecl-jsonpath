@@ -18,7 +18,7 @@ static int count_numeric_str_len(char* p);
 static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, char* json_path);
 static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, char* json_path);
 static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, char* json_path);
-static bool extract_boolean_literal(char* p, char* buffer, size_t bufSize, char* json_path);
+static bool extract_boolean_or_null_literal(char* p, char* buffer, size_t bufSize, char* json_path);
 
 const char* LEX_STR[] = {
     "LEX_NOT_FOUND",       /* Token not found */
@@ -42,6 +42,7 @@ const char* LEX_STR[] = {
     "LEX_PAREN_CLOSE",     /* ) */
     "LEX_LITERAL",         /* "some string" 'some string' */
     "LEX_LITERAL_BOOL",    /* true, false */
+    "LEX_LITERAL_NULL",    /* null */
     "LEX_LITERAL_NUMERIC", /* long, double */
     "LEX_FILTER_START",    /* [ */
     "LEX_AND",             /* && */
@@ -232,11 +233,19 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
       case 'T':
       case 'f':
       case 'F':
-        if (!extract_boolean_literal(*p, buffer, bufSize, json_path)) {
+        if (!extract_boolean_or_null_literal(*p, buffer, bufSize, json_path)) {
           return LEX_ERR;
         }
         *p += strlen(buffer) - 1;
         found_token = LEX_LITERAL_BOOL;
+        break;
+      case 'n':
+      case 'N':
+        if (!extract_boolean_or_null_literal(*p, buffer, bufSize, json_path)) {
+          return LEX_ERR;
+        }
+        *p += strlen(buffer) - 1;
+        found_token = LEX_LITERAL_NULL;
         break;
       case '-':
       case '0':
@@ -356,8 +365,8 @@ static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufS
   return true;
 }
 
-/* Extract boolean */
-static bool extract_boolean_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
+/* Extract boolean or null */
+static bool extract_boolean_or_null_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
   char* start;
   size_t cpy_len;
 

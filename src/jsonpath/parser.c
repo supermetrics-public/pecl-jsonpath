@@ -36,11 +36,11 @@ static bool numeric_to_long(char* str, int str_len, long* dest);
 static bool is_operator(lex_token type);
 static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
 
-const char* AST_STR[] = {"AST_AND",  "AST_BOOL",       "AST_DOUBLE",      "AST_EQ",          "AST_EXPR",
-                         "AST_GT",   "AST_GTE",        "AST_INDEX_LIST",  "AST_INDEX_SLICE", "AST_LITERAL",
-                         "AST_LONG", "AST_LT",         "AST_LTE",         "AST_NE",          "AST_NEGATION",
-                         "AST_OR",   "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",     "AST_RGXP",
-                         "AST_ROOT", "AST_SELECTOR",   "AST_WILD_CARD"};
+const char* AST_STR[] = {"AST_AND",  "AST_BOOL", "AST_DOUBLE",     "AST_EQ",          "AST_EXPR",
+                         "AST_GT",   "AST_GTE",  "AST_INDEX_LIST", "AST_INDEX_SLICE", "AST_LITERAL",
+                         "AST_LONG", "AST_LT",   "AST_LTE",        "AST_NE",          "AST_NEGATION",
+                         "AST_NULL", "AST_OR",   "AST_PAREN_LEFT", "AST_PAREN_RIGHT", "AST_RECURSE",
+                         "AST_RGXP", "AST_ROOT", "AST_SELECTOR",   "AST_WILD_CARD"};
 
 static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right) {
   struct ast_node* node = ast_alloc_node(NULL, type);
@@ -353,6 +353,12 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     return ret;
   }
 
+  if (CUR_TOKEN() == LEX_LITERAL_NULL) {
+    struct ast_node* ret = ast_alloc_node(NULL, AST_NULL);
+    CONSUME_TOKEN();
+    return ret;
+  }
+
   if (CUR_TOKEN() == LEX_NODE) {
     struct ast_node* ret = NULL;
     struct ast_node* tail = NULL;
@@ -455,6 +461,48 @@ static bool validate_root_next(struct ast_node* head) {
   }
 }
 
+bool is_binary(enum ast_type type) {
+  switch (type) {
+    case AST_AND:
+    case AST_EQ:
+    case AST_GT:
+    case AST_GTE:
+    case AST_LT:
+    case AST_LTE:
+    case AST_NE:
+    case AST_OR:
+    case AST_RGXP:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool is_unary(enum ast_type type) {
+  switch (type) {
+    case AST_NEGATION:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool validate_expression_head(struct ast_node* tok) {
+  if (is_binary(tok->type)) {
+    return true;
+  }
+  
+  if (is_unary(tok->type)) {
+    return true;
+  }
+
+  if (tok->type == AST_SELECTOR) {
+    return true;
+  }
+
+  return false;
+}
+
 bool validate_parse_tree(struct ast_node* head) {
   struct ast_node* cur = head;
 
@@ -473,6 +521,9 @@ bool validate_parse_tree(struct ast_node* head) {
       case AST_EXPR:
         if (cur->data.d_expression.head == NULL) {
           zend_throw_exception(spl_ce_RuntimeException, "Filter expressions may not be empty.", 0);
+          return false;
+        } else if (!validate_expression_head(cur->data.d_expression.head)) {
+          zend_throw_exception(spl_ce_RuntimeException, "Invalid expression.", 0);
           return false;
         }
         break;
@@ -655,6 +706,9 @@ void print_ast(struct ast_node* head, const char* m, int level) {
         break;
       case AST_DOUBLE:
         printf(" [val=%f]\n", head->data.d_double.value);
+        break;
+      case AST_NULL:
+        printf(" [val=null]\n");
         break;
       case AST_SELECTOR:
         while (head->type == AST_SELECTOR) {

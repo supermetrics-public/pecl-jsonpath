@@ -25,6 +25,7 @@ typedef enum {
   LEX_PAREN_CLOSE,     /* ) */
   LEX_LITERAL,         /* "some string" 'some string' */
   LEX_LITERAL_BOOL,    /* true, false */
+  LEX_LITERAL_NULL,    /* null */
   LEX_LITERAL_NUMERIC, /* int, float */
   LEX_FILTER_START,    /* [ */
   LEX_AND,             /* && */
