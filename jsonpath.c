@@ -51,78 +51,73 @@ PHP_METHOD(JsonPath, find) {
     return;
   }
 
-  if (!sanity_check(lex_tok, lex_tok_count)) {
-    return;
-  }
+  //   if (!sanity_check(lex_tok, lex_tok_count)) {
+  //     return;
+  //   }
 
-#ifdef JSONPATH_DEBUG
-  print_lex_tokens(lex_tok, lex_tok_literals, lex_tok_count, "Lexer - Processed tokens");
-#endif
+  // #ifdef JSONPATH_DEBUG
+  //   print_lex_tokens(lex_tok, lex_tok_literals, lex_tok_count, "Lexer - Processed tokens");
+  // #endif
 
-  /* assemble an array of query execution instructions from parsed tokens */
+  //   /* assemble an array of query execution instructions from parsed tokens */
 
-  struct ast_node head;
-  int i = 0;
+  //   struct ast_node head;
+  //   int i = 0;
 
-  if (!build_parse_tree(lex_tok, lex_tok_literals, &i, lex_tok_count, &head)) {
-    free_ast_nodes(head.next);
-    return;
-  }
+  //   if (!build_parse_tree(lex_tok, lex_tok_literals, &i, lex_tok_count, &head)) {
+  //     free_ast_nodes(head.next);
+  //     return;
+  //   }
 
-  if (!validate_parse_tree(head.next)) {
-    free_ast_nodes(head.next);
-    return;
-  }
+  //   if (!validate_parse_tree(head.next)) {
+  //     free_ast_nodes(head.next);
+  //     return;
+  //   }
 
-#ifdef JSONPATH_DEBUG
-  print_ast(head.next, "Parser - AST sent to interpreter", 0);
-#endif
+  // #ifdef JSONPATH_DEBUG
+  //   print_ast(head.next, "Parser - AST sent to interpreter", 0);
+  // #endif
 
-  /* execute the JSON-path query instructions against the search target (PHP object/array) */
+  //   /* execute the JSON-path query instructions against the search target (PHP object/array) */
 
-  array_init(return_value);
+  //   array_init(return_value);
 
-  eval_ast(search_target, search_target, head.next, return_value);
+  //   eval_ast(search_target, search_target, head.next, return_value);
 
-  free_ast_nodes(head.next);
+  //   free_ast_nodes(head.next);
 
-  /* return false if no results were found by the JSON-path query */
+  //   /* return false if no results were found by the JSON-path query */
 
-  if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
-    convert_to_boolean(return_value);
-    RETURN_FALSE;
-  }
+  //   if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
+  //     convert_to_boolean(return_value);
+  //     RETURN_FALSE;
+  //   }
 }
 
 bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count) {
-  lex_token cur_tok;
   char* p = json_path;
-  char buffer[PARSE_BUF_LEN];
-
   int i = 0;
 
-  while ((cur_tok = scan(&p, buffer, sizeof(buffer), json_path)) != LEX_NOT_FOUND) {
-    if (i >= PARSE_BUF_LEN) {
-      zend_throw_exception(spl_ce_RuntimeException, "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
-      return false;
-    }
+  struct jpath_token token = {0};
+  while (*p != '\0' && scan(&p, &token, json_path)) {
+    printf("type: %s len: %d\n", LEX_STR[token.type], token.len);
 
-    switch (cur_tok) {
+    // if (i >= PARSE_BUF_LEN) {
+    //   zend_throw_exception(spl_ce_RuntimeException, "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
+    //   return false;
+    // }
+
+    switch (token.type) {
       case LEX_NODE:
       case LEX_LITERAL:
       case LEX_LITERAL_BOOL:
       case LEX_LITERAL_NUMERIC:
-        strcpy(tok_literals[i], buffer);
-        break;
-      case LEX_ERR:
-        return false;
-      default:
-        tok_literals[i][0] = '\0';
+        php_write(token.val, token.len);
         break;
     }
 
-    tok[i] = cur_tok;
-    i++;
+    // tok[i] = cur_tok;
+    // i++;
   }
 
   *tok_count = i;
