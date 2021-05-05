@@ -54,7 +54,8 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-array(9) {
+Assertion 1
+array(8) {
   [0]=>
   array(1) {
     ["key"]=>
@@ -88,18 +89,11 @@ array(9) {
   [6]=>
   array(1) {
     ["key"]=>
-    string(2) "41"
-  }
-  [7]=>
-  array(1) {
-    ["key"]=>
     string(5) "value"
   }
-  [8]=>
+  [7]=>
   array(1) {
     ["some"]=>
     string(5) "value"
   }
 }
---XFAIL--
-This kind of negation is not currently supported
