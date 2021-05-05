@@ -129,6 +129,11 @@ bool build_parse_tree(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][
         break;
       case LEX_EXPR_START:
         cur->next = parse_expression(PARSER_ARGS);
+
+        if (cur->next == NULL) {
+          return false;
+        }
+
         cur = cur->next;
 
         if (cur->data.d_expression.head == NULL) {
@@ -212,6 +217,11 @@ static bool parse_filter_list(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_v
 
 static struct ast_node* parse_expression(PARSER_PARAMS) {
   CONSUME_TOKEN(); /* LEX_EXPR_START */
+
+  if (CUR_TOKEN() != LEX_PAREN_OPEN) {
+    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing opening paren (");
+    return NULL;
+  }
 
   struct ast_node* expr = ast_alloc_node(NULL, AST_EXPR);
   expr->data.d_expression.head = parse_or(lex_token, lex_tok_values, lex_idx, lex_tok_count);
@@ -384,6 +394,12 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     /* handle @.node[?(...)] */
     if (CUR_TOKEN() == LEX_EXPR_START) {
       tail->next = parse_expression(PARSER_ARGS);
+
+      if (tail->next == NULL) {
+        free_ast_nodes(ret);
+        return NULL;
+      }
+
       tail = tail->next;
 
       CONSUME_TOKEN();
