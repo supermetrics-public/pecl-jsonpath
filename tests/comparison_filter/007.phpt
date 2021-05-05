@@ -48,6 +48,18 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-PHP Fatal Error
+Assertion 1
+array(2) {
+  [0]=>
+  array(1) {
+    ["key"]=>
+    int(1)
+  }
+  [1]=>
+  array(1) {
+    ["key"]=>
+    int(3)
+  }
+}
 --XFAIL--
-Now returns false, would be better to error out due to invalid syntax
+Now returns also strings, booleans and arrays, needs a numeracy check for the @.key>0 comparison
