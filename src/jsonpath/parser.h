@@ -30,6 +30,7 @@ enum ast_type {
   AST_LT,
   AST_LTE,
   AST_NE,
+  AST_NEGATION,
   AST_NULL,
   AST_OR,
   AST_PAREN_LEFT,
@@ -71,6 +72,9 @@ union ast_node_data {
   struct {
     long value;
   } d_long;
+  struct {
+    struct ast_node* right;
+  } d_unary;
 };
 
 struct ast_node {
@@ -84,6 +88,7 @@ bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PA
 bool sanity_check(lex_token lex_tok[], int lex_tok_count);
 void free_ast_nodes(struct ast_node* head);
 bool is_binary(enum ast_type type);
+bool is_unary(enum ast_type type);
 bool validate_parse_tree(struct ast_node* head);
 
 #ifdef JSONPATH_DEBUG

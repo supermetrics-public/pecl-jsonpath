@@ -29,7 +29,9 @@ $result = $jsonPath->find($data, "$[?(@.key*2==100)]");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Should error out due to invalid syntax, now get_token_type: Assertion `0' failed
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Multiplying node values is not supported. in %s
+Stack trace:
+%s
+%s
+%s
