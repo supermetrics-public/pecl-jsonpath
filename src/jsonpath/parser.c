@@ -507,7 +507,7 @@ bool validate_expression_head(struct ast_node* tok) {
   if (is_binary(tok->type)) {
     return true;
   }
-  
+
   if (is_unary(tok->type)) {
     return true;
   }

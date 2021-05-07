@@ -72,5 +72,3 @@ array(3) {
     int(100)
   }
 }
---XFAIL--
-Outcome depends on how values of different types are compared

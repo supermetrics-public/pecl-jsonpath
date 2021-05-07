@@ -50,7 +50,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(!(@.key<42))]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
@@ -101,5 +100,3 @@ array(9) {
     string(5) "value"
   }
 }
---XFAIL--
-This kind of negation is not currently supported

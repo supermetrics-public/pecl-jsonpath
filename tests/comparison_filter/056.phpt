@@ -77,7 +77,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(@.key!=42)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
@@ -189,5 +188,3 @@ array(19) {
     string(5) "value"
   }
 }
---XFAIL--
-Outcome depends on how values of different types are compared (string "42"), fails to include item with missing `key` property

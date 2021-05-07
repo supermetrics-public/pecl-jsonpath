@@ -61,5 +61,3 @@ array(2) {
     int(3)
   }
 }
---XFAIL--
-Now returns also strings, booleans and arrays, needs a numeracy check for the @.key>0 comparison
