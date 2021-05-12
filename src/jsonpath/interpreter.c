@@ -18,6 +18,7 @@ void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok
 bool evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+bool can_check_inequality(zval* lhs, zval* rhs);
 
 void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   while (tok != NULL) {
@@ -267,10 +268,18 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
     case AST_ROOT:
       ZVAL_INDIRECT(tmp_dest, NULL);
       eval_ast(arr_head, arr_head, src, tmp_dest);
+      if (Z_INDIRECT_P(tmp_dest) == NULL) {
+        ZVAL_UNDEF(tmp_dest);
+        return tmp_dest;
+      }
       return Z_INDIRECT_P(tmp_dest);
     case AST_SELECTOR:
       ZVAL_INDIRECT(tmp_dest, NULL);
       eval_ast(arr_head, arr_cur, src, tmp_dest);
+      if (Z_INDIRECT_P(tmp_dest) == NULL) {
+        ZVAL_UNDEF(tmp_dest);
+        return tmp_dest;
+      }
       return Z_INDIRECT_P(tmp_dest);
     default:
       assert(0);
@@ -308,7 +317,7 @@ bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
 
   if (tok->type == AST_SELECTOR) {
     zval tmp = {0};
-    return evaluate_primary(tok, &tmp, arr_head, arr_cur) != NULL;
+    return Z_TYPE_P(evaluate_primary(tok, &tmp, arr_head, arr_cur)) != IS_UNDEF;
   }
 
   zval tmp = {0};
@@ -330,7 +339,7 @@ bool evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
     return !evaluate_binary(arr_head, arr_cur, tok->data.d_unary.right);
   } else if (tok->data.d_unary.right->type == AST_SELECTOR) {
     /* ?(!@.selector) */
-    return evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur) == NULL;
+    return Z_TYPE_P(evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur)) == IS_UNDEF;
   }
 
   zval* val = evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur);
@@ -356,14 +365,10 @@ bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
     ZVAL_BOOL(val_lh, result);
   } else if (lh_operand->type == AST_SELECTOR && (tok->type == AST_OR || tok->type == AST_AND)) {
     /* ?(@.selector <or|and> [operand]) */
-    bool exists = (evaluate_primary(lh_operand, &tmp_lh, arr_head, arr_cur) != NULL);
+    bool exists = Z_TYPE_P(evaluate_primary(lh_operand, &tmp_lh, arr_head, arr_cur)) != IS_UNDEF;
     ZVAL_BOOL(val_lh, exists);
   } else {
     val_lh = evaluate_primary(lh_operand, &tmp_lh, arr_head, arr_cur);
-  }
-
-  if (val_lh == NULL) {
-    return false;
   }
 
   if (is_binary(rh_operand->type)) {
@@ -374,7 +379,7 @@ bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
     ZVAL_BOOL(val_rh, result);
   } else if (rh_operand->type == AST_SELECTOR && (tok->type == AST_OR || tok->type == AST_AND)) {
     /* ?([operand] <or|and> @.selector) */
-    bool exists = evaluate_primary(rh_operand, &tmp_rh, arr_head, arr_cur) != NULL;
+    bool exists = Z_TYPE_P(evaluate_primary(rh_operand, &tmp_rh, arr_head, arr_cur)) != IS_UNDEF;
     ZVAL_BOOL(val_rh, exists);
   } else {
     val_rh = evaluate_primary(rh_operand, &tmp_rh, arr_head, arr_cur);
@@ -382,23 +387,18 @@ bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
 
   bool ret = false;
 
-  if (val_rh == NULL) {
-    ret = false;
-    goto FREE_LHS;
-  }
-
   switch (tok->type) {
     case AST_EQ:
       ret = fast_is_identical_function(val_lh, val_rh);
       break;
     case AST_NE:
-      ret = compare(val_lh, val_rh) != 0;
+      ret = !fast_is_identical_function(val_lh, val_rh);
       break;
     case AST_LT:
-      ret = compare(val_lh, val_rh) < 0;
+      ret = can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) < 0;
       break;
     case AST_LTE:
-      ret = compare(val_lh, val_rh) <= 0;
+      ret = can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) <= 0;
       break;
     case AST_OR:
       ret = (Z_TYPE_P(val_lh) == IS_TRUE) || (Z_TYPE_P(val_rh) == IS_TRUE);
@@ -407,10 +407,10 @@ bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
       ret = (Z_TYPE_P(val_lh) == IS_TRUE) && (Z_TYPE_P(val_rh) == IS_TRUE);
       break;
     case AST_GT:
-      ret = compare(val_lh, val_rh) > 0;
+      ret = can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) > 0;
       break;
     case AST_GTE:
-      ret = compare(val_lh, val_rh) >= 0;
+      ret = can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) >= 0;
       break;
     case AST_RGXP:
       ret = compare_rgxp(val_lh, val_rh);
@@ -432,4 +432,22 @@ FREE_LHS:
   }
 
   return ret;
+}
+
+/* Determine if two zvals can be checked for inequality (>, <, >=, <=). */
+/* Specifically forbid comparing strings with numeric values in order to */
+/* avoid returning true for scenarios such as 42 > "value". */
+bool can_check_inequality(zval* lhs, zval* rhs) {
+
+  bool lhs_is_numeric = (Z_TYPE_P(lhs) == IS_LONG || Z_TYPE_P(lhs) == IS_DOUBLE);
+  bool rhs_is_numeric = (Z_TYPE_P(rhs) == IS_LONG || Z_TYPE_P(rhs) == IS_DOUBLE);
+
+  if (lhs_is_numeric && rhs_is_numeric) {
+    return true;
+  }
+
+  bool lhs_is_string = Z_TYPE_P(lhs) == IS_STRING;
+  bool rhs_is_string = Z_TYPE_P(rhs) == IS_STRING;
+
+  return lhs_is_string && rhs_is_string;
 }

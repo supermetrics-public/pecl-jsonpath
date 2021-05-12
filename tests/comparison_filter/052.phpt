@@ -82,5 +82,3 @@ array(5) {
     float(41.9999)
   }
 }
---XFAIL--
-Outcome depends on how values of different types are compared
