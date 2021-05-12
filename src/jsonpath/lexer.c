@@ -74,6 +74,15 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
             break; /* dot is superfluous in .['node'] */
           case '*':
             break; /* get in next loop */
+          case ' ':
+            raise_error("Unexpected whitespace", json_path, *p + 1);
+            return LEX_ERR;
+          case '\0':
+            /* The whole expression can end with a recursive descent operator, but not with a dot selector */
+            if (*(*p - 1) != '.') {
+              raise_error("Dot selector must be followed by a node name or wildcard", json_path, *p);
+              return LEX_ERR;
+            }
           default:
             found_token = LEX_NODE;
             break;

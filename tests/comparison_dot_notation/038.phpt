@@ -18,7 +18,9 @@ $result = $jsonPath->find($data, "$. a");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now returns unrecognized token 'a' at position 3, would be better to identify the whitespace as the culprit
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Unexpected whitespace at position 2 in %s
+Stack trace:
+%s
+%s
+%s
