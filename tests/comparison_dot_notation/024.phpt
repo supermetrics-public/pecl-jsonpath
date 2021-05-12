@@ -17,7 +17,9 @@ $result = $jsonPath->find($data, "$.");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now returns 9001, consensus is to not support empty path
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Dot selector must be followed by a node name or wildcard at position 1 in %s
+Stack trace:
+%s
+%s
+%s
