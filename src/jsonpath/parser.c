@@ -416,7 +416,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     CONSUME_TOKEN();
     struct ast_node* expr = parse_or(PARSER_ARGS);
 
-    // Abort if parsing the expression resulted in an exception
+    /* Abort if parsing the expression resulted in an exception */
     if (expr == NULL) {
       return NULL;
     }
@@ -425,6 +425,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       CONSUME_TOKEN();
       return expr;
     } else {
+      free_ast_nodes(expr);
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing closing paren )");
       return NULL;
     }
