@@ -91,6 +91,11 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
         if (found_token == LEX_NODE) {
           (*p)++;
 
+          if (**p == '"' || **p == '\'') {
+            raise_error("Quoted node names must use the bracket notation [", json_path, *p);
+            return LEX_ERR;
+          }
+
           if (!extract_unbounded_literal(*p, buffer, bufSize, json_path)) {
             return LEX_ERR;
           }
