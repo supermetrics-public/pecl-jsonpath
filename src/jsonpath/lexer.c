@@ -16,11 +16,10 @@
 #define PEEK_CHAR() *(*p + 1)
 #define NEXT_CHAR() (*p)++
 
-static int count_numeric_str_len(char* p);
 static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token* token);
 static void extract_unbounded_literal(char** p, char* json_path, struct jpath_token* token);
-static bool extract_unbounded_numeric_literal(char** p, char* json_path, struct jpath_token* token);
-static bool extract_boolean_literal(char** p, char* json_path, struct jpath_token* token);
+static void extract_unbounded_numeric_literal(char** p, char* json_path, struct jpath_token* token);
+static void extract_boolean_literal(char** p, char* json_path, struct jpath_token* token);
 
 const char* LEX_STR[] = {
     "LEX_NOT_FOUND",       /* Token not found */
@@ -91,21 +90,6 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
 
         switch (CUR_CHAR()) {
           case '\'':
-
-            if (!extract_quoted_literal(p, json_path, token)) {
-              return false;
-            }
-
-            token->type = LEX_NODE;
-
-            EAT_WHITESPACE();
-
-            if (CUR_CHAR() != ']') {
-              raise_error("Missing closing ] bracket", json_path, *p);
-              return false;
-            }
-            NEXT_CHAR();
-            return true;
           case '"':
             if (!extract_quoted_literal(p, json_path, token)) {
               return false;
@@ -159,7 +143,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
         NEXT_CHAR();
         return true;
       case '!':
-        if (*(*p + 1) == '=') {
+        if (PEEK_CHAR() == '=') {
           token->type = LEX_NEQ;
           NEXT_CHAR();
         } else {
@@ -168,7 +152,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
         NEXT_CHAR();
         return true;
       case '>':
-        if (*(*p + 1) == '=') {
+        if (PEEK_CHAR() == '=') {
           token->type = LEX_GTE;
           NEXT_CHAR();
         } else {
@@ -177,7 +161,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
         NEXT_CHAR();
         return true;
       case '<':
-        if (*(*p + 1) == '=') {
+        if (PEEK_CHAR() == '=') {
           token->type = LEX_LTE;
           NEXT_CHAR();
         } else {
@@ -216,18 +200,11 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
         NEXT_CHAR();
         return true;
       case '\'':
-        if (!extract_quoted_literal(p, json_path, token)) {
-          return false;
-        }
-        token->type = LEX_LITERAL;
-        // NEXT_CHAR();
-        return true;
       case '"':
         if (!extract_quoted_literal(p, json_path, token)) {
           return false;
         }
         token->type = LEX_LITERAL;
-        // NEXT_CHAR();
         return true;
       case '*':
         token->type = LEX_WILD_CARD;
@@ -237,9 +214,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
       case 'T':
       case 'f':
       case 'F':
-        if (!extract_boolean_literal(p, json_path, token)) {
-          return false;
-        }
+        extract_boolean_literal(p, json_path, token);
         token->type = LEX_LITERAL_BOOL;
         return true;
       case '-':
@@ -253,7 +228,8 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
       case '7':
       case '8':
       case '9':
-        return extract_unbounded_numeric_literal(p, json_path, token);
+        extract_unbounded_numeric_literal(p, json_path, token);
+        return true;
       case ' ':
         NEXT_CHAR();
         break;
@@ -273,7 +249,7 @@ static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token
   bool quote_found = false;
   char* start = *p;
 
-  for (; CUR_CHAR() != '\0' && (CUR_CHAR() == '\'' || CUR_CHAR() == '"' || CUR_CHAR() == ' '); NEXT_CHAR()) {
+  for (; (CUR_CHAR() == '\'' || CUR_CHAR() == '"' || CUR_CHAR() == ' '); NEXT_CHAR()) {
     // Find first occurrence
     if (CUR_CHAR() == '\'' || CUR_CHAR() == '"') {
       quote_found = true;
@@ -303,11 +279,10 @@ static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token
 
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
 static void extract_unbounded_literal(char** p, char* json_path, struct jpath_token* token) {
-  for (; CUR_CHAR() == ' '; NEXT_CHAR())
-    ;
-
   token->len = 0;
   token->val = *p;
+
+  EAT_WHITESPACE();
 
   for (; CUR_CHAR() != '\0' && !isspace(CUR_CHAR()) && (CUR_CHAR() == '_' || CUR_CHAR() == '-' || !ispunct(CUR_CHAR()));
        NEXT_CHAR()) {
@@ -316,30 +291,24 @@ static void extract_unbounded_literal(char** p, char* json_path, struct jpath_to
 }
 
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
-static bool extract_unbounded_numeric_literal(char** p, char* json_path, struct jpath_token* token) {
+static void extract_unbounded_numeric_literal(char** p, char* json_path, struct jpath_token* token) {
   token->len = 0;
   token->type = LEX_LITERAL_NUMERIC;
   token->val = *p;
 
-  while (CUR_CHAR() != '\0') {
-    if ((CUR_CHAR() >= '0' && CUR_CHAR() <= '9') || CUR_CHAR() == '.' || CUR_CHAR() == '-' || CUR_CHAR() == 'e' ||
-        CUR_CHAR() == 'E') {
-      token->len++;
-    } else {
-      break;
-    }
-    NEXT_CHAR();
+  for (; (CUR_CHAR() >= '0' && CUR_CHAR() <= '9') || CUR_CHAR() == '.' || CUR_CHAR() == '-' || CUR_CHAR() == 'e' ||
+         CUR_CHAR() == 'E';
+       NEXT_CHAR()) {
+    token->len++;
   }
-  return true;
 }
 
 /* Extract boolean */
-static bool extract_boolean_literal(char** p, char* json_path, struct jpath_token* token) {
+static void extract_boolean_literal(char** p, char* json_path, struct jpath_token* token) {
   char* start;
   size_t cpy_len;
 
-  for (; CUR_CHAR() == ' '; NEXT_CHAR())
-    ;
+  EAT_WHITESPACE();
 
   start = *p;
 
@@ -352,6 +321,4 @@ static bool extract_boolean_literal(char** p, char* json_path, struct jpath_toke
   token->len = cpy_len;
   token->type = LEX_LITERAL;
   token->val = start;
-
-  return true;
 }
