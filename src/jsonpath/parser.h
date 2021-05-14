@@ -56,11 +56,13 @@ union ast_node_data {
     int indexes[10]; /* todo check for max */
   } d_list;
   struct {
-    char value[PARSE_BUF_LEN];
+    char* val;
+    int len;
     bool value_bool;
   } d_literal;
   struct {
-    char value[PARSE_BUF_LEN];
+    char* val;
+    int len;
   } d_selector;
   struct {
     struct ast_node* head;
@@ -82,9 +84,9 @@ struct ast_node {
   union ast_node_data data;
 };
 
-bool build_parse_tree(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
-                      int lex_tok_count, struct ast_node* head);
-bool sanity_check(lex_token lex_tok[], int lex_tok_count);
+bool build_parse_tree(struct jpath_token lex_tok[PARSE_BUF_LEN], int* lex_idx, int lex_tok_count,
+                      struct ast_node* head);
+bool sanity_check(struct jpath_token lex_token[], int lex_tok_count);
 void free_ast_nodes(struct ast_node* head);
 bool validate_parse_tree(struct ast_node* head);
 

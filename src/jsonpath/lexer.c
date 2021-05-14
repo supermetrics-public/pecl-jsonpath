@@ -11,11 +11,8 @@
 #endif
 #include <stdio.h>
 
-#include "safe_string.h"
-
 #define CUR_CHAR() **p
-#define EAT_WHITESPACE()     \
-  for (; **p == ' '; (*p)++)
+#define EAT_WHITESPACE() for (; **p == ' '; (*p)++)
 #define PEEK_CHAR() *(*p + 1)
 #define NEXT_CHAR() (*p)++
 
@@ -88,176 +85,176 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
             return true;
         }
         break;
-      // case '[':
-      //   NEXT_CHAR();
-      //   EAT_WHITESPACE();
+      case '[':
+        NEXT_CHAR();
+        EAT_WHITESPACE();
 
-      //   switch (CUR_CHAR()) {
-      //     case '\'':
+        switch (CUR_CHAR()) {
+          case '\'':
 
-      //       if (!extract_quoted_literal(p, json_path, token)) {
-      //         return false;
-      //       }
+            if (!extract_quoted_literal(p, json_path, token)) {
+              return false;
+            }
 
-      //       token->type = LEX_NODE;
+            token->type = LEX_NODE;
 
-      //       EAT_WHITESPACE();
+            EAT_WHITESPACE();
 
-      //       if (CUR_CHAR() != ']') {
-      //         raise_error("Missing closing ] bracket", json_path, *p);
-      //         return false;
-      //       }
-      //       NEXT_CHAR();
-      //       return true;
-      //     case '"':
-      //       if (!extract_quoted_literal(p, json_path, token)) {
-      //         return false;
-      //       }
+            if (CUR_CHAR() != ']') {
+              raise_error("Missing closing ] bracket", json_path, *p);
+              return false;
+            }
+            NEXT_CHAR();
+            return true;
+          case '"':
+            if (!extract_quoted_literal(p, json_path, token)) {
+              return false;
+            }
 
-      //       EAT_WHITESPACE();
+            EAT_WHITESPACE();
 
-      //       if (CUR_CHAR() != ']') {
-      //         raise_error("Missing closing ] bracket", json_path, *p);
-      //         return false;
-      //       }
-      //       token->type = LEX_NODE;
-      //       break;
-      //     case '?':
-      //       token->type = LEX_EXPR_START;
-      //       break;
-      //     default:
-      //       /* Pick up start in next iteration, maybe simplify */
-      //       (*p)--;
-      //       token->type = LEX_FILTER_START;
-      //       break;
-      //   }
-      //   NEXT_CHAR();
-      //   break;
-      // case ']':
-      //   token->type = LEX_EXPR_END;
-      //   NEXT_CHAR();
-      //   break;
-      // case '@':
-      //   token->type = LEX_CUR_NODE;
-      //   NEXT_CHAR();
-      //   break;
-      // case ':':
-      //   token->type = LEX_SLICE;
-      //   NEXT_CHAR();
-      //   break;
-      // case ',':
-      //   token->type = LEX_CHILD_SEP;
-      //   NEXT_CHAR();
-      //   break;
-      // case '=':
-      //   NEXT_CHAR();
+            if (CUR_CHAR() != ']') {
+              raise_error("Missing closing ] bracket", json_path, *p);
+              return false;
+            }
+            token->type = LEX_NODE;
+            break;
+          case '?':
+            token->type = LEX_EXPR_START;
+            break;
+          default:
+            /* Pick up start in next iteration, maybe simplify */
+            (*p)--;
+            token->type = LEX_FILTER_START;
+            break;
+        }
+        NEXT_CHAR();
+        break;
+      case ']':
+        token->type = LEX_EXPR_END;
+        NEXT_CHAR();
+        break;
+      case '@':
+        token->type = LEX_CUR_NODE;
+        NEXT_CHAR();
+        break;
+      case ':':
+        token->type = LEX_SLICE;
+        NEXT_CHAR();
+        break;
+      case ',':
+        token->type = LEX_CHILD_SEP;
+        NEXT_CHAR();
+        break;
+      case '=':
+        NEXT_CHAR();
 
-      //   if (CUR_CHAR() == '=') {
-      //     token->type = LEX_EQ;
-      //   } else if (CUR_CHAR() == '~') {
-      //     token->type = LEX_RGXP;
-      //   } else {
-      //     raise_error("Invalid character after '='. Valid values: '==', '!~'.", json_path, *p);
-      //     return false;
-      //   }
-      //   NEXT_CHAR();
-      //   break;
-      // case '!':
-      //   if (*(*p + 1) == '=') {
-      //     token->type = LEX_NEQ;
-      //     NEXT_CHAR();
-      //   } else {
-      //     token->type = LEX_NEGATION;
-      //   }
-      //   NEXT_CHAR();
-      //   break;
-      // case '>':
-      //   if (*(*p + 1) == '=') {
-      //     token->type = LEX_GTE;
-      //     NEXT_CHAR();
-      //   } else {
-      //     token->type = LEX_GT;
-      //   }
-      //   NEXT_CHAR();
-      //   break;
-      // case '<':
-      //   if (*(*p + 1) == '=') {
-      //     token->type = LEX_LTE;
-      //     NEXT_CHAR();
-      //   } else {
-      //     token->type = LEX_LT;
-      //   }
-      //   NEXT_CHAR();
-      //   break;
-      // case '&':
-      //   NEXT_CHAR();
+        if (CUR_CHAR() == '=') {
+          token->type = LEX_EQ;
+        } else if (CUR_CHAR() == '~') {
+          token->type = LEX_RGXP;
+        } else {
+          raise_error("Invalid character after '='. Valid values: '==', '!~'.", json_path, *p);
+          return false;
+        }
+        NEXT_CHAR();
+        break;
+      case '!':
+        if (*(*p + 1) == '=') {
+          token->type = LEX_NEQ;
+          NEXT_CHAR();
+        } else {
+          token->type = LEX_NEGATION;
+        }
+        NEXT_CHAR();
+        break;
+      case '>':
+        if (*(*p + 1) == '=') {
+          token->type = LEX_GTE;
+          NEXT_CHAR();
+        } else {
+          token->type = LEX_GT;
+        }
+        NEXT_CHAR();
+        break;
+      case '<':
+        if (*(*p + 1) == '=') {
+          token->type = LEX_LTE;
+          NEXT_CHAR();
+        } else {
+          token->type = LEX_LT;
+        }
+        NEXT_CHAR();
+        break;
+      case '&':
+        NEXT_CHAR();
 
-      //   if (CUR_CHAR() != '&') {
-      //     raise_error("'And' operator must be double &&", json_path, *p);
-      //     return false;
-      //   }
+        if (CUR_CHAR() != '&') {
+          raise_error("'And' operator must be double &&", json_path, *p);
+          return false;
+        }
 
-      //   token->type = LEX_AND;
-      //   NEXT_CHAR();
-      //   break;
-      // case '|':
-      //   NEXT_CHAR();
+        token->type = LEX_AND;
+        NEXT_CHAR();
+        break;
+      case '|':
+        NEXT_CHAR();
 
-      //   if (CUR_CHAR() != '|') {
-      //     raise_error("'Or' operator must be double ||", json_path, *p);
-      //     return false;
-      //   }
+        if (CUR_CHAR() != '|') {
+          raise_error("'Or' operator must be double ||", json_path, *p);
+          return false;
+        }
 
-      //   token->type = LEX_OR;
-      //   NEXT_CHAR();
-      //   break;
-      // case '(':
-      //   token->type = LEX_PAREN_OPEN;
-      //   NEXT_CHAR();
-      //   break;
-      // case ')':
-      //   token->type = LEX_PAREN_CLOSE;
-      //   NEXT_CHAR();
-      //   break;
-      // case '\'':
-      //   if (!extract_quoted_literal(p, json_path, token)) {
-      //     return false;
-      //   }
-      //   token->type = LEX_LITERAL;
-      //   NEXT_CHAR();
-      //   break;
-      // case '"':
-      //   if (!extract_quoted_literal(p, json_path, token)) {
-      //     return false;
-      //   }
-      //   token->type = LEX_LITERAL;
-      //   NEXT_CHAR();
-      //   break;
-      // case '*':
-      //   token->type = LEX_WILD_CARD;
-      //   NEXT_CHAR();
-      //   break;
-      // case 't':
-      // case 'T':
-      // case 'f':
-      // case 'F':
-      //   if (!extract_boolean_literal(p, json_path, token)) {
-      //     return false;
-      //   }
-      //   token->type = LEX_LITERAL_BOOL;
-      //   break;
-      // case '-':
-      // case '0':
-      // case '1':
-      // case '2':
-      // case '3':
-      // case '4':
-      // case '5':
-      // case '6':
-      // case '7':
-      // case '8':
-      // case '9':
-      //   return extract_unbounded_numeric_literal(p, json_path, token);
+        token->type = LEX_OR;
+        NEXT_CHAR();
+        break;
+      case '(':
+        token->type = LEX_PAREN_OPEN;
+        NEXT_CHAR();
+        break;
+      case ')':
+        token->type = LEX_PAREN_CLOSE;
+        NEXT_CHAR();
+        break;
+      case '\'':
+        if (!extract_quoted_literal(p, json_path, token)) {
+          return false;
+        }
+        token->type = LEX_LITERAL;
+        NEXT_CHAR();
+        break;
+      case '"':
+        if (!extract_quoted_literal(p, json_path, token)) {
+          return false;
+        }
+        token->type = LEX_LITERAL;
+        NEXT_CHAR();
+        break;
+      case '*':
+        token->type = LEX_WILD_CARD;
+        NEXT_CHAR();
+        break;
+      case 't':
+      case 'T':
+      case 'f':
+      case 'F':
+        if (!extract_boolean_literal(p, json_path, token)) {
+          return false;
+        }
+        token->type = LEX_LITERAL_BOOL;
+        break;
+      case '-':
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        return extract_unbounded_numeric_literal(p, json_path, token);
       case ' ':
         NEXT_CHAR();
         break;
@@ -313,7 +310,8 @@ static void extract_unbounded_literal(char** p, char* json_path, struct jpath_to
   token->len = 0;
   token->val = *p;
 
-  for (; CUR_CHAR() != '\0' && !isspace(CUR_CHAR()) && (CUR_CHAR() == '_' || CUR_CHAR() == '-' || !ispunct(CUR_CHAR())); NEXT_CHAR()) {
+  for (; CUR_CHAR() != '\0' && !isspace(CUR_CHAR()) && (CUR_CHAR() == '_' || CUR_CHAR() == '-' || !ispunct(CUR_CHAR()));
+       NEXT_CHAR()) {
     token->len++;
   }
 }
@@ -325,7 +323,8 @@ static bool extract_unbounded_numeric_literal(char** p, char* json_path, struct 
   token->val = *p;
 
   while (CUR_CHAR() != '\0') {
-    if ((CUR_CHAR() >= '0' && CUR_CHAR() <= '9') || CUR_CHAR() == '.' || CUR_CHAR() == '-' || CUR_CHAR() == 'e' || CUR_CHAR() == 'E') {
+    if ((CUR_CHAR() >= '0' && CUR_CHAR() <= '9') || CUR_CHAR() == '.' || CUR_CHAR() == '-' || CUR_CHAR() == 'e' ||
+        CUR_CHAR() == 'E') {
       token->len++;
     } else {
       break;
@@ -346,7 +345,8 @@ static bool extract_boolean_literal(char** p, char* json_path, struct jpath_toke
 
   start = *p;
 
-  for (; CUR_CHAR() != '\0' && !isspace(CUR_CHAR()) && (CUR_CHAR() == '_' || CUR_CHAR() == '-' || !ispunct(CUR_CHAR())); NEXT_CHAR())
+  for (; CUR_CHAR() != '\0' && !isspace(CUR_CHAR()) && (CUR_CHAR() == '_' || CUR_CHAR() == '-' || !ispunct(CUR_CHAR()));
+       NEXT_CHAR())
     ;
 
   cpy_len = (size_t)(*p - start);

@@ -5,17 +5,16 @@
 
 #include <ext/spl/spl_exceptions.h>
 
-#include "safe_string.h"
 #include "zend_exceptions.h"
 
 #define CONSUME_TOKEN() (*lex_idx)++
 #define CUR_POS() *lex_idx
-#define CUR_TOKEN_LITERAL() lex_tok_values[*lex_idx]
-#define CUR_TOKEN() lex_token[*lex_idx]
+#define CUR_TOKEN_LITERAL() lex_tok[*lex_idx].val
+#define CUR_TOKEN_LEN() lex_tok[*lex_idx].len
+#define CUR_TOKEN() lex_tok[*lex_idx].type
 #define HAS_TOKEN() *lex_idx < lex_tok_count
-#define PARSER_ARGS lex_token, lex_tok_values, lex_idx, lex_tok_count
-#define PARSER_PARAMS \
-  lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int *lex_idx, int lex_tok_count
+#define PARSER_ARGS lex_tok, lex_idx, lex_tok_count
+#define PARSER_PARAMS struct jpath_token lex_tok[PARSE_BUF_LEN], int *lex_idx, int lex_tok_count
 
 static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right);
 static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
@@ -28,8 +27,7 @@ static struct ast_node* parse_comparison(PARSER_PARAMS);
 static struct ast_node* parse_primary(PARSER_PARAMS);
 static struct ast_node* parse_unary(PARSER_PARAMS);
 
-static bool parse_filter_list(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* start,
-                              int lex_tok_count, struct ast_node* tok);
+static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok);
 static bool validate_root_next(struct ast_node* head);
 
 static bool numeric_to_long(char* str, int str_len, long* dest);
@@ -63,8 +61,7 @@ static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type
   return node;
 }
 
-bool build_parse_tree(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
-                      int lex_tok_count, struct ast_node* head) {
+bool build_parse_tree(PARSER_PARAMS, struct ast_node* head) {
   struct ast_node* cur = head;
 
   for (; *lex_idx < lex_tok_count; (*lex_idx)++) {
@@ -84,7 +81,8 @@ bool build_parse_tree(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][
       case LEX_NODE:
         // fall-through
         cur = ast_alloc_node(cur, AST_SELECTOR);
-        strcpy(cur->data.d_selector.value, CUR_TOKEN_LITERAL());
+        cur->data.d_selector.val = CUR_TOKEN_LITERAL();
+        cur->data.d_selector.len = CUR_TOKEN_LEN();
         break;
       case LEX_FILTER_START:
 
@@ -104,7 +102,7 @@ bool build_parse_tree(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][
             /* fall-through */
           case LEX_CHILD_SEP:
             cur = ast_alloc_node(cur, AST_INDEX_LIST);
-            if (!parse_filter_list(lex_token, lex_tok_values, lex_idx, lex_tok_count, cur)) {
+            if (!parse_filter_list(PARSER_ARGS, cur)) {
               return false;
             }
             break;
@@ -119,7 +117,7 @@ bool build_parse_tree(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][
             break;
         }
 
-        if (*lex_idx == lex_tok_count - 1 || lex_token[(*lex_idx) + 1] != LEX_EXPR_END) { /* last token */
+        if (*lex_idx == lex_tok_count - 1 || lex_tok[(*lex_idx) + 1].type != LEX_EXPR_END) { /* last token */
           zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end ]");
           return false;
         }
@@ -149,8 +147,7 @@ bool build_parse_tree(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][
   return true;
 }
 
-static bool parse_filter_list(lex_token lex_token[PARSE_BUF_LEN], char lex_tok_values[][PARSE_BUF_LEN], int* lex_idx,
-                              int lex_tok_count, struct ast_node* tok) {
+static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
   int slice_count = 0;
 
   /* assume filter type is an index list by default. this resolves type */
@@ -214,7 +211,7 @@ static struct ast_node* parse_expression(PARSER_PARAMS) {
   CONSUME_TOKEN(); /* LEX_EXPR_START */
 
   struct ast_node* expr = ast_alloc_node(NULL, AST_EXPR);
-  expr->data.d_expression.head = parse_or(lex_token, lex_tok_values, lex_idx, lex_tok_count);
+  expr->data.d_expression.head = parse_or(PARSER_ARGS);
 
   return expr;
 }
@@ -320,10 +317,9 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   if (CUR_TOKEN() == LEX_LITERAL) {
     struct ast_node* ret = ast_alloc_node(NULL, AST_LITERAL);
 
-    if (jp_str_cpy(ret->data.d_literal.value, PARSE_BUF_LEN, CUR_TOKEN_LITERAL(), strlen(CUR_TOKEN_LITERAL())) > 0) {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Buffer size exceeded");
-      return NULL;
-    }
+    ret->data.d_literal.val = CUR_TOKEN_LITERAL();
+    ret->data.d_literal.len = CUR_TOKEN_LEN();
+
     CONSUME_TOKEN();
     return ret;
   }
@@ -365,7 +361,8 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       } else {
         tail = ast_alloc_node(tail, AST_SELECTOR);
       }
-      strcpy(tail->data.d_selector.value, CUR_TOKEN_LITERAL());
+      tail->data.d_selector.val = CUR_TOKEN_LITERAL();
+      tail->data.d_selector.len = CUR_TOKEN_LEN();
       CONSUME_TOKEN();
 
       if (CUR_TOKEN() == LEX_WILD_CARD) {
@@ -429,7 +426,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
 
     /* Run build_parse_tree on a subset of the lex stream, until the */
     /* boundary of the sub-JSONPath */
-    if (!build_parse_tree(lex_token, lex_tok_values, &start, stop, ptr)) {
+    if (!build_parse_tree(lex_tok, &start, stop, ptr)) {
       return NULL;
     }
 
@@ -477,7 +474,7 @@ bool validate_parse_tree(struct ast_node* head) {
         }
         break;
       case AST_RECURSE:
-        if (cur->next == NULL || (cur->next->type == AST_SELECTOR && cur->next->data.d_selector.value[0] == '\0')) {
+        if (cur->next == NULL || (cur->next->type == AST_SELECTOR && cur->next->data.d_selector.len == 0)) {
           zend_throw_exception(
               spl_ce_RuntimeException,
               "Recursive descent operator (..) must be followed by a child selector, filter or wildcard.", 0);
@@ -567,13 +564,13 @@ static bool is_operator(lex_token type) {
   }
 }
 
-bool sanity_check(lex_token lex_token[], int lex_tok_count) {
+bool sanity_check(struct jpath_token lex_token[], int lex_tok_count) {
   if (lex_tok_count == 0) {
     zend_throw_exception(spl_ce_RuntimeException, "The JSONpath contains no valid elements", 0);
     return false;
   }
 
-  if (lex_token[0] != LEX_ROOT) {
+  if (lex_token[0].type != LEX_ROOT) {
     zend_throw_exception(spl_ce_RuntimeException, "JSONpath must start with a root $", 0);
     return false;
   }
@@ -658,7 +655,9 @@ void print_ast(struct ast_node* head, const char* m, int level) {
         break;
       case AST_SELECTOR:
         while (head->type == AST_SELECTOR) {
-          printf(" [val=%s]", head->data.d_selector.value);
+          printf(" [val=");
+          php_write(head->data.d_selector.val, head->data.d_selector.len);
+          printf("]");
           if (head->next != NULL && head->next->type == AST_SELECTOR) {
             head = head->next;
           } else {
@@ -668,7 +667,9 @@ void print_ast(struct ast_node* head, const char* m, int level) {
         printf("\n");
         break;
       case AST_LITERAL:
-        printf(" [val=%s]\n", head->data.d_literal.value);
+        printf(" [val=");
+        php_write(head->data.d_literal.val, head->data.d_literal.len);
+        printf("]");
         break;
       case AST_INDEX_SLICE:
         printf(" [start=%d end=%d step=%d]\n", head->data.d_list.indexes[0], head->data.d_list.indexes[1],

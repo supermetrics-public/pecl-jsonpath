@@ -16,10 +16,9 @@
 
 /* True global resources - no need for thread safety here */
 static int le_jsonpath;
-bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count);
+bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count);
 #ifdef JSONPATH_DEBUG
-void print_lex_tokens(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_literals[][PARSE_BUF_LEN], int lex_tok_count,
-                      const char* m);
+void print_lex_tokens(struct jpath_token lex_tok[PARSE_BUF_LEN], int lex_tok_count, const char* m);
 #endif
 
 zend_class_entry* jsonpath_ce;
@@ -43,31 +42,30 @@ PHP_METHOD(JsonPath, find) {
 
   /* tokenize JSON-path string */
 
-  lex_token lex_tok[PARSE_BUF_LEN];
-  char lex_tok_literals[PARSE_BUF_LEN][PARSE_BUF_LEN];
+  struct jpath_token lex_tok[PARSE_BUF_LEN];
   int lex_tok_count = 0;
 
-  if (!scanTokens(j_path, lex_tok, lex_tok_literals, &lex_tok_count)) {
+  if (!scanTokens(j_path, lex_tok, &lex_tok_count)) {
     return;
   }
 
-  //   if (!sanity_check(lex_tok, lex_tok_count)) {
-  //     return;
-  //   }
+  if (!sanity_check(lex_tok, lex_tok_count)) {
+    return;
+  }
 
-  // #ifdef JSONPATH_DEBUG
-  //   print_lex_tokens(lex_tok, lex_tok_literals, lex_tok_count, "Lexer - Processed tokens");
-  // #endif
+#ifdef JSONPATH_DEBUG
+  print_lex_tokens(lex_tok, lex_tok_count, "Lexer - Processed tokens");
+#endif
 
-  //   /* assemble an array of query execution instructions from parsed tokens */
+  /* assemble an array of query execution instructions from parsed tokens */
 
-  //   struct ast_node head;
-  //   int i = 0;
+  struct ast_node head;
+  int i = 0;
 
-  //   if (!build_parse_tree(lex_tok, lex_tok_literals, &i, lex_tok_count, &head)) {
-  //     free_ast_nodes(head.next);
-  //     return;
-  //   }
+  if (!build_parse_tree(lex_tok, &i, lex_tok_count, &head)) {
+    free_ast_nodes(head.next);
+    return;
+  }
 
   //   if (!validate_parse_tree(head.next)) {
   //     free_ast_nodes(head.next);
@@ -94,30 +92,21 @@ PHP_METHOD(JsonPath, find) {
   //   }
 }
 
-bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_LEN], int* tok_count) {
+bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count) {
   char* p = json_path;
   int i = 0;
 
-  struct jpath_token token = {0};
-  while (*p != '\0' && scan(&p, &token, json_path)) {
-    printf("type: %s len: %d\n", LEX_STR[token.type], token.len);
-
-    // if (i >= PARSE_BUF_LEN) {
-    //   zend_throw_exception(spl_ce_RuntimeException, "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
-    //   return false;
-    // }
-
-    switch (token.type) {
-      case LEX_NODE:
-      case LEX_LITERAL:
-      case LEX_LITERAL_BOOL:
-      case LEX_LITERAL_NUMERIC:
-        php_write(token.val, token.len);
-        break;
+  while (*p != '\0') {
+    if (i >= PARSE_BUF_LEN) {
+      zend_throw_exception(spl_ce_RuntimeException, "The query is too long. Token count exceeds PARSE_BUF_LEN.", 0);
+      return false;
     }
 
-    // tok[i] = cur_tok;
-    // i++;
+    if (!scan(&p, &tok[i], json_path)) {
+      return false;
+    }
+
+    i++;
   }
 
   *tok_count = i;
@@ -126,15 +115,14 @@ bool scanTokens(char* json_path, lex_token tok[], char tok_literals[][PARSE_BUF_
 }
 
 #ifdef JSONPATH_DEBUG
-void print_lex_tokens(lex_token lex_tok[PARSE_BUF_LEN], char lex_tok_literals[][PARSE_BUF_LEN], int lex_tok_count,
-                      const char* m) {
+void print_lex_tokens(struct jpath_token lex_tok[PARSE_BUF_LEN], int lex_tok_count, const char* m) {
   printf("--------------------------------------\n");
   printf("%s\n\n", m);
 
   for (int i = 0; i < lex_tok_count; i++) {
-    printf("\t• %s", LEX_STR[lex_tok[i]]);
-    if (strlen(lex_tok_literals[i]) > 0) {
-      printf(" [val=%s]", lex_tok_literals[i]);
+    printf("\t• %s", LEX_STR[lex_tok[i].type]);
+    if (strlen(lex_tok[i].val) > 0) {
+      printf(" [val=%s]", lex_tok[i].val);
     }
     printf("\n");
   }
