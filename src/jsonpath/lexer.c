@@ -121,23 +121,21 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
             break;
           case '?':
             token->type = LEX_EXPR_START;
-            break;
+            return true;
           default:
-            /* Pick up start in next iteration, maybe simplify */
-            (*p)--;
             token->type = LEX_FILTER_START;
-            break;
+            return true;
         }
         NEXT_CHAR();
-        break;
+        return true;
       case ']':
         token->type = LEX_EXPR_END;
         NEXT_CHAR();
-        break;
+        return true;
       case '@':
         token->type = LEX_CUR_NODE;
         NEXT_CHAR();
-        break;
+        return true;
       case ':':
         token->type = LEX_SLICE;
         NEXT_CHAR();
@@ -145,7 +143,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
       case ',':
         token->type = LEX_CHILD_SEP;
         NEXT_CHAR();
-        break;
+        return true;
       case '=':
         NEXT_CHAR();
 
@@ -158,7 +156,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
           return false;
         }
         NEXT_CHAR();
-        break;
+        return true;
       case '!':
         if (*(*p + 1) == '=') {
           token->type = LEX_NEQ;
@@ -167,7 +165,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
           token->type = LEX_NEGATION;
         }
         NEXT_CHAR();
-        break;
+        return true;
       case '>':
         if (*(*p + 1) == '=') {
           token->type = LEX_GTE;
@@ -176,7 +174,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
           token->type = LEX_GT;
         }
         NEXT_CHAR();
-        break;
+        return true;
       case '<':
         if (*(*p + 1) == '=') {
           token->type = LEX_LTE;
@@ -185,7 +183,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
           token->type = LEX_LT;
         }
         NEXT_CHAR();
-        break;
+        return true;
       case '&':
         NEXT_CHAR();
 
@@ -196,7 +194,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
 
         token->type = LEX_AND;
         NEXT_CHAR();
-        break;
+        return true;
       case '|':
         NEXT_CHAR();
 
@@ -207,33 +205,33 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
 
         token->type = LEX_OR;
         NEXT_CHAR();
-        break;
+        return true;
       case '(':
         token->type = LEX_PAREN_OPEN;
         NEXT_CHAR();
-        break;
+        return true;
       case ')':
         token->type = LEX_PAREN_CLOSE;
         NEXT_CHAR();
-        break;
+        return true;
       case '\'':
         if (!extract_quoted_literal(p, json_path, token)) {
           return false;
         }
         token->type = LEX_LITERAL;
         NEXT_CHAR();
-        break;
+        return true;
       case '"':
         if (!extract_quoted_literal(p, json_path, token)) {
           return false;
         }
         token->type = LEX_LITERAL;
         NEXT_CHAR();
-        break;
+        return true;
       case '*':
         token->type = LEX_WILD_CARD;
         NEXT_CHAR();
-        break;
+        return true;
       case 't':
       case 'T':
       case 'f':
@@ -242,7 +240,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
           return false;
         }
         token->type = LEX_LITERAL_BOOL;
-        break;
+        return true;
       case '-':
       case '0':
       case '1':
@@ -331,7 +329,6 @@ static bool extract_unbounded_numeric_literal(char** p, char* json_path, struct 
     }
     NEXT_CHAR();
   }
-
   return true;
 }
 
