@@ -192,7 +192,7 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
     } else if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
       long idx = 0;
 
-      if (!numeric_to_long(CUR_TOKEN_LITERAL(), strlen(CUR_TOKEN_LITERAL()), &idx)) {
+      if (!numeric_to_long(CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN(), &idx)) {
         zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value.", 0);
         return false;
       }
@@ -326,7 +326,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
 
   if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
     struct ast_node* ret = ast_alloc_node(NULL, AST_DOUBLE);
-    if (!make_numeric_node(ret, CUR_TOKEN_LITERAL(), strlen(CUR_TOKEN_LITERAL()))) {
+    if (!make_numeric_node(ret, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN())) {
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric.");
       return NULL;
     }

@@ -67,29 +67,29 @@ PHP_METHOD(JsonPath, find) {
     return;
   }
 
-  //   if (!validate_parse_tree(head.next)) {
-  //     free_ast_nodes(head.next);
-  //     return;
-  //   }
+  if (!validate_parse_tree(head.next)) {
+    free_ast_nodes(head.next);
+    return;
+  }
 
-  // #ifdef JSONPATH_DEBUG
-  //   print_ast(head.next, "Parser - AST sent to interpreter", 0);
-  // #endif
+#ifdef JSONPATH_DEBUG
+  print_ast(head.next, "Parser - AST sent to interpreter", 0);
+#endif
 
-  //   /* execute the JSON-path query instructions against the search target (PHP object/array) */
+  /* execute the JSON-path query instructions against the search target (PHP object/array) */
 
-  //   array_init(return_value);
+  array_init(return_value);
 
-  //   eval_ast(search_target, search_target, head.next, return_value);
+  eval_ast(search_target, search_target, head.next, return_value);
 
-  //   free_ast_nodes(head.next);
+  free_ast_nodes(head.next);
 
-  //   /* return false if no results were found by the JSON-path query */
+  /* return false if no results were found by the JSON-path query */
 
-  //   if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
-  //     convert_to_boolean(return_value);
-  //     RETURN_FALSE;
-  //   }
+  if (zend_hash_num_elements(HASH_OF(return_value)) == 0) {
+    convert_to_boolean(return_value);
+    RETURN_FALSE;
+  }
 }
 
 bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count) {
@@ -121,8 +121,10 @@ void print_lex_tokens(struct jpath_token lex_tok[PARSE_BUF_LEN], int lex_tok_cou
 
   for (int i = 0; i < lex_tok_count; i++) {
     printf("\t• %s", LEX_STR[lex_tok[i].type]);
-    if (strlen(lex_tok[i].val) > 0) {
-      printf(" [val=%s]", lex_tok[i].val);
+    if (lex_tok[i].len > 0) {
+      printf(" [val=");
+      php_write(lex_tok[i].val, lex_tok[i].len);
+      printf("]");
     }
     printf("\n");
   }
