@@ -121,6 +121,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
             break;
           case '?':
             token->type = LEX_EXPR_START;
+            NEXT_CHAR();
             return true;
           default:
             token->type = LEX_FILTER_START;
@@ -139,7 +140,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
       case ':':
         token->type = LEX_SLICE;
         NEXT_CHAR();
-        break;
+        return true;
       case ',':
         token->type = LEX_CHILD_SEP;
         NEXT_CHAR();
