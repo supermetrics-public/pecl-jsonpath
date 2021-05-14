@@ -1,6 +1,6 @@
 # JsonPath-PHP - extension for PHP 7.4+
 
-[![Build status](https://github.com/supermetrics/php-ext-jsonpath/workflows/Build/badge.svg)](https://github.com/supermetrics/php-ext-jsonpath/actions?query=workflow%3ABuild)
+[![Build status](https://github.com/supermetrics-public/php-ext-jsonpath/workflows/Build/badge.svg)](https://github.com/supermetrics-public/php-ext-jsonpath/actions?query=workflow%3ABuild)
 ![Code coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/crocodele/5ceb08845fe95635fc41af2f4c86c631/raw/php-ext-jsonpath__main.json&labelColor=343940)
 
 JSONPath is a language for querying and extracting data from JSON, similar to XPath for XML.
@@ -251,5 +251,5 @@ You can then find a coverage report in the `lcov_html/` directory.
 JsonPath-PHP is created by [Mike Kaminski](https://github.com/mkaminski1988) and maintained by 
 [Supermetrics](https://github.com/supermetrics-public) and Mike Kaminski.
 
-Found a bug, or missing some feature? [Raise an issue](https://github.com/supermetrics/php-ext-jsonpath/issues) or
-[submit a pull request](https://github.com/supermetrics/php-ext-jsonpath/pulls).
+Found a bug, or missing some feature? [Raise an issue](https://github.com/supermetrics-public/php-ext-jsonpath/issues) or
+[submit a pull request](https://github.com/supermetrics-public/php-ext-jsonpath/pulls).
