@@ -249,7 +249,7 @@ You can then find a coverage report in the `lcov_html/` directory.
 ## Contributors
 
 JsonPath-PHP is created by [Mike Kaminski](https://github.com/mkaminski1988) and maintained by 
-[Supermetrics](https://github.com/supermetrics) and Mike Kaminski.
+[Supermetrics](https://github.com/supermetrics-public) and Mike Kaminski.
 
 Found a bug, or missing some feature? [Raise an issue](https://github.com/supermetrics/php-ext-jsonpath/issues) or
 [submit a pull request](https://github.com/supermetrics/php-ext-jsonpath/pulls).
