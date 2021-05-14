@@ -220,14 +220,14 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
           return false;
         }
         token->type = LEX_LITERAL;
-        NEXT_CHAR();
+        // NEXT_CHAR();
         return true;
       case '"':
         if (!extract_quoted_literal(p, json_path, token)) {
           return false;
         }
         token->type = LEX_LITERAL;
-        NEXT_CHAR();
+        // NEXT_CHAR();
         return true;
       case '*':
         token->type = LEX_WILD_CARD;
