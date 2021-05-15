@@ -20,8 +20,8 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing filter end ] in %s015.php:%d
+Fatal error: Uncaught RuntimeException: Missing filter end `]` in %s
 Stack trace:
-#0 %s015.php(%d): JsonPath->find(Array, '$[*,1]')
-#1 {main}
-  thrown in %s015.php on line %d
+%s
+%s
+%s

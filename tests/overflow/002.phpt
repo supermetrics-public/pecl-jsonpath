@@ -14,4 +14,4 @@ try {
     echo get_class($e) . ": " . $e->getMessage();
 }
 --EXPECT--
-RuntimeException: The query is too long. Token count exceeds PARSE_BUF_LEN.
+RuntimeException: The query is too long, token count exceeds maximum amount (50)

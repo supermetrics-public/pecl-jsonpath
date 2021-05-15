@@ -44,7 +44,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token 'i' at position 6 in %s
+Fatal error: Uncaught RuntimeException: Unrecognized token `i` at position 6 in %s
 Stack trace:
 %s
 %s

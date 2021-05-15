@@ -33,7 +33,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token '/' at position 12 in %s
+Fatal error: Uncaught RuntimeException: Unrecognized token `/` at position 12 in %s
 Stack trace:
 %s
 %s

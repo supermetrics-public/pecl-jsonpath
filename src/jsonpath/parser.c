@@ -76,10 +76,10 @@ bool build_parse_tree(PARSER_PARAMS, struct ast_node* head) {
         cur = ast_alloc_node(cur, AST_RECURSE);
         break;
       case LEX_CUR_NODE:
-        // noop
+        /* noop */
         break;
       case LEX_NODE:
-        // fall-through
+        /* fall-through */
         cur = ast_alloc_node(cur, AST_SELECTOR);
         cur->data.d_selector.val = CUR_TOKEN_LITERAL();
         cur->data.d_selector.len = CUR_TOKEN_LEN();
@@ -87,7 +87,7 @@ bool build_parse_tree(PARSER_PARAMS, struct ast_node* head) {
       case LEX_FILTER_START:
 
         if (*lex_idx == lex_tok_count - 1) { /* last token */
-          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end ]");
+          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end `]`");
           return false;
         }
 
@@ -118,7 +118,7 @@ bool build_parse_tree(PARSER_PARAMS, struct ast_node* head) {
         }
 
         if (*lex_idx == lex_tok_count - 1 || lex_tok[(*lex_idx) + 1].type != LEX_EXPR_END) { /* last token */
-          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end ]");
+          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end `]`");
           return false;
         }
 
@@ -170,22 +170,22 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
     } else if (CUR_TOKEN() == LEX_CHILD_SEP) {
       if (sep_found == AST_INDEX_SLICE) {
         zend_throw_exception(spl_ce_RuntimeException,
-                             "Multiple filter list separators found [,:], only one type is allowed.", 0);
+                             "Multiple filter list separators `,` and `:` found, only one type is allowed", 0);
         return false;
       }
       tok->type = sep_found = AST_INDEX_LIST;
     } else if (CUR_TOKEN() == LEX_SLICE) {
       if (sep_found == AST_INDEX_LIST) {
         zend_throw_exception(spl_ce_RuntimeException,
-                             "Multiple filter list separators found [,:], only one type is allowed.", 0);
+                             "Multiple filter list separators `,` and `:` found, only one type is allowed", 0);
         return false;
       }
 
       tok->type = sep_found = AST_INDEX_SLICE;
 
       slice_count++;
-      // [:a] => [0:a]
-      // [a::] => [a:0:]
+      /* [:a] => [0:a] */
+      /* [a::] => [a:0:] */
       if (slice_count > tok->data.d_list.count) {
         if (slice_count == 1) {
           tok->data.d_list.indexes[tok->data.d_list.count] = INT_MAX;
@@ -198,14 +198,14 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
       long idx = 0;
 
       if (!numeric_to_long(CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN(), &idx)) {
-        zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value.", 0);
+        zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value", 0);
         return false;
       }
 
       tok->data.d_list.indexes[tok->data.d_list.count] = idx;
       tok->data.d_list.count++;
     } else {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token in filter: %s", LEX_STR[CUR_TOKEN()]);
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token `%s` in filter", LEX_STR[CUR_TOKEN()]);
       return false;
     }
   }
@@ -216,7 +216,7 @@ static struct ast_node* parse_expression(PARSER_PARAMS) {
   CONSUME_TOKEN(); /* LEX_EXPR_START */
 
   if (CUR_TOKEN() != LEX_PAREN_OPEN) {
-    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing opening paren (");
+    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing opening paren `(`");
     return NULL;
   }
 
@@ -337,7 +337,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
     struct ast_node* ret = ast_alloc_node(NULL, AST_DOUBLE);
     if (!make_numeric_node(ret, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN())) {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric.");
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric");
       return NULL;
     }
     CONSUME_TOKEN();
@@ -352,7 +352,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     } else if (strncasecmp("false", CUR_TOKEN_LITERAL(), 5) == 0) {
       ret->data.d_literal.value_bool = false;
     } else {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Expected `true` or `false` for boolean token.");
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Expected `true` or `false` for boolean token");
       return NULL;
     }
     CONSUME_TOKEN();
@@ -383,7 +383,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
 
       if (CUR_TOKEN() == LEX_WILD_CARD) {
         free_ast_nodes(ret);
-        zend_throw_exception(spl_ce_RuntimeException, "Multiplying node values is not supported.", 0);
+        zend_throw_exception(spl_ce_RuntimeException, "Multiplying node values is not supported", 0);
         return NULL;
       }
     }
@@ -423,7 +423,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       return expr;
     } else {
       free_ast_nodes(expr);
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing closing paren )");
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing closing paren `)`");
       return NULL;
     }
   }
@@ -456,7 +456,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     return head.next;
   }
 
-  zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter expressions may not be empty.");
+  zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter expressions may not be empty");
 
   return NULL;
 }
@@ -528,13 +528,13 @@ bool validate_parse_tree(struct ast_node* head) {
         }
         if (!validate_root_next(cur->next)) {
           zend_throw_exception(spl_ce_RuntimeException,
-                               "$ must be followed by a child selector, filter or recurse element.", 0);
+                               "Root `$` must be followed by a child selector, filter or recurse element", 0);
           return false;
         }
         break;
       case AST_EXPR:
         if (cur->data.d_expression.head == NULL) {
-          zend_throw_exception(spl_ce_RuntimeException, "Filter expressions may not be empty.", 0);
+          zend_throw_exception(spl_ce_RuntimeException, "Filter expressions may not be empty", 0);
           return false;
         } else if (!validate_expression_head(cur->data.d_expression.head)) {
           zend_throw_exception(spl_ce_RuntimeException, "Invalid expression.", 0);
@@ -545,7 +545,7 @@ bool validate_parse_tree(struct ast_node* head) {
         if (cur->next == NULL || (cur->next->type == AST_SELECTOR && cur->next->data.d_selector.len == 0)) {
           zend_throw_exception(
               spl_ce_RuntimeException,
-              "Recursive descent operator (..) must be followed by a child selector, filter or wildcard.", 0);
+              "Recursive descent operator `..` must be followed by a child selector, filter or wildcard", 0);
           return false;
         }
         break;
@@ -634,12 +634,12 @@ static bool is_operator(lex_token type) {
 
 bool sanity_check(struct jpath_token lex_token[], int lex_tok_count) {
   if (lex_tok_count == 0) {
-    zend_throw_exception(spl_ce_RuntimeException, "The JSONpath contains no valid elements", 0);
+    zend_throw_exception(spl_ce_RuntimeException, "JSONPath expression contains no valid elements", 0);
     return false;
   }
 
   if (lex_token[0].type != LEX_ROOT) {
-    zend_throw_exception(spl_ce_RuntimeException, "JSONpath must start with a root $", 0);
+    zend_throw_exception(spl_ce_RuntimeException, "JSONPath expression must start with a root `$`", 0);
     return false;
   }
 

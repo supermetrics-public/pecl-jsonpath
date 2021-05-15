@@ -134,39 +134,39 @@ void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* retur
   int range_end = tok->data.d_list.count > 1 ? tok->data.d_list.indexes[1] : INT_MAX;
   int range_step = tok->data.d_list.count > 2 ? tok->data.d_list.indexes[2] : 1;
 
-  // Zero-steps are not allowed, abort
+  /* Zero-steps are not allowed, abort */
   if (range_step == 0) {
     return;
   }
 
-  // Replace placeholder with actual value
+  /* Replace placeholder with actual value */
   if (range_start == INT_MAX) {
     range_start = range_step > 0 ? 0 : data_length - 1;
   }
-  // Indexing from the end of the list
+  /* Indexing from the end of the list */
   else if (range_start < 0) {
     range_start = data_length - abs(range_start);
   }
 
-  // Replace placeholder with actual value
+  /* Replace placeholder with actual value */
   if (range_end == INT_MAX) {
     range_end = range_step > 0 ? data_length : -1;
   }
-  // Indexing from the end of the list
+  /* Indexing from the end of the list */
   else if (range_end < 0) {
     range_end = data_length - abs(range_end);
   }
 
-  // Set suitable boundaries for start index
+  /* Set suitable boundaries for start index */
   range_start = range_start < -1 ? -1 : range_start;
   range_start = range_start > data_length ? data_length : range_start;
 
-  // Set suitable boundaries for end index
+  /* Set suitable boundaries for end index */
   range_end = range_end < -1 ? -1 : range_end;
   range_end = range_end > data_length ? data_length : range_end;
 
   if (range_step > 0) {
-    // Make sure that the range is sane so we don't end up in an infinite loop
+    /* Make sure that the range is sane so we don't end up in an infinite loop */
     if (range_start >= range_end) {
       return;
     }
@@ -180,7 +180,7 @@ void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* retur
       }
     }
   } else {
-    // Make sure that the range is sane so we don't end up in an infinite loop
+    /* Make sure that the range is sane so we don't end up in an infinite loop */
     if (range_start <= range_end) {
       return;
     }

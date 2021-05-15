@@ -9,7 +9,7 @@ $jsonPath = new JsonPath();
 
 $jsonPath->find([], '$.book[');
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing filter end ] in %s
+Fatal error: Uncaught RuntimeException: Missing filter end `]` in %s
 Stack trace:
 %s
 %s

@@ -9,7 +9,7 @@ $jsonPath = new JsonPath();
 
 $jsonPath->find([], '$.testl["test"');
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing closing ] bracket at position 14 in %s
+Fatal error: Uncaught RuntimeException: Missing closing bracket `]` at position 14 in %s
 Stack trace:
 %s
 %s

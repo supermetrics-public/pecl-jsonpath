@@ -30,7 +30,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Multiplying node values is not supported. in %s
+Fatal error: Uncaught RuntimeException: Multiplying node values is not supported in %s
 Stack trace:
 %s
 %s

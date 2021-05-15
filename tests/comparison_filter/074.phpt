@@ -81,7 +81,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing opening paren ( in %s
+Fatal error: Uncaught RuntimeException: Missing opening paren `(` in %s
 Stack trace:
 %s
 %s

@@ -16,7 +16,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing closing ] bracket at position %d in %s
+Fatal error: Uncaught RuntimeException: Missing closing bracket `]` at position %d in %s
 Stack trace:
 %s
 %s

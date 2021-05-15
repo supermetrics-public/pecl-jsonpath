@@ -81,7 +81,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Invalid character after '='. Valid values: '==', '!~'. at position 12 in %s
+Fatal error: Uncaught RuntimeException: Invalid character after `=`, valid values are `==` and `=~` at position 12 in %s
 Stack trace:
 %s
 %s
