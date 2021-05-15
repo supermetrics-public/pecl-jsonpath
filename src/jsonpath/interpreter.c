@@ -58,14 +58,13 @@ void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* re
   }
 
   zend_ulong idx;
-  int len = strlen(tok->data.d_selector.value);
 
-  if (ZEND_HANDLE_NUMERIC_STR(tok->data.d_selector.value, len, idx)) {
+  if (ZEND_HANDLE_NUMERIC_STR(tok->data.d_selector.val, tok->data.d_selector.len, idx)) {
     /* look up numeric index */
     arr_cur = zend_hash_index_find(HASH_OF(arr_cur), idx);
   } else {
     /* look up string index */
-    arr_cur = zend_hash_str_find(HASH_OF(arr_cur), tok->data.d_selector.value, len);
+    arr_cur = zend_hash_str_find(HASH_OF(arr_cur), tok->data.d_selector.val, tok->data.d_selector.len);
   }
 
   if (arr_cur != NULL) {
@@ -257,7 +256,7 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
       ZVAL_DOUBLE(tmp_dest, src->data.d_double.value);
       return tmp_dest;
     case AST_LITERAL:
-      ZVAL_STRING(tmp_dest, src->data.d_literal.value);
+      ZVAL_STRINGL(tmp_dest, src->data.d_literal.val, src->data.d_literal.len);
       return tmp_dest;
     case AST_LONG:
       ZVAL_LONG(tmp_dest, src->data.d_long.value);
@@ -438,7 +437,6 @@ FREE_LHS:
 /* Specifically forbid comparing strings with numeric values in order to */
 /* avoid returning true for scenarios such as 42 > "value". */
 bool can_check_inequality(zval* lhs, zval* rhs) {
-
   bool lhs_is_numeric = (Z_TYPE_P(lhs) == IS_LONG || Z_TYPE_P(lhs) == IS_DOUBLE);
   bool rhs_is_numeric = (Z_TYPE_P(rhs) == IS_LONG || Z_TYPE_P(rhs) == IS_DOUBLE);
 
