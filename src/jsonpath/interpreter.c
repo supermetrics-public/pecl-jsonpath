@@ -21,34 +21,35 @@ bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 bool can_check_inequality(zval* lhs, zval* rhs);
 
 void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
-  while (tok != NULL) {
-    switch (tok->type) {
-      case AST_INDEX_LIST:
-        exec_index_filter(arr_head, arr_cur, tok, return_value);
-        return;
-      case AST_INDEX_SLICE:
-        exec_slice(arr_head, arr_cur, tok, return_value);
-        return;
-      case AST_ROOT:
-        tok = tok->next;
-        break;
-      case AST_RECURSE:
-        tok = tok->next;
-        exec_recursive_descent(arr_head, arr_cur, tok, return_value);
-        return;
-      case AST_SELECTOR:
-        exec_selector(arr_head, arr_cur, tok, return_value);
-        return;
-      case AST_WILD_CARD:
-        exec_wildcard(arr_head, arr_cur, tok, return_value);
-        return;
-      case AST_EXPR:
-        exec_expression(arr_head, arr_cur, tok, return_value);
-        return;
-      default:
-        assert(0);
-        return;
-    }
+  if (tok == NULL) {
+    return;
+  }
+  switch (tok->type) {
+    case AST_INDEX_LIST:
+      exec_index_filter(arr_head, arr_cur, tok, return_value);
+      break;
+    case AST_INDEX_SLICE:
+      exec_slice(arr_head, arr_cur, tok, return_value);
+      break;
+    case AST_ROOT:
+      copy_result_or_continue(arr_head, arr_cur, tok, return_value);
+      break;
+    case AST_RECURSE:
+      tok = tok->next;
+      exec_recursive_descent(arr_head, arr_cur, tok, return_value);
+      break;
+    case AST_SELECTOR:
+      exec_selector(arr_head, arr_cur, tok, return_value);
+      break;
+    case AST_WILD_CARD:
+      exec_wildcard(arr_head, arr_cur, tok, return_value);
+      break;
+    case AST_EXPR:
+      exec_expression(arr_head, arr_cur, tok, return_value);
+      break;
+    default:
+      assert(0);
+      break;
   }
 }
 
