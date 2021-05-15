@@ -20,7 +20,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Quoted node names must use the bracket notation [ at position 2 in %s
+Fatal error: Uncaught RuntimeException: Quoted node names must use the bracket notation `[` at position 2 in %s
 Stack trace:
 %s
 %s

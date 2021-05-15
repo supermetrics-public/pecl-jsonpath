@@ -16,7 +16,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: JSONpath must start with a root $ in %s
+Fatal error: Uncaught RuntimeException: JSONPath expression must start with a root `$` in %s
 Stack trace:
 %s
 %s

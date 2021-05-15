@@ -25,7 +25,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Multiple filter list separators found [,:], only one type is allowed. in %s
+Fatal error: Uncaught RuntimeException: Multiple filter list separators `,` and `:` found, only one type is allowed in %s
 Stack trace:
 %s
 %s
