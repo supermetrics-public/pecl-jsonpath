@@ -1,6 +1,7 @@
 #ifndef LEXER_H
 #define LEXER_H 1
 
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef enum {
@@ -34,8 +35,14 @@ typedef enum {
   LEX_ERR              /* Signals lexing error */
 } lex_token;
 
+struct jpath_token {
+  lex_token type;
+  char* val;
+  int len;
+};
+
 extern const char* LEX_STR[];
 
-lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path);
+bool scan(char** p, struct jpath_token* token, char* json_path);
 
 #endif /* LEXER_H */

@@ -9,16 +9,17 @@
 #ifndef S_SPLINT_S
 #include <ctype.h>
 #endif
-#include <stdbool.h>
 #include <stdio.h>
 
-#include "safe_string.h"
+#define CUR_CHAR() **p
+#define EAT_WHITESPACE() for (; **p == ' '; (*p)++)
+#define PEEK_CHAR() *(*p + 1)
+#define NEXT_CHAR() (*p)++
 
-static int count_numeric_str_len(char* p);
-static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, char* json_path);
-static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, char* json_path);
-static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, char* json_path);
-static bool extract_boolean_or_null_literal(char* p, char* buffer, size_t bufSize, char* json_path);
+static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token* token);
+static void extract_unbounded_literal(char** p, char* json_path, struct jpath_token* token);
+static void extract_unbounded_numeric_literal(char** p, char* json_path, struct jpath_token* token);
+static void extract_boolean_or_null_literal(char** p, char* json_path, struct jpath_token* token);
 
 const char* LEX_STR[] = {
     "LEX_NOT_FOUND",       /* Token not found */
@@ -55,212 +56,187 @@ void raise_error(const char* msg, char* json_path, char* cur_pos) {
   zend_throw_exception_ex(spl_ce_RuntimeException, 0, "%s at position %ld", msg, (cur_pos - json_path));
 }
 
-lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
+bool scan(char** p, struct jpath_token* token, char* json_path) {
   char* start = *p;
-  lex_token found_token = LEX_NOT_FOUND;
 
-  while (**p != '\0' && found_token == LEX_NOT_FOUND) {
-    switch (**p) {
+  token->len = 0;
+  token->type = LEX_NOT_FOUND;
+  token->val = NULL;
+
+  while (CUR_CHAR() != '\0' && token->type == LEX_NOT_FOUND) {
+    switch (CUR_CHAR()) {
       case '$':
-        found_token = LEX_ROOT;
-        break;
+        token->type = LEX_ROOT;
+        NEXT_CHAR();
+        return true;
       case '.':
-
-        switch (*(*p + 1)) {
+        NEXT_CHAR();
+        switch (CUR_CHAR()) {
           case '.':
-            found_token = LEX_DEEP_SCAN;
-            break;
+            token->type = LEX_DEEP_SCAN;
+            return true;
           case '[':
             break; /* dot is superfluous in .['node'] */
           case '*':
             break; /* get in next loop */
           case ' ':
-            raise_error("Unexpected whitespace", json_path, *p + 1);
-            return LEX_ERR;
+            raise_error("Unexpected whitespace", json_path, *p);
+            return false;
           case '\0':
             /* The whole expression can end with a recursive descent operator, but not with a dot selector */
-            if (*(*p - 1) != '.') {
-              raise_error("Dot selector must be followed by a node name or wildcard", json_path, *p);
-              return LEX_ERR;
+            if (*(*p - 2) != '.') {
+              raise_error("Dot selector must be followed by a node name or wildcard", json_path, *p - 1);
+              return false;
             }
+            return true;
           default:
-            found_token = LEX_NODE;
-            break;
+            if (CUR_CHAR() == '"' || CUR_CHAR() == '\'') {
+              raise_error("Quoted node names must use the bracket notation [", json_path, *p);
+              return false;
+            }
+            extract_unbounded_literal(p, json_path, token);
+            token->type = LEX_NODE;
+            return true;
         }
-
-        if (found_token == LEX_NODE) {
-          (*p)++;
-
-          if (**p == '"' || **p == '\'') {
-            raise_error("Quoted node names must use the bracket notation [", json_path, *p);
-            return LEX_ERR;
-          }
-
-          if (!extract_unbounded_literal(*p, buffer, bufSize, json_path)) {
-            return LEX_ERR;
-          }
-
-          *p += strlen(buffer) - 1;
-        }
-
         break;
       case '[':
-        (*p)++;
+        NEXT_CHAR();
+        EAT_WHITESPACE();
 
-        for (; **p == ' '; (*p)++)
-          ;
-
-        switch (**p) {
+        switch (CUR_CHAR()) {
           case '\'':
-            if (!extract_quoted_literal(*p, buffer, bufSize, json_path)) {
-              return LEX_ERR;
-            }
-            *p += strlen(buffer) + 2;
-
-            for (; **p == ' '; (*p)++)
-              ;
-
-            if (**p != ']') {
-              raise_error("Missing closing ] bracket", json_path, *p);
-              return LEX_ERR;
-            }
-            found_token = LEX_NODE;
-            break;
           case '"':
-            if (!extract_quoted_literal(*p, buffer, bufSize, json_path)) {
-              return LEX_ERR;
+            if (!extract_quoted_literal(p, json_path, token)) {
+              return false;
             }
-            *p += strlen(buffer) + 2;
 
-            for (; **p == ' '; (*p)++)
-              ;
+            EAT_WHITESPACE();
 
-            if (**p != ']') {
+            if (CUR_CHAR() != ']') {
               raise_error("Missing closing ] bracket", json_path, *p);
-              return LEX_ERR;
+              return false;
             }
-            found_token = LEX_NODE;
+            token->type = LEX_NODE;
             break;
           case '?':
-            found_token = LEX_EXPR_START;
-            break;
+            token->type = LEX_EXPR_START;
+            NEXT_CHAR();
+            return true;
           default:
-            /* Pick up start in next iteration, maybe simplify */
-            (*p)--;
-            found_token = LEX_FILTER_START;
-            break;
+            token->type = LEX_FILTER_START;
+            return true;
         }
-        break;
+        NEXT_CHAR();
+        return true;
       case ']':
-        found_token = LEX_EXPR_END;
-        break;
+        token->type = LEX_EXPR_END;
+        NEXT_CHAR();
+        return true;
       case '@':
-        found_token = LEX_CUR_NODE;
-        break;
+        token->type = LEX_CUR_NODE;
+        NEXT_CHAR();
+        return true;
       case ':':
-        found_token = LEX_SLICE;
-        break;
+        token->type = LEX_SLICE;
+        NEXT_CHAR();
+        return true;
       case ',':
-        found_token = LEX_CHILD_SEP;
-        break;
+        token->type = LEX_CHILD_SEP;
+        NEXT_CHAR();
+        return true;
       case '=':
-        (*p)++;
+        NEXT_CHAR();
 
-        if (**p == '=') {
-          found_token = LEX_EQ;
-        } else if (**p == '~') {
-          found_token = LEX_RGXP;
+        if (CUR_CHAR() == '=') {
+          token->type = LEX_EQ;
+        } else if (CUR_CHAR() == '~') {
+          token->type = LEX_RGXP;
         } else {
           raise_error("Invalid character after '='. Valid values: '==', '!~'.", json_path, *p);
-          return LEX_ERR;
+          return false;
         }
-
-        break;
+        NEXT_CHAR();
+        return true;
       case '!':
-        if (*(*p + 1) == '=') {
-          found_token = LEX_NEQ;
-          (*p)++;
+        if (PEEK_CHAR() == '=') {
+          token->type = LEX_NEQ;
+          NEXT_CHAR();
         } else {
-          found_token = LEX_NEGATION;
+          token->type = LEX_NEGATION;
         }
-        break;
+        NEXT_CHAR();
+        return true;
       case '>':
-        if (*(*p + 1) == '=') {
-          found_token = LEX_GTE;
-          (*p)++;
+        if (PEEK_CHAR() == '=') {
+          token->type = LEX_GTE;
+          NEXT_CHAR();
         } else {
-          found_token = LEX_GT;
+          token->type = LEX_GT;
         }
-        break;
+        NEXT_CHAR();
+        return true;
       case '<':
-        if (*(*p + 1) == '=') {
-          found_token = LEX_LTE;
-          (*p)++;
+        if (PEEK_CHAR() == '=') {
+          token->type = LEX_LTE;
+          NEXT_CHAR();
         } else {
-          found_token = LEX_LT;
+          token->type = LEX_LT;
         }
-        break;
+        NEXT_CHAR();
+        return true;
       case '&':
-        (*p)++;
+        NEXT_CHAR();
 
-        if (**p != '&') {
+        if (CUR_CHAR() != '&') {
           raise_error("'And' operator must be double &&", json_path, *p);
-          return LEX_ERR;
+          return false;
         }
 
-        found_token = LEX_AND;
-        break;
+        token->type = LEX_AND;
+        NEXT_CHAR();
+        return true;
       case '|':
-        (*p)++;
+        NEXT_CHAR();
 
-        if (**p != '|') {
+        if (CUR_CHAR() != '|') {
           raise_error("'Or' operator must be double ||", json_path, *p);
-          return LEX_ERR;
+          return false;
         }
 
-        found_token = LEX_OR;
-        break;
+        token->type = LEX_OR;
+        NEXT_CHAR();
+        return true;
       case '(':
-        found_token = LEX_PAREN_OPEN;
-        break;
+        token->type = LEX_PAREN_OPEN;
+        NEXT_CHAR();
+        return true;
       case ')':
-        found_token = LEX_PAREN_CLOSE;
-        break;
+        token->type = LEX_PAREN_CLOSE;
+        NEXT_CHAR();
+        return true;
       case '\'':
-        if (!extract_quoted_literal(*p, buffer, bufSize, json_path)) {
-          return LEX_ERR;
-        }
-        *p += strlen(buffer) + 1;
-        found_token = LEX_LITERAL;
-        break;
       case '"':
-        if (!extract_quoted_literal(*p, buffer, bufSize, json_path)) {
-          return LEX_ERR;
+        if (!extract_quoted_literal(p, json_path, token)) {
+          return false;
         }
-        *p += strlen(buffer) + 1;
-        found_token = LEX_LITERAL;
-        break;
+        token->type = LEX_LITERAL;
+        return true;
       case '*':
-        found_token = LEX_WILD_CARD;
-        break;
+        token->type = LEX_WILD_CARD;
+        NEXT_CHAR();
+        return true;
       case 't':
       case 'T':
       case 'f':
       case 'F':
-        if (!extract_boolean_or_null_literal(*p, buffer, bufSize, json_path)) {
-          return LEX_ERR;
-        }
-        *p += strlen(buffer) - 1;
-        found_token = LEX_LITERAL_BOOL;
-        break;
+        extract_boolean_or_null_literal(p, json_path, token);
+        token->type = LEX_LITERAL_BOOL;
+        return true;
       case 'n':
       case 'N':
-        if (!extract_boolean_or_null_literal(*p, buffer, bufSize, json_path)) {
-          return LEX_ERR;
-        }
-        *p += strlen(buffer) - 1;
-        found_token = LEX_LITERAL_NULL;
-        break;
+        extract_boolean_or_null_literal(p, json_path, token);
+        token->type = LEX_LITERAL_NULL;
+        return true;
       case '-':
       case '0':
       case '1':
@@ -272,39 +248,33 @@ lex_token scan(char** p, char* buffer, size_t bufSize, char* json_path) {
       case '7':
       case '8':
       case '9':
-        if (!extract_unbounded_numeric_literal(*p, buffer, bufSize, json_path)) {
-          return LEX_ERR;
-        }
-        *p += strlen(buffer) - 1;
-        found_token = LEX_LITERAL_NUMERIC;
-        break;
+        extract_unbounded_numeric_literal(p, json_path, token);
+        return true;
       case ' ':
+        NEXT_CHAR();
         break;
       default:
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unrecognized token '%c' at position %ld", **p,
+        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unrecognized token '%c' at position %ld", CUR_CHAR(),
                                 (*p - json_path));
-        return LEX_ERR;
+        return false;
     }
-
-    (*p)++;
   }
 
-  return found_token;
+  return false;
 }
 
 /* Extract contents of string bounded by either single or double quotes */
-static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
-  char* start;
+static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token* token) {
   char quote_type;
   bool quote_found = false;
-  size_t cpy_len;
+  char* start = *p;
 
-  for (; *p != '\0' && (*p == '\'' || *p == '"' || *p == ' '); p++) {
+  for (; (CUR_CHAR() == '\'' || CUR_CHAR() == '"' || CUR_CHAR() == ' '); NEXT_CHAR()) {
     // Find first occurrence
-    if (*p == '\'' || *p == '"') {
+    if (CUR_CHAR() == '\'' || CUR_CHAR() == '"') {
       quote_found = true;
-      quote_type = *p;
-      p++;
+      quote_type = CUR_CHAR();
+      NEXT_CHAR();
       break;
     }
   }
@@ -314,90 +284,61 @@ static bool extract_quoted_literal(char* p, char* buffer, size_t bufSize, char* 
     return false;
   }
 
-  start = p;
+  token->len = 0;
+  token->val = *p;
+  token->type = LEX_LITERAL;
 
-  for (; *p != '\0' && *p != quote_type && *(p - 1) != '\\'; p++)
-    ;
-
-  cpy_len = (size_t)(p - start);
-
-  if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
-    raise_error("String exceeded buffer size", json_path, start + bufSize);
-    return false;
+  for (; CUR_CHAR() != '\0' && CUR_CHAR() != quote_type && *(*p - 1) != '\\'; NEXT_CHAR()) {
+    token->len++;
   }
+
+  NEXT_CHAR();
 
   return true;
 }
 
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
-static bool extract_unbounded_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
-  char* start;
-  size_t cpy_len;
+static void extract_unbounded_literal(char** p, char* json_path, struct jpath_token* token) {
+  token->len = 0;
+  token->val = *p;
 
-  for (; *p == ' '; p++)
-    ;
+  EAT_WHITESPACE();
 
-  start = p;
-
-  for (; *p != '\0' && !isspace(*p) && (*p == '_' || *p == '-' || !ispunct(*p)); p++)
-    ;
-
-  cpy_len = (size_t)(p - start);
-
-  if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
-    raise_error("String exceeded buffer size", json_path, start + bufSize);
-    return false;
+  for (; CUR_CHAR() != '\0' && !isspace(CUR_CHAR()) && (CUR_CHAR() == '_' || CUR_CHAR() == '-' || !ispunct(CUR_CHAR()));
+       NEXT_CHAR()) {
+    token->len++;
   }
-
-  return true;
-}
-
-/* Count the number of leading contiguous characters that are valid in PHP numeric strings. */
-static int count_numeric_str_len(char* p) {
-  int count = 0;
-
-  while (*p != '\0') {
-    if ((*p >= '0' && *p <= '9') || *p == '.' || *p == '-' || *p == 'e' || *p == 'E') {
-      count++;
-    } else {
-      break;
-    }
-    p++;
-  }
-
-  return count;
 }
 
 /* Extract literal without clear bounds that ends in non alpha-numeric char */
-static bool extract_unbounded_numeric_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
-  int len = count_numeric_str_len(p);
+static void extract_unbounded_numeric_literal(char** p, char* json_path, struct jpath_token* token) {
+  token->len = 0;
+  token->type = LEX_LITERAL_NUMERIC;
+  token->val = *p;
 
-  if (jp_str_cpy(buffer, bufSize, p, len) > 0) {
-    raise_error("String exceeded buffer size", json_path, p + bufSize);
-    return false;
+  for (; (CUR_CHAR() >= '0' && CUR_CHAR() <= '9') || CUR_CHAR() == '.' || CUR_CHAR() == '-' || CUR_CHAR() == 'e' ||
+         CUR_CHAR() == 'E';
+       NEXT_CHAR()) {
+    token->len++;
   }
-  return true;
 }
 
 /* Extract boolean or null */
-static bool extract_boolean_or_null_literal(char* p, char* buffer, size_t bufSize, char* json_path) {
+static void extract_boolean_or_null_literal(char** p, char* json_path, struct jpath_token* token) {
   char* start;
   size_t cpy_len;
 
-  for (; *p == ' '; p++)
+  EAT_WHITESPACE();
+
+  start = *p;
+
+  for (; CUR_CHAR() != '\0' && !isspace(CUR_CHAR()) && (CUR_CHAR() == '_' || CUR_CHAR() == '-' || !ispunct(CUR_CHAR()));
+       NEXT_CHAR())
     ;
 
-  start = p;
+  cpy_len = (size_t)(*p - start);
 
-  for (; *p != '\0' && !isspace(*p) && (*p == '_' || *p == '-' || !ispunct(*p)); p++)
-    ;
-
-  cpy_len = (size_t)(p - start);
-
-  if (jp_str_cpy(buffer, bufSize, start, cpy_len) > 0) {
-    raise_error("String exceeded buffer size", json_path, start + bufSize);
-    return false;
-  }
-
-  return true;
+  token->len = cpy_len;
+  token->type = LEX_LITERAL;
+  token->val = start;
 }
