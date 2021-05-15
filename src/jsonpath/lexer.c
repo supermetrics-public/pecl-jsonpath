@@ -288,8 +288,23 @@ static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token
   token->val = *p;
   token->type = LEX_LITERAL;
 
-  for (; CUR_CHAR() != '\0' && CUR_CHAR() != quote_type && *(*p - 1) != '\\'; NEXT_CHAR()) {
+  while (CUR_CHAR() != '\0') {
+    /* Find escaped quotes and backslashes and remove the escaping by shifting the string */
+    if (CUR_CHAR() == '\\') {
+      if (PEEK_CHAR() == '\\' || PEEK_CHAR() == '\'' || PEEK_CHAR() == '"') {
+        memmove(*p, *p + 1, strlen(*p));
+        token->len++;
+        NEXT_CHAR();
+        continue;
+      }
+    }
+
+    if (CUR_CHAR() == quote_type) {
+      break;
+    }
+
     token->len++;
+    NEXT_CHAR();
   }
 
   NEXT_CHAR();

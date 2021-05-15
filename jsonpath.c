@@ -34,18 +34,23 @@ PHP_METHOD(JsonPath, find) {
 
   char* j_path;
   size_t j_path_len;
+  char* j_path_work_copy;
   zval* search_target;
 
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &search_target, &j_path, &j_path_len) == FAILURE) {
     return;
   }
 
+  /* Keep the original parameter untouched for the stack trace and instead work with a copy */
+  /* that might be modified during processing, e.g. due to escaped quotes in string literals */
+  j_path_work_copy = strdup(j_path);
+
   /* tokenize JSON-path string */
 
   struct jpath_token lex_tok[PARSE_BUF_LEN];
   int lex_tok_count = 0;
 
-  if (!scanTokens(j_path, lex_tok, &lex_tok_count)) {
+  if (!scanTokens(j_path_work_copy, lex_tok, &lex_tok_count)) {
     return;
   }
 

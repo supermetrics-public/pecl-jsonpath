@@ -21,5 +21,3 @@ array(1) {
   [0]=>
   int(42)
 }
---XFAIL--
-Requires changes to accommodate for quoted single-quotes
