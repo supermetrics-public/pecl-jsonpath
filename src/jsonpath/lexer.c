@@ -19,7 +19,7 @@
 static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token* token);
 static void extract_unbounded_literal(char** p, char* json_path, struct jpath_token* token);
 static void extract_unbounded_numeric_literal(char** p, char* json_path, struct jpath_token* token);
-static void extract_boolean_literal(char** p, char* json_path, struct jpath_token* token);
+static void extract_boolean_or_null_literal(char** p, char* json_path, struct jpath_token* token);
 
 const char* LEX_STR[] = {
     "LEX_NOT_FOUND",       /* Token not found */
@@ -43,6 +43,7 @@ const char* LEX_STR[] = {
     "LEX_PAREN_CLOSE",     /* ) */
     "LEX_LITERAL",         /* "some string" 'some string' */
     "LEX_LITERAL_BOOL",    /* true, false */
+    "LEX_LITERAL_NULL",    /* null */
     "LEX_LITERAL_NUMERIC", /* long, double */
     "LEX_FILTER_START",    /* [ */
     "LEX_AND",             /* && */
@@ -78,9 +79,23 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
             break; /* dot is superfluous in .['node'] */
           case '*':
             break; /* get in next loop */
+          case ' ':
+            raise_error("Unexpected whitespace", json_path, *p);
+            return false;
+          case '\0':
+            /* The whole expression can end with a recursive descent operator, but not with a dot selector */
+            if (*(*p - 2) != '.') {
+              raise_error("Dot selector must be followed by a node name or wildcard", json_path, *p - 1);
+              return false;
+            }
+            return true;
           default:
-            token->type = LEX_NODE;
+            if (CUR_CHAR() == '"' || CUR_CHAR() == '\'') {
+              raise_error("Quoted node names must use the bracket notation [", json_path, *p);
+              return false;
+            }
             extract_unbounded_literal(p, json_path, token);
+            token->type = LEX_NODE;
             return true;
         }
         break;
@@ -214,8 +229,13 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
       case 'T':
       case 'f':
       case 'F':
-        extract_boolean_literal(p, json_path, token);
+        extract_boolean_or_null_literal(p, json_path, token);
         token->type = LEX_LITERAL_BOOL;
+        return true;
+      case 'n':
+      case 'N':
+        extract_boolean_or_null_literal(p, json_path, token);
+        token->type = LEX_LITERAL_NULL;
         return true;
       case '-':
       case '0':
@@ -303,8 +323,8 @@ static void extract_unbounded_numeric_literal(char** p, char* json_path, struct 
   }
 }
 
-/* Extract boolean */
-static void extract_boolean_literal(char** p, char* json_path, struct jpath_token* token) {
+/* Extract boolean or null */
+static void extract_boolean_or_null_literal(char** p, char* json_path, struct jpath_token* token) {
   char* start;
   size_t cpy_len;
 

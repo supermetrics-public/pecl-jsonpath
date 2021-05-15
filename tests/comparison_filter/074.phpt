@@ -80,7 +80,9 @@ $result = $jsonPath->find($data, "$[?@.key==42]");
 echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-PHP Fatal Error
---XFAIL--
-Now results in a segfault, would be better to error out due to invalid syntax
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Missing opening paren ( in %s
+Stack trace:
+%s
+%s
+%s

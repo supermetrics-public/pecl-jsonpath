@@ -48,6 +48,63 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-PHP Fatal Error
---XFAIL--
-Now returns a bunch of values, would be better to error out due to invalid syntax
+Assertion 1
+array(11) {
+  [0]=>
+  array(1) {
+    ["key"]=>
+    int(1)
+  }
+  [1]=>
+  array(1) {
+    ["key"]=>
+    int(3)
+  }
+  [2]=>
+  array(1) {
+    ["key"]=>
+    string(4) "nice"
+  }
+  [3]=>
+  array(1) {
+    ["key"]=>
+    bool(true)
+  }
+  [4]=>
+  array(1) {
+    ["key"]=>
+    NULL
+  }
+  [5]=>
+  array(1) {
+    ["key"]=>
+    bool(false)
+  }
+  [6]=>
+  array(1) {
+    ["key"]=>
+    array(0) {
+    }
+  }
+  [7]=>
+  array(1) {
+    ["key"]=>
+    array(0) {
+    }
+  }
+  [8]=>
+  array(1) {
+    ["key"]=>
+    int(-1)
+  }
+  [9]=>
+  array(1) {
+    ["key"]=>
+    int(0)
+  }
+  [10]=>
+  array(1) {
+    ["key"]=>
+    string(0) ""
+  }
+}
