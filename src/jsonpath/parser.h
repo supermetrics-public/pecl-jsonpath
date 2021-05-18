@@ -18,6 +18,7 @@ typedef enum {
 enum ast_type {
   AST_AND,
   AST_BOOL,
+  AST_CUR_NODE,
   AST_DOUBLE,
   AST_EQ,
   AST_EXPR,

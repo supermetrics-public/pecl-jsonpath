@@ -103,8 +103,8 @@ bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count) {
 
   while (*p != '\0') {
     if (i >= PARSE_BUF_LEN) {
-      zend_throw_exception_ex(spl_ce_RuntimeException,
-                              0, "The query is too long, token count exceeds maximum amount (%d)", PARSE_BUF_LEN);
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0,
+                              "The query is too long, token count exceeds maximum amount (%d)", PARSE_BUF_LEN);
       return false;
     }
 

@@ -53,5 +53,3 @@ array(11) {
   [10]=>
   bool(true)
 }
---XFAIL--
-Requires more work on filter expressions
