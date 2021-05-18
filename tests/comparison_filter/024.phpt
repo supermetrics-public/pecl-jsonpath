@@ -29,5 +29,3 @@ array(1) {
   [0]=>
   int(42)
 }
---XFAIL--
-Requires more work on filter expressions
