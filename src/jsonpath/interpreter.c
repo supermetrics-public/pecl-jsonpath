@@ -113,11 +113,12 @@ void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok,
 
 void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   for (int i = 0; i < tok->data.d_list.count; i++) {
-    if (tok->data.d_list.indexes[i] < 0) {
-      tok->data.d_list.indexes[i] = zend_hash_num_elements(HASH_OF(arr_cur)) - abs(tok->data.d_list.indexes[i]);
+    int index = tok->data.d_list.indexes[i];
+    if (index < 0) {
+      index = zend_hash_num_elements(HASH_OF(arr_cur)) - abs(index);
     }
     zval* data;
-    if ((data = zend_hash_index_find(HASH_OF(arr_cur), tok->data.d_list.indexes[i])) != NULL) {
+    if ((data = zend_hash_index_find(HASH_OF(arr_cur), index)) != NULL) {
       copy_result_or_continue(arr_head, data, tok, return_value);
       if (break_if_result_found(return_value)) {
         break;
