@@ -19,11 +19,10 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[two.some]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing filter end `]` in %s
+Fatal error: Uncaught RuntimeException: Unexpected filter element in %s
 Stack trace:
 %s
 %s

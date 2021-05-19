@@ -33,5 +33,3 @@ array(1) {
     string(1) "b"
   }
 }
---XFAIL--
-Requires more work on filter expressions
