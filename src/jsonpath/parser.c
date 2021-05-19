@@ -571,6 +571,13 @@ bool validate_parse_tree(struct ast_node* head) {
           return false;
         }
         break;
+      case AST_SELECTOR:
+        /* Expressions like $.$ and $.node$ are not allowed. Bracket notation $['$'] and $['node$'] should be used instead. */
+        if (cur->next != NULL && cur->next->type == AST_ROOT) {
+          zend_throw_exception(spl_ce_RuntimeException,
+                             "Unexpected root `$` in node name, use bracket notation for node names with special characters", 0);
+          return false;
+        }
       default:
         break;
     }
