@@ -12,7 +12,7 @@
 #define CUR_TOKEN_LITERAL() lex_tok[*lex_idx].val
 #define CUR_TOKEN_LEN() lex_tok[*lex_idx].len
 #define CUR_TOKEN() lex_tok[*lex_idx].type
-#define HAS_TOKEN() *lex_idx < lex_tok_count
+#define HAS_TOKEN() (*lex_idx < lex_tok_count)
 #define PARSER_ARGS lex_tok, lex_idx, lex_tok_count
 #define PARSER_PARAMS struct jpath_token lex_tok[PARSE_BUF_LEN], int *lex_idx, int lex_tok_count
 
@@ -20,6 +20,7 @@ static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* le
 static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
 
 static struct ast_node* parse_expression(PARSER_PARAMS);
+static struct ast_node* parse_filter(PARSER_PARAMS);
 static struct ast_node* parse_or(PARSER_PARAMS);
 static struct ast_node* parse_and(PARSER_PARAMS);
 static struct ast_node* parse_equality(PARSER_PARAMS);
@@ -85,45 +86,11 @@ bool build_parse_tree(PARSER_PARAMS, struct ast_node* head) {
         cur->data.d_selector.len = CUR_TOKEN_LEN();
         break;
       case LEX_FILTER_START:
-
-        if (*lex_idx == lex_tok_count - 1) { /* last token */
-          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end `]`");
+        cur->next = parse_filter(PARSER_ARGS);
+        if (cur->next == NULL) {
           return false;
         }
-
-        CONSUME_TOKEN();
-
-        switch (CUR_TOKEN()) {
-          case LEX_LITERAL_NUMERIC:
-            /* fall-through */
-          case LEX_LITERAL:
-            /* fall-through */
-          case LEX_SLICE:
-            /* fall-through */
-          case LEX_CHILD_SEP:
-            cur = ast_alloc_node(cur, AST_INDEX_LIST);
-            if (!parse_filter_list(PARSER_ARGS, cur)) {
-              return false;
-            }
-            break;
-          case LEX_WILD_CARD:
-            cur = ast_alloc_node(cur, AST_WILD_CARD);
-            break;
-          case LEX_EXPR_END:
-            zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter must not be empty");
-            return false;
-          default:
-            /* noop */
-            break;
-        }
-
-        if (*lex_idx == lex_tok_count - 1 || lex_tok[(*lex_idx) + 1].type != LEX_EXPR_END) { /* last token */
-          zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end `]`");
-          return false;
-        }
-
-        CONSUME_TOKEN();
-
+        cur = cur->next;
         break;
       case LEX_EXPR_START:
         cur->next = parse_expression(PARSER_ARGS);
@@ -222,6 +189,48 @@ static struct ast_node* parse_expression(PARSER_PARAMS) {
 
   struct ast_node* expr = ast_alloc_node(NULL, AST_EXPR);
   expr->data.d_expression.head = parse_or(PARSER_ARGS);
+
+  return expr;
+}
+
+static struct ast_node* parse_filter(PARSER_PARAMS) {
+  CONSUME_TOKEN();
+
+  if (!HAS_TOKEN()) {
+    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end `]`");
+    return NULL;
+  }
+
+  struct ast_node* expr = NULL;
+
+  switch (CUR_TOKEN()) {
+    case LEX_CHILD_SEP:
+    case LEX_LITERAL_NUMERIC:
+    case LEX_LITERAL:
+    case LEX_SLICE:
+      expr = ast_alloc_node(NULL, AST_INDEX_LIST);
+      if (!parse_filter_list(PARSER_ARGS, expr)) {
+        return NULL;
+      }
+      break;
+    case LEX_WILD_CARD:
+      expr = ast_alloc_node(NULL, AST_WILD_CARD);
+      break;
+    case LEX_EXPR_END:
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter must not be empty");
+      return NULL;
+    default:
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected filter element");
+      return NULL;
+  }
+
+  CONSUME_TOKEN();
+
+  if (!HAS_TOKEN() || CUR_TOKEN() != LEX_EXPR_END) {
+    free_ast_nodes(expr);
+    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end `]`");
+    return NULL;
+  }
 
   return expr;
 }
@@ -406,6 +415,17 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       if (tail->data.d_expression.head == NULL) {
         return NULL;
       }
+    } else if (CUR_TOKEN() == LEX_FILTER_START) {
+      tail->next = parse_filter(PARSER_ARGS);
+
+      if (tail->next == NULL) {
+        free_ast_nodes(ret);
+        return NULL;
+      }
+
+      tail = tail->next;
+
+      CONSUME_TOKEN();
     }
 
     return ret;
