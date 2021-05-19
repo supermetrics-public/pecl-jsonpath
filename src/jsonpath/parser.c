@@ -210,6 +210,7 @@ static struct ast_node* parse_filter(PARSER_PARAMS) {
     case LEX_SLICE:
       expr = ast_alloc_node(NULL, AST_INDEX_LIST);
       if (!parse_filter_list(PARSER_ARGS, expr)) {
+        free_ast_nodes(expr);
         return NULL;
       }
       break;
