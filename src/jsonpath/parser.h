@@ -86,13 +86,10 @@ struct ast_node {
   union ast_node_data data;
 };
 
-bool build_parse_tree(struct jpath_token lex_tok[PARSE_BUF_LEN], int* lex_idx, int lex_tok_count,
-                      struct ast_node* head);
-bool sanity_check(struct jpath_token lex_token[], int lex_tok_count);
 void free_ast_nodes(struct ast_node* head);
 bool is_binary(enum ast_type type);
 bool is_unary(enum ast_type type);
-bool validate_parse_tree(struct ast_node* head);
+struct ast_node* parse_jsonpath(struct jpath_token lex_tok[PARSE_BUF_LEN], int* lex_idx, int lex_tok_count);
 
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level);

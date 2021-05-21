@@ -50,11 +50,10 @@ PHP_METHOD(JsonPath, find) {
   struct jpath_token lex_tok[PARSE_BUF_LEN];
   int lex_tok_count = 0;
 
-  if (!scanTokens(j_path_work_copy, lex_tok, &lex_tok_count)) {
-    return;
-  }
+  bool scan_ok = scanTokens(j_path_work_copy, lex_tok, &lex_tok_count);
 
-  if (!sanity_check(lex_tok, lex_tok_count)) {
+  if (!scan_ok) {
+    free(j_path_work_copy);
     return;
   }
 
@@ -64,30 +63,26 @@ PHP_METHOD(JsonPath, find) {
 
   /* assemble an array of query execution instructions from parsed tokens */
 
-  struct ast_node head;
   int i = 0;
+  struct ast_node* head = parse_jsonpath(lex_tok, &i, lex_tok_count);
 
-  if (!build_parse_tree(lex_tok, &i, lex_tok_count, &head)) {
-    free_ast_nodes(head.next);
-    return;
-  }
-
-  if (!validate_parse_tree(head.next)) {
-    free_ast_nodes(head.next);
+  if (head == NULL) {
+    free(j_path_work_copy);
     return;
   }
 
 #ifdef JSONPATH_DEBUG
-  print_ast(head.next, "Parser - AST sent to interpreter", 0);
+  print_ast(head->next, "Parser - AST sent to interpreter", 0);
 #endif
 
   /* execute the JSON-path query instructions against the search target (PHP object/array) */
 
   array_init(return_value);
 
-  eval_ast(search_target, search_target, head.next, return_value);
+  eval_ast(search_target, search_target, head, return_value);
 
-  free_ast_nodes(head.next);
+  free_ast_nodes(head);
+  free(j_path_work_copy);
 
   /* return false if no results were found by the JSON-path query */
 
