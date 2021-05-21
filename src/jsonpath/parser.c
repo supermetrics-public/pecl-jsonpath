@@ -712,6 +712,8 @@ void free_ast_nodes(struct ast_node* head) {
 
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level) {
+  int i;
+
   if (level == 0) {
     printf("--------------------------------------\n");
     printf("%s\n\n", m);
@@ -720,7 +722,7 @@ void print_ast(struct ast_node* head, const char* m, int level) {
   }
 
   while (head != NULL) {
-    for (int i = 0; i < level; i++) {
+    for (i = 0; i < level; i++) {
       printf("\t");
     }
     printf("➔ %s", AST_STR[head->type]);
