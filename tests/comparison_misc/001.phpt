@@ -17,7 +17,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: JSONPath expression contains no valid elements in %s
+Fatal error: Uncaught RuntimeException: JSONPath must start with a root operator `$` in %s
 Stack trace:
 %s
 %s

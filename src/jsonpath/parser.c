@@ -19,21 +19,23 @@
 static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right);
 static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
 
+static struct ast_node* parse_and(PARSER_PARAMS);
+static struct ast_node* parse_childpath(PARSER_PARAMS);
+static struct ast_node* parse_comparison(PARSER_PARAMS);
+static struct ast_node* parse_equality(PARSER_PARAMS);
 static struct ast_node* parse_expression(PARSER_PARAMS);
 static struct ast_node* parse_filter(PARSER_PARAMS);
+static struct ast_node* parse_operator(PARSER_PARAMS);
 static struct ast_node* parse_or(PARSER_PARAMS);
-static struct ast_node* parse_and(PARSER_PARAMS);
-static struct ast_node* parse_equality(PARSER_PARAMS);
-static struct ast_node* parse_comparison(PARSER_PARAMS);
 static struct ast_node* parse_primary(PARSER_PARAMS);
 static struct ast_node* parse_unary(PARSER_PARAMS);
 
 static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok);
-static bool validate_root_next(struct ast_node* head);
 
 static bool numeric_to_long(char* str, int str_len, long* dest);
 static bool is_operator(lex_token type);
 static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
+bool validate_expression_head(struct ast_node* tok);
 
 const char* AST_STR[] = {"AST_AND",      "AST_BOOL", "AST_CUR_NODE", "AST_DOUBLE",     "AST_EQ",
                          "AST_EXPR",     "AST_GT",   "AST_GTE",      "AST_INDEX_LIST", "AST_INDEX_SLICE",
@@ -60,63 +62,6 @@ static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type
   }
 
   return node;
-}
-
-bool build_parse_tree(PARSER_PARAMS, struct ast_node* head) {
-  struct ast_node* cur = head;
-
-  for (; *lex_idx < lex_tok_count; (*lex_idx)++) {
-    switch (CUR_TOKEN()) {
-      case LEX_WILD_CARD:
-        cur = ast_alloc_node(cur, AST_WILD_CARD);
-        break;
-      case LEX_ROOT:
-        cur = ast_alloc_node(cur, AST_ROOT);
-        break;
-      case LEX_DEEP_SCAN:
-        cur = ast_alloc_node(cur, AST_RECURSE);
-        break;
-      case LEX_CUR_NODE:
-        /* noop */
-        break;
-      case LEX_NODE:
-        /* fall-through */
-        cur = ast_alloc_node(cur, AST_SELECTOR);
-        cur->data.d_selector.val = CUR_TOKEN_LITERAL();
-        cur->data.d_selector.len = CUR_TOKEN_LEN();
-        break;
-      case LEX_FILTER_START:
-        cur->next = parse_filter(PARSER_ARGS);
-        if (cur->next == NULL) {
-          return false;
-        }
-        cur = cur->next;
-        break;
-      case LEX_EXPR_START:
-        cur->next = parse_expression(PARSER_ARGS);
-
-        if (cur->next == NULL) {
-          return false;
-        }
-
-        cur = cur->next;
-
-        if (cur->data.d_expression.head == NULL) {
-          return false;
-        }
-
-#ifdef JSONPATH_DEBUG
-        print_ast(cur->data.d_expression.head, "Parser - Expression before infix-postfix conversion", 0);
-#endif
-        break;
-      default:
-        /* this token is probably in an invalid position. the problem should */
-        /* be caught later by validate_parse_tree. */
-        break;
-    }
-  }
-
-  return true;
 }
 
 static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
@@ -179,6 +124,108 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
   return true;
 }
 
+struct ast_node* parse_jsonpath(PARSER_PARAMS) {
+  if (!HAS_TOKEN() || CUR_TOKEN() != LEX_ROOT) {
+    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "JSONPath must start with a root operator `$`");
+    return NULL;
+  }
+
+  CONSUME_TOKEN();
+
+  struct ast_node* expr = NULL;
+
+  if (HAS_TOKEN()) {
+    expr = parse_operator(PARSER_ARGS);
+    if (expr == NULL) {
+      return NULL;
+    }
+  }
+
+  struct ast_node* ret = ast_alloc_node(NULL, AST_ROOT);
+  ret->next = expr;
+
+  return ret;
+}
+
+static struct ast_node* parse_childpath(PARSER_PARAMS) {
+  CONSUME_TOKEN();
+
+  struct ast_node* expr = parse_operator(PARSER_ARGS);
+
+  if (expr == NULL) {
+    return NULL;
+  }
+
+  struct ast_node* ret = ast_alloc_node(NULL, AST_CUR_NODE);
+  ret->next = expr;
+
+  return ret;
+}
+
+static struct ast_node* parse_operator(PARSER_PARAMS) {
+  if (!HAS_TOKEN()) {
+    return NULL;
+  }
+
+  struct ast_node* expr = NULL;
+
+  switch (CUR_TOKEN()) {
+    case LEX_NODE:
+      expr = ast_alloc_node(NULL, AST_SELECTOR);
+      expr->data.d_selector.val = CUR_TOKEN_LITERAL();
+      expr->data.d_selector.len = CUR_TOKEN_LEN();
+      CONSUME_TOKEN();
+      break;
+    case LEX_FILTER_START:
+      expr = parse_filter(PARSER_ARGS);
+      CONSUME_TOKEN();
+      break;
+    case LEX_EXPR_START:
+      expr = parse_expression(PARSER_ARGS);
+      if (expr == NULL) {
+        return NULL;
+      }
+      CONSUME_TOKEN();
+      break;
+    case LEX_DEEP_SCAN:
+      expr = ast_alloc_node(NULL, AST_RECURSE);
+      CONSUME_TOKEN();
+      /* todo : why is LEX_NOT_FOUND generated in tests/comparison_recursive_descent/002.php? */
+      if (!HAS_TOKEN() || (CUR_TOKEN() == LEX_NODE && CUR_TOKEN_LEN() == 0) || CUR_TOKEN() == LEX_NOT_FOUND) {
+        zend_throw_exception(spl_ce_RuntimeException,
+                             "Recursive descent operator `..` must be followed by a child selector, filter or wildcard",
+                             0);
+        return NULL;
+      }
+      break;
+    case LEX_WILD_CARD:
+      expr = ast_alloc_node(NULL, AST_WILD_CARD);
+      CONSUME_TOKEN();
+      break;
+    case LEX_ROOT:
+      /* Expressions like $.$ and $.node$ are not allowed. Bracket notation $['$'] and $['node$'] should be used
+       * instead. */
+      zend_throw_exception(
+          spl_ce_RuntimeException,
+          "Unexpected root `$` in node name, use bracket notation for node names with special characters", 0);
+      return NULL;
+    default:
+      zend_throw_exception_ex(spl_ce_RuntimeException, 0,
+                              "Expecting child node, filter, expression, or recursive node");
+      return NULL;
+  }
+
+  if (expr != NULL && HAS_TOKEN()) {
+    expr->next = parse_operator(PARSER_ARGS);
+    if (expr->next == NULL) {
+      free_ast_nodes(expr);
+      return NULL;
+    }
+  }
+
+  return expr;
+}
+
 static struct ast_node* parse_expression(PARSER_PARAMS) {
   CONSUME_TOKEN(); /* LEX_EXPR_START */
 
@@ -189,6 +236,11 @@ static struct ast_node* parse_expression(PARSER_PARAMS) {
 
   struct ast_node* expr = ast_alloc_node(NULL, AST_EXPR);
   expr->data.d_expression.head = parse_or(PARSER_ARGS);
+
+  if (!validate_expression_head(expr->data.d_expression.head)) {
+    free_ast_nodes(expr);
+    return NULL;
+  }
 
   return expr;
 }
@@ -239,7 +291,7 @@ static struct ast_node* parse_filter(PARSER_PARAMS) {
 static struct ast_node* parse_or(PARSER_PARAMS) {
   struct ast_node* expr = parse_and(PARSER_ARGS);
 
-  while (CUR_TOKEN() == LEX_OR) {
+  while (HAS_TOKEN() && CUR_TOKEN() == LEX_OR) {
     CONSUME_TOKEN();
 
     struct ast_node* right = parse_and(PARSER_ARGS);
@@ -253,7 +305,7 @@ static struct ast_node* parse_or(PARSER_PARAMS) {
 static struct ast_node* parse_and(PARSER_PARAMS) {
   struct ast_node* expr = parse_equality(PARSER_ARGS);
 
-  while (CUR_TOKEN() == LEX_AND) {
+  while (HAS_TOKEN() && CUR_TOKEN() == LEX_AND) {
     CONSUME_TOKEN();
 
     struct ast_node* right = parse_equality(PARSER_ARGS);
@@ -424,8 +476,6 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
         return NULL;
       }
 
-      tail = tail->next;
-
       CONSUME_TOKEN();
     }
 
@@ -441,7 +491,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       return NULL;
     }
 
-    if (CUR_TOKEN() == LEX_PAREN_CLOSE) {
+    if (HAS_TOKEN() && CUR_TOKEN() == LEX_PAREN_CLOSE) {
       CONSUME_TOKEN();
       return expr;
     } else {
@@ -467,35 +517,14 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       CONSUME_TOKEN();
     }
 
-    struct ast_node head = {0};
-    struct ast_node* ptr = &head;
-
-    /* Run build_parse_tree on a subset of the lex stream, until the */
+    /* Run parse_jsonpath on a subset of the lex stream, until the */
     /* boundary of the sub-JSONPath */
-    if (!build_parse_tree(lex_tok, &start, stop, ptr)) {
-      return NULL;
-    }
-
-    return head.next;
+    return parse_jsonpath(lex_tok, &start, stop);
   }
 
   zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter expressions may not be empty");
 
   return NULL;
-}
-
-static bool validate_root_next(struct ast_node* head) {
-  switch (head->type) {
-    case AST_EXPR:
-    case AST_INDEX_LIST:
-    case AST_INDEX_SLICE:
-    case AST_RECURSE:
-    case AST_SELECTOR:
-    case AST_WILD_CARD:
-      return true;
-    default:
-      return false;
-  }
 }
 
 bool is_binary(enum ast_type type) {
@@ -525,6 +554,10 @@ bool is_unary(enum ast_type type) {
 }
 
 bool validate_expression_head(struct ast_node* tok) {
+  if (tok == NULL) {
+    return false;
+  }
+
   if (is_binary(tok->type)) {
     return true;
   }
@@ -537,55 +570,9 @@ bool validate_expression_head(struct ast_node* tok) {
     return true;
   }
 
+  zend_throw_exception(spl_ce_RuntimeException, "Invalid expression.", 0);
+
   return false;
-}
-
-bool validate_parse_tree(struct ast_node* head) {
-  struct ast_node* cur = head;
-
-  while (cur != NULL) {
-    switch (cur->type) {
-      case AST_ROOT:
-        if (cur->next == NULL) {
-          return true;
-        }
-        if (!validate_root_next(cur->next)) {
-          zend_throw_exception(spl_ce_RuntimeException,
-                               "Root `$` must be followed by a child selector, filter or recurse element", 0);
-          return false;
-        }
-        break;
-      case AST_EXPR:
-        if (cur->data.d_expression.head == NULL) {
-          zend_throw_exception(spl_ce_RuntimeException, "Filter expressions may not be empty", 0);
-          return false;
-        } else if (!validate_expression_head(cur->data.d_expression.head)) {
-          zend_throw_exception(spl_ce_RuntimeException, "Invalid expression.", 0);
-          return false;
-        }
-        break;
-      case AST_RECURSE:
-        if (cur->next == NULL || (cur->next->type == AST_SELECTOR && cur->next->data.d_selector.len == 0)) {
-          zend_throw_exception(
-              spl_ce_RuntimeException,
-              "Recursive descent operator `..` must be followed by a child selector, filter or wildcard", 0);
-          return false;
-        }
-        break;
-      case AST_SELECTOR:
-        /* Expressions like $.$ and $.node$ are not allowed. Bracket notation $['$'] and $['node$'] should be used instead. */
-        if (cur->next != NULL && cur->next->type == AST_ROOT) {
-          zend_throw_exception(spl_ce_RuntimeException,
-                             "Unexpected root `$` in node name, use bracket notation for node names with special characters", 0);
-          return false;
-        }
-      default:
-        break;
-    }
-    cur = cur->next;
-  }
-
-  return true;
 }
 
 static bool make_numeric_node(struct ast_node* tok, char* str, int str_len) {
@@ -660,20 +647,6 @@ static bool is_operator(lex_token type) {
     default:
       return false;
   }
-}
-
-bool sanity_check(struct jpath_token lex_token[], int lex_tok_count) {
-  if (lex_tok_count == 0) {
-    zend_throw_exception(spl_ce_RuntimeException, "JSONPath expression contains no valid elements", 0);
-    return false;
-  }
-
-  if (lex_token[0].type != LEX_ROOT) {
-    zend_throw_exception(spl_ce_RuntimeException, "JSONPath expression must start with a root `$`", 0);
-    return false;
-  }
-
-  return true;
 }
 
 void free_ast_nodes(struct ast_node* head) {
