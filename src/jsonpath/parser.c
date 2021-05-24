@@ -334,6 +334,12 @@ static struct ast_node* parse_equality(PARSER_PARAMS) {
 
     struct ast_node* right = parse_comparison(PARSER_ARGS);
 
+    if (right == NULL) {
+      free_ast_nodes(expr);
+      free_ast_nodes(right);
+      return NULL;
+    }
+
     expr = ast_alloc_binary(type, expr, right);
   }
 
@@ -363,6 +369,12 @@ static struct ast_node* parse_comparison(PARSER_PARAMS) {
     CONSUME_TOKEN();
 
     struct ast_node* right = parse_unary(PARSER_ARGS);
+
+    if (right == NULL) {
+      free_ast_nodes(expr);
+      free_ast_nodes(right);
+      return NULL;
+    }
 
     expr = ast_alloc_binary(type, expr, right);
   }
@@ -395,6 +407,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
     struct ast_node* ret = ast_alloc_node(NULL, AST_DOUBLE);
     if (!make_numeric_node(ret, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN())) {
+      free_ast_nodes(ret);
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric");
       return NULL;
     }
@@ -410,6 +423,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     } else if (strncasecmp("false", CUR_TOKEN_LITERAL(), 5) == 0) {
       ret->data.d_literal.value_bool = false;
     } else {
+      free_ast_nodes(ret);
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Expected `true` or `false` for boolean token");
       return NULL;
     }
