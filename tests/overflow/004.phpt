@@ -1,5 +1,5 @@
 --TEST--
-Test bracket notation with overflowing index
+Test filter with overflowing operand
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--
