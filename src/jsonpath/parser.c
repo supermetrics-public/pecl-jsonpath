@@ -33,7 +33,7 @@ static struct ast_node* parse_unary(PARSER_PARAMS);
 static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok);
 
 static bool numeric_to_long(char* str, int str_len, long* dest);
-static bool is_operator(lex_token type);
+static bool is_logical_operator(lex_token type);
 static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
 bool validate_expression_head(struct ast_node* tok);
 
@@ -147,21 +147,6 @@ struct ast_node* parse_jsonpath(PARSER_PARAMS) {
   return ret;
 }
 
-static struct ast_node* parse_childpath(PARSER_PARAMS) {
-  CONSUME_TOKEN();
-
-  struct ast_node* expr = parse_operator(PARSER_ARGS);
-
-  if (expr == NULL) {
-    return NULL;
-  }
-
-  struct ast_node* ret = ast_alloc_node(NULL, AST_CUR_NODE);
-  ret->next = expr;
-
-  return ret;
-}
-
 static struct ast_node* parse_operator(PARSER_PARAMS) {
   if (!HAS_TOKEN()) {
     return NULL;
@@ -215,7 +200,9 @@ static struct ast_node* parse_operator(PARSER_PARAMS) {
       return NULL;
   }
 
-  if (expr != NULL && HAS_TOKEN()) {
+  if (expr != NULL && HAS_TOKEN() && !is_logical_operator(CUR_TOKEN()) && CUR_TOKEN() != LEX_PAREN_CLOSE) {
+    /* Make sure the next call to parse_operator() returns NULL only if the there's an error, not because the token type
+     * isn't an operator. */
     expr->next = parse_operator(PARSER_ARGS);
     if (expr->next == NULL) {
       free_ast_nodes(expr);
@@ -437,65 +424,6 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     return ret;
   }
 
-  if (CUR_TOKEN() == LEX_NODE || CUR_TOKEN() == LEX_CUR_NODE) {
-    struct ast_node* ret = NULL;
-    struct ast_node* tail = NULL;
-
-    if (CUR_TOKEN() == LEX_CUR_NODE) {
-      CONSUME_TOKEN();
-      ret = ast_alloc_node(NULL, AST_CUR_NODE);
-      tail = ret;
-    }
-
-    /* handle @.node */
-    while (CUR_TOKEN() == LEX_NODE) {
-      if (ret == NULL) {
-        ret = ast_alloc_node(NULL, AST_SELECTOR);
-        tail = ret;
-      } else {
-        tail = ast_alloc_node(tail, AST_SELECTOR);
-      }
-      tail->data.d_selector.val = CUR_TOKEN_LITERAL();
-      tail->data.d_selector.len = CUR_TOKEN_LEN();
-      CONSUME_TOKEN();
-
-      if (CUR_TOKEN() == LEX_WILD_CARD) {
-        free_ast_nodes(ret);
-        zend_throw_exception(spl_ce_RuntimeException, "Multiplying node values is not supported", 0);
-        return NULL;
-      }
-    }
-
-    /* handle @.node[?(...)] */
-    if (CUR_TOKEN() == LEX_EXPR_START) {
-      tail->next = parse_expression(PARSER_ARGS);
-
-      if (tail->next == NULL) {
-        free_ast_nodes(ret);
-        return NULL;
-      }
-
-      tail = tail->next;
-
-      CONSUME_TOKEN();
-
-      if (tail->data.d_expression.head == NULL) {
-        return NULL;
-      }
-    } else if (CUR_TOKEN() == LEX_FILTER_START) {
-      tail->next = parse_filter(PARSER_ARGS);
-
-      if (tail->next == NULL) {
-        free_ast_nodes(ret);
-        return NULL;
-      }
-
-      CONSUME_TOKEN();
-    }
-
-    return ret;
-  }
-
   if (CUR_TOKEN() == LEX_PAREN_OPEN) {
     CONSUME_TOKEN();
     struct ast_node* expr = parse_or(PARSER_ARGS);
@@ -524,7 +452,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
 
     /* Find the boundary of the JSONPath */
     while (HAS_TOKEN()) {
-      if (is_operator(CUR_TOKEN()) || CUR_TOKEN() == LEX_PAREN_CLOSE) {
+      if (is_logical_operator(CUR_TOKEN()) || CUR_TOKEN() == LEX_PAREN_CLOSE) {
         stop = CUR_POS();
         break;
       }
@@ -536,9 +464,20 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     return parse_jsonpath(lex_tok, &start, stop);
   }
 
-  zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter expressions may not be empty");
+  if (CUR_TOKEN() == LEX_CUR_NODE) {
+    struct ast_node* expr = ast_alloc_node(NULL, AST_CUR_NODE);
+    CONSUME_TOKEN();
+    if (HAS_TOKEN() && !is_logical_operator(CUR_TOKEN()) && CUR_TOKEN() != LEX_PAREN_CLOSE) {
+      expr->next = parse_operator(PARSER_ARGS);
+      if (expr->next == NULL) {
+        free_ast_nodes(expr);
+        return NULL;
+      }
+    }
+    return expr;
+  }
 
-  return NULL;
+  return parse_operator(PARSER_ARGS);
 }
 
 bool is_binary(enum ast_type type) {
@@ -646,7 +585,7 @@ static bool numeric_to_long(char* str, int str_len, long* dest) {
   return true;
 }
 
-static bool is_operator(lex_token type) {
+static bool is_logical_operator(lex_token type) {
   switch (type) {
     case LEX_AND:
     case LEX_EQ:

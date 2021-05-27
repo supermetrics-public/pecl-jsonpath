@@ -21,7 +21,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Filter expressions may not be empty in %s
+Fatal error: Uncaught RuntimeException: Expecting child node, filter, expression, or recursive node in %s
 Stack trace:
 %s
 %s
