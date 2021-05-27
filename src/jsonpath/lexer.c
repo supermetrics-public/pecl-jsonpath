@@ -78,7 +78,9 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
           case '[':
             break; /* dot is superfluous in .['node'] */
           case '*':
-            break; /* get in next loop */
+            token->type = LEX_WILD_CARD;
+            NEXT_CHAR();
+            return true;
           case ' ':
             raise_error("Unexpected whitespace", json_path, *p);
             return false;
@@ -120,6 +122,15 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
             break;
           case '?':
             token->type = LEX_EXPR_START;
+            NEXT_CHAR();
+            return true;
+          case '*':
+            token->type = LEX_WILD_CARD;
+            NEXT_CHAR();
+            if (CUR_CHAR() != ']') {
+              raise_error("Wildcard filter contains an invalid character, expected `]`", json_path, *p);
+              return false;
+            }
             NEXT_CHAR();
             return true;
           default:
@@ -220,10 +231,6 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
           return false;
         }
         token->type = LEX_LITERAL;
-        return true;
-      case '*':
-        token->type = LEX_WILD_CARD;
-        NEXT_CHAR();
         return true;
       case 't':
       case 'T':

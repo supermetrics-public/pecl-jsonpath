@@ -29,7 +29,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unexpected token `LEX_WILD_CARD` in filter in %s
+Fatal error: Uncaught RuntimeException: Unrecognized token `*` at position 10 in %s
 Stack trace:
 %s
 %s

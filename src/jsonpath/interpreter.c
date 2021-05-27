@@ -3,9 +3,8 @@
 #include <ext/pcre/php_pcre.h>
 #include <ext/spl/spl_exceptions.h>
 
-#include "zend_exceptions.h"
-
 #include "lexer.h"
+#include "zend_exceptions.h"
 
 int compare(zval* lh, zval* rh);
 bool compare_rgxp(zval* lh, zval* rh);
@@ -442,7 +441,6 @@ bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
     zval_ptr_dtor(val_rh);
   }
 
-FREE_LHS:
   if (lh_operand->type == AST_LITERAL) {
     zval_ptr_dtor(val_lh);
   }
