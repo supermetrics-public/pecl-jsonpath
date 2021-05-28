@@ -35,11 +35,9 @@ $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$..['c','d']");
 sortRecursively($result);
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(7) {
   [0]=>
   string(3) "cc1"
@@ -56,5 +54,3 @@ array(7) {
   [6]=>
   string(3) "dd4"
 }
---XFAIL--
-Requires more work on union implementation

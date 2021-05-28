@@ -32,6 +32,7 @@ enum ast_type {
   AST_LTE,
   AST_NE,
   AST_NEGATION,
+  AST_NODE_LIST,
   AST_NULL,
   AST_OR,
   AST_PAREN_LEFT,
@@ -57,6 +58,11 @@ union ast_node_data {
     int count;
     int indexes[10]; /* todo check for max */
   } d_list;
+  struct {
+    int count;
+    int len[10];   /* todo check for max */
+    char* str[10]; /* todo check for max */
+  } d_nodes;
   struct {
     char* val;
     int len;

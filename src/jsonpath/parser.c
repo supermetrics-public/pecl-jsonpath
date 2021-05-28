@@ -37,11 +37,12 @@ static bool is_logical_operator(lex_token type);
 static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
 bool validate_expression_head(struct ast_node* tok);
 
-const char* AST_STR[] = {"AST_AND",      "AST_BOOL", "AST_CUR_NODE", "AST_DOUBLE",     "AST_EQ",
-                         "AST_EXPR",     "AST_GT",   "AST_GTE",      "AST_INDEX_LIST", "AST_INDEX_SLICE",
-                         "AST_LITERAL",  "AST_LONG", "AST_LT",       "AST_LTE",        "AST_NE",
-                         "AST_NEGATION", "AST_NULL", "AST_OR",       "AST_PAREN_LEFT", "AST_PAREN_RIGHT",
-                         "AST_RECURSE",  "AST_RGXP", "AST_ROOT",     "AST_SELECTOR",   "AST_WILD_CARD"};
+const char* AST_STR[] = {"AST_AND",         "AST_BOOL",      "AST_CUR_NODE", "AST_DOUBLE",     "AST_EQ",
+                         "AST_EXPR",        "AST_GT",        "AST_GTE",      "AST_INDEX_LIST", "AST_INDEX_SLICE",
+                         "AST_LITERAL",     "AST_LONG",      "AST_LT",       "AST_LTE",        "AST_NE",
+                         "AST_NEGATION",    "AST_NODE_LIST", "AST_NULL",     "AST_OR",         "AST_PAREN_LEFT",
+                         "AST_PAREN_RIGHT", "AST_RECURSE",   "AST_RGXP",     "AST_ROOT",       "AST_SELECTOR",
+                         "AST_WILD_CARD"};
 
 static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right) {
   struct ast_node* node = ast_alloc_node(NULL, type);
@@ -116,6 +117,15 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
 
       tok->data.d_list.indexes[tok->data.d_list.count] = idx;
       tok->data.d_list.count++;
+    } else if (CUR_TOKEN() == LEX_LITERAL) {
+      if (sep_found == AST_INDEX_SLICE) {
+        zend_throw_exception(spl_ce_RuntimeException, "Array slice indexes must be integers", 0);
+        return false;
+      }
+      tok->type = sep_found = AST_NODE_LIST;
+      tok->data.d_nodes.str[tok->data.d_nodes.count] = CUR_TOKEN_LITERAL();
+      tok->data.d_nodes.len[tok->data.d_nodes.count] = CUR_TOKEN_LEN();
+      tok->data.d_nodes.count++;
     } else {
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token `%s` in filter", LEX_STR[CUR_TOKEN()]);
       return false;

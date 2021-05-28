@@ -21,16 +21,12 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[0]['c','d']");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(2) {
   [0]=>
   string(3) "cc1"
   [1]=>
   string(3) "dd1"
 }
---XFAIL--
-Requires more work on union implementation

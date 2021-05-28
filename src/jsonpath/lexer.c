@@ -106,20 +106,6 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
         EAT_WHITESPACE();
 
         switch (CUR_CHAR()) {
-          case '\'':
-          case '"':
-            if (!extract_quoted_literal(p, json_path, token)) {
-              return false;
-            }
-
-            EAT_WHITESPACE();
-
-            if (CUR_CHAR() != ']') {
-              raise_error("Missing closing bracket `]`", json_path, *p);
-              return false;
-            }
-            token->type = LEX_NODE;
-            break;
           case '?':
             token->type = LEX_EXPR_START;
             NEXT_CHAR();
