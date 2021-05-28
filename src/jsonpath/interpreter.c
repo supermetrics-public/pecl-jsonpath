@@ -10,6 +10,7 @@ int compare(zval* lh, zval* rh);
 bool compare_rgxp(zval* lh, zval* rh);
 void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
@@ -27,6 +28,9 @@ void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_
     return;
   }
   switch (tok->type) {
+    case AST_NODE_LIST:
+      exec_node_filter(arr_head, arr_cur, tok, return_value);
+      break;
     case AST_INDEX_LIST:
       exec_index_filter(arr_head, arr_cur, tok, return_value);
       break;
@@ -111,6 +115,28 @@ void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok,
     exec_recursive_descent(arr_head, data, tok, return_value);
   }
   ZEND_HASH_FOREACH_END();
+}
+
+void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+  int i;
+  zend_ulong idx;
+  zval* data;
+
+  for (i = 0; i < tok->data.d_nodes.count; i++) {
+    if (ZEND_HANDLE_NUMERIC_STR(tok->data.d_nodes.str[i], tok->data.d_nodes.len[i], idx)) {
+      /* look up numeric index */
+      data = zend_hash_index_find(HASH_OF(arr_cur), idx);
+    } else {
+      /* look up string index */
+      data = zend_hash_str_find(HASH_OF(arr_cur), tok->data.d_nodes.str[i], tok->data.d_nodes.len[i]);
+    }
+    if (data != NULL) {
+      copy_result_or_continue(arr_head, data, tok, return_value);
+      if (break_if_result_found(return_value)) {
+        break;
+      }
+    }
+  }
 }
 
 void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {

@@ -21,11 +21,9 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[:]['c','d']");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(4) {
   [0]=>
   string(3) "cc1"
@@ -36,5 +34,3 @@ array(4) {
   [3]=>
   string(3) "dd2"
 }
---XFAIL--
-Requires more work on union implementation

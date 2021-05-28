@@ -29,7 +29,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing closing bracket `]` at position 15 in %s
+Fatal error: Uncaught RuntimeException: Array slice indexes must be integers in %s
 Stack trace:
 %s
 %s
