@@ -81,5 +81,3 @@ array(1) {
     }
   }
 }
---XFAIL--
-Array syntax is not supported yet

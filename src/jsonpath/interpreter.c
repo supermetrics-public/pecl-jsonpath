@@ -6,6 +6,13 @@
 #include "lexer.h"
 #include "zend_exceptions.h"
 
+#define BOOL_ERR -1
+#define RETURN_ERR_IF_NULL(val) \
+  if (val == NULL) return -1
+#define RETURN_NULL_IF_ERR(val) \
+  if (val < 0) return NULL
+#define BOOL_OR_ERR int
+
 int compare(zval* lh, zval* rh);
 bool compare_rgxp(zval* lh, zval* rh);
 void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
@@ -16,11 +23,13 @@ void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* re
 void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur);
+void copy_index_list_to_array(struct ast_node* tok, zval* val);
+void free_primary_zvals(struct ast_node* tok, zval* val);
 bool break_if_result_found(zval* return_value);
 void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-bool evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
-bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
-bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 bool can_check_inequality(zval* lhs, zval* rhs);
 
 void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
@@ -243,7 +252,11 @@ void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* 
   zval* data;
 
   ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr_cur), num_key, key, data) {
-    if (evaluate_expression(arr_head, data, tok->data.d_expression.head)) {
+    int res = evaluate_expression(arr_head, data, tok->data.d_expression.head);
+    if (res == BOOL_ERR) {
+      return;
+    }
+    if (res) {
       copy_result_or_continue(arr_head, data, tok, return_value);
       if (break_if_result_found(return_value)) {
         break;
@@ -320,9 +333,29 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
         return tmp_dest;
       }
       return Z_INDIRECT_P(tmp_dest);
+    case AST_NODE_LIST:
+      copy_index_list_to_array(src, tmp_dest);
+      return tmp_dest;
     default:
-      assert(0);
+      zend_throw_exception(spl_ce_RuntimeException, "Unsupported expression operand", 0);
       return NULL;
+  }
+}
+
+void copy_index_list_to_array(struct ast_node* tok, zval* val) {
+  array_init(val);
+  int i;
+  for (i = 0; i < tok->data.d_nodes.count; i++) {
+    add_index_stringl(val, i, tok->data.d_nodes.str[i], tok->data.d_nodes.len[i]);
+  }
+}
+
+/* free zvals created by evaluate_primary() */
+void free_primary_zvals(struct ast_node* tok, zval* val) {
+  if (tok->type == AST_LITERAL) {
+    zval_ptr_dtor(val);
+  } else if (tok->type == AST_NODE_LIST) {
+    zend_array_destroy(Z_ARR_P(val));
   }
 }
 
@@ -345,7 +378,7 @@ void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok
   }
 }
 
-bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
+BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   if (is_binary(tok->type)) {
     return evaluate_binary(arr_head, arr_cur, tok);
   }
@@ -356,11 +389,15 @@ bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
 
   if (tok->type == AST_SELECTOR || tok->type == AST_CUR_NODE) {
     zval tmp = {0};
-    return Z_TYPE_P(evaluate_primary(tok, &tmp, arr_head, arr_cur)) != IS_UNDEF;
+    zval* res = evaluate_primary(tok, &tmp, arr_head, arr_cur);
+    RETURN_ERR_IF_NULL(res);
+    return Z_TYPE_P(res) != IS_UNDEF;
   }
 
   zval tmp = {0};
   zval* val = evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur);
+
+  RETURN_ERR_IF_NULL(val);
 
   if (Z_TYPE_P(val) == IS_FALSE) {
     return true;
@@ -369,7 +406,7 @@ bool evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   return false;
 }
 
-bool evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
+BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   zval tmp = {0};
 
   if (is_unary(tok->data.d_unary.right->type)) {
@@ -378,10 +415,14 @@ bool evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
     return !evaluate_binary(arr_head, arr_cur, tok->data.d_unary.right);
   } else if (tok->data.d_unary.right->type == AST_SELECTOR || tok->data.d_unary.right->type == AST_CUR_NODE) {
     /* ?(!@.selector) */
-    return Z_TYPE_P(evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur)) == IS_UNDEF;
+    zval* res = evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur);
+    RETURN_ERR_IF_NULL(res);
+    return Z_TYPE_P(res) == IS_UNDEF;
   }
 
   zval* val = evaluate_primary(tok->data.d_unary.right, &tmp, arr_head, arr_cur);
+
+  RETURN_ERR_IF_NULL(val);
 
   if (Z_TYPE_P(val) == IS_FALSE) {
     return true;
@@ -390,40 +431,46 @@ bool evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   return false;
 }
 
-bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
-  /* use stack-allocated zvals in order to avoid malloc, if possible */
-  zval tmp_lh = {0}, tmp_rh = {0};
-  zval *val_lh = &tmp_lh, *val_rh = &tmp_rh;
-  struct ast_node *lh_operand = tok->data.d_binary.left, *rh_operand = tok->data.d_binary.right;
-
-  if (is_binary(lh_operand->type)) {
-    bool result = evaluate_binary(arr_head, arr_cur, lh_operand);
-    ZVAL_BOOL(val_lh, result);
+zval* evaluate_operand(zval* arr_head, zval* arr_cur, struct ast_node* tok, struct ast_node* operand, zval* tmp_val) {
+  if (is_binary(operand->type)) {
+    int result = evaluate_binary(arr_head, arr_cur, operand);
+    RETURN_NULL_IF_ERR(result);
+    ZVAL_BOOL(tmp_val, result);
+    return tmp_val;
   } else if (is_unary(tok->type)) {
-    bool result = evaluate_unary(arr_head, arr_cur, lh_operand);
-    ZVAL_BOOL(val_lh, result);
-  } else if ((lh_operand->type == AST_SELECTOR || lh_operand->type == AST_CUR_NODE) &&
+    int result = evaluate_unary(arr_head, arr_cur, operand);
+    RETURN_NULL_IF_ERR(result);
+    ZVAL_BOOL(tmp_val, result);
+    return tmp_val;
+  } else if ((operand->type == AST_SELECTOR || operand->type == AST_CUR_NODE) &&
              (tok->type == AST_OR || tok->type == AST_AND)) {
     /* ?(@.selector <or|and> [operand]) */
-    bool exists = Z_TYPE_P(evaluate_primary(lh_operand, &tmp_lh, arr_head, arr_cur)) != IS_UNDEF;
-    ZVAL_BOOL(val_lh, exists);
-  } else {
-    val_lh = evaluate_primary(lh_operand, &tmp_lh, arr_head, arr_cur);
+    zval* tmp = evaluate_primary(operand, tmp_val, arr_head, arr_cur);
+    if (tmp == NULL) {
+      return NULL;
+    }
+    bool exists = Z_TYPE_P(tmp) != IS_UNDEF;
+    ZVAL_BOOL(tmp_val, exists);
+    return tmp_val;
   }
 
-  if (is_binary(rh_operand->type)) {
-    bool result = evaluate_binary(arr_head, arr_cur, rh_operand);
-    ZVAL_BOOL(val_rh, result);
-  } else if (is_unary(tok->type)) {
-    bool result = evaluate_unary(arr_head, arr_cur, rh_operand);
-    ZVAL_BOOL(val_rh, result);
-  } else if ((rh_operand->type == AST_SELECTOR || rh_operand->type == AST_CUR_NODE) &&
-             (tok->type == AST_OR || tok->type == AST_AND)) {
-    /* ?([operand] <or|and> @.selector) */
-    bool exists = Z_TYPE_P(evaluate_primary(rh_operand, &tmp_rh, arr_head, arr_cur)) != IS_UNDEF;
-    ZVAL_BOOL(val_rh, exists);
-  } else {
-    val_rh = evaluate_primary(rh_operand, &tmp_rh, arr_head, arr_cur);
+  return evaluate_primary(operand, tmp_val, arr_head, arr_cur);
+}
+
+BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
+  /* use stack-allocated zvals in order to avoid malloc, if possible */
+  zval tmp_lh = {0}, tmp_rh = {0};
+  struct ast_node *lh_operand = tok->data.d_binary.left, *rh_operand = tok->data.d_binary.right;
+
+  zval* val_lh = evaluate_operand(arr_head, arr_cur, tok, lh_operand, &tmp_lh);
+
+  RETURN_ERR_IF_NULL(val_lh);
+
+  zval* val_rh = evaluate_operand(arr_head, arr_cur, tok, rh_operand, &tmp_rh);
+
+  if (val_rh == NULL) {
+    free_primary_zvals(lh_operand, val_lh);
+    return BOOL_ERR;
   }
 
   bool ret = false;
@@ -461,15 +508,8 @@ bool evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
       break;
   }
 
-  /* clean up strings allocated in evaluate_primary() */
-
-  if (rh_operand->type == AST_LITERAL) {
-    zval_ptr_dtor(val_rh);
-  }
-
-  if (lh_operand->type == AST_LITERAL) {
-    zval_ptr_dtor(val_lh);
-  }
+  free_primary_zvals(lh_operand, val_lh);
+  free_primary_zvals(rh_operand, val_rh);
 
   return ret;
 }
