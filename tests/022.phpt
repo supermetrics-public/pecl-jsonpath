@@ -1,5 +1,5 @@
 --TEST--
-Test filter expression with equals array with single quotes
+Test filter expression with unsupported operand (int array)
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--
@@ -8,8 +8,8 @@ Test filter expression with equals array with single quotes
 $data = [
     [
         "d" => [
-            "v1",
-            "v2",
+            "100",
+            "200",
         ],
     ],
     [
@@ -62,22 +62,13 @@ $data = [
 ];
 
 $jsonPath = new JsonPath();
-$result = $jsonPath->find($data, "$[?(@.d==['v1','v2'])]");
+$result = $jsonPath->find($data, '$[?(@.d==[100,200])]');
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
---EXPECT--
-Assertion 1
-array(1) {
-  [0]=>
-  array(1) {
-    ["d"]=>
-    array(2) {
-      [0]=>
-      string(2) "v1"
-      [1]=>
-      string(2) "v2"
-    }
-  }
-}
+--EXPECTF--
+Fatal error: Uncaught RuntimeException: Unsupported expression operand in %s
+Stack trace:
+%s
+%s
+%s
