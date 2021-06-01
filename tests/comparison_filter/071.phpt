@@ -41,10 +41,35 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(@..child)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-??
---XFAIL--
-Not sure what would be the best outcome here
+array(2) {
+  [0]=>
+  array(1) {
+    ["key"]=>
+    array(2) {
+      [0]=>
+      array(1) {
+        ["child"]=>
+        int(1)
+      }
+      [1]=>
+      array(1) {
+        ["child"]=>
+        int(2)
+      }
+    }
+  }
+  [1]=>
+  array(1) {
+    ["key"]=>
+    array(1) {
+      [0]=>
+      array(1) {
+        ["child"]=>
+        int(2)
+      }
+    }
+  }
+}
