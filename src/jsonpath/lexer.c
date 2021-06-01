@@ -20,6 +20,7 @@ static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token
 static void extract_unbounded_literal(char** p, char* json_path, struct jpath_token* token);
 static void extract_unbounded_numeric_literal(char** p, char* json_path, struct jpath_token* token);
 static void extract_boolean_or_null_literal(char** p, char* json_path, struct jpath_token* token);
+static bool extract_regex(char** p, char* json_path, struct jpath_token* token);
 
 const char* LEX_STR[] = {
     "LEX_NOT_FOUND",       /* Token not found */
@@ -230,6 +231,12 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
         extract_boolean_or_null_literal(p, json_path, token);
         token->type = LEX_LITERAL_NULL;
         return true;
+      case '/':
+        if (!extract_regex(p, json_path, token)) {
+          return false;
+        }
+        token->type = LEX_LITERAL;
+        return true;
       case '-':
       case '0':
       case '1':
@@ -300,6 +307,29 @@ static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token
     NEXT_CHAR();
   }
 
+  NEXT_CHAR();
+
+  return true;
+}
+
+static bool extract_regex(char** p, char* json_path, struct jpath_token* token) {
+  token->len = 0;
+  token->val = *p;
+  char* start = *p;
+
+  token->len++;
+  NEXT_CHAR();
+
+  for (; CUR_CHAR() != '\0' && CUR_CHAR() != '/'; NEXT_CHAR()) {
+    token->len++;
+  }
+
+  if (CUR_CHAR() != '/') {
+    raise_error("Missing closing regex /", json_path, start);
+    return false;
+  }
+
+  token->len++;
   NEXT_CHAR();
 
   return true;
