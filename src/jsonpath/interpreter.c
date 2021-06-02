@@ -274,7 +274,46 @@ int compare(zval* lh, zval* rh) {
   return (int)Z_LVAL(result);
 }
 
+void output(zval* zv_ptr) {
+  switch (Z_TYPE_P(zv_ptr)) {
+    case IS_NULL:
+      php_printf("NULL: null\n");
+      break;
+    case IS_TRUE:
+      php_printf("BOOL: true\n");
+      break;
+    case IS_FALSE:
+      php_printf("BOOL: false\n");
+      break;
+    case IS_LONG:
+      php_printf("LONG: %ld\n", Z_LVAL_P(zv_ptr));
+      break;
+    case IS_DOUBLE:
+      php_printf("DOUBLE: %g\n", Z_DVAL_P(zv_ptr));
+      break;
+    case IS_STRING:
+      php_printf("STRING: value=\"");
+      PHPWRITE(Z_STRVAL_P(zv_ptr), Z_STRLEN_P(zv_ptr));
+      php_printf("\", length=%zd\n", Z_STRLEN_P(zv_ptr));
+      break;
+    case IS_RESOURCE:
+      php_printf("RESOURCE: id=%d\n", Z_RES_HANDLE_P(zv_ptr));
+      break;
+    case IS_ARRAY:
+      php_printf("ARRAY: hashtable=%p\n", Z_ARRVAL_P(zv_ptr));
+      break;
+    case IS_OBJECT:
+      php_printf("OBJECT: object=%p\n", Z_OBJ_P(zv_ptr));
+      break;
+      EMPTY_SWITCH_DEFAULT_CASE()  // Assert that all types are handled.
+  }
+}
+
 bool compare_rgxp(zval* lh, zval* rh) {
+  if (Z_TYPE_P(lh) == IS_NULL || Z_TYPE_P(rh) == IS_NULL) {
+    return false;
+  }
+
   pcre_cache_entry* pce;
 
   if ((pce = pcre_get_compiled_regex_cache(Z_STR_P(rh))) == NULL) {
