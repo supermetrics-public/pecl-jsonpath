@@ -185,13 +185,6 @@ static struct ast_node* parse_operator(PARSER_PARAMS) {
     case LEX_DEEP_SCAN:
       expr = ast_alloc_node(NULL, AST_RECURSE);
       CONSUME_TOKEN();
-      /* todo : why is LEX_NOT_FOUND generated in tests/comparison_recursive_descent/002.php? */
-      if (!HAS_TOKEN() || (CUR_TOKEN() == LEX_NODE && CUR_TOKEN_LEN() == 0) || CUR_TOKEN() == LEX_NOT_FOUND) {
-        zend_throw_exception(spl_ce_RuntimeException,
-                             "Recursive descent operator `..` must be followed by a child selector, filter or wildcard",
-                             0);
-        return NULL;
-      }
       break;
     case LEX_WILD_CARD:
       expr = ast_alloc_node(NULL, AST_WILD_CARD);
