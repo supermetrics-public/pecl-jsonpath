@@ -31,6 +31,7 @@ BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 bool can_check_inequality(zval* lhs, zval* rhs);
+bool can_shortcut_binary_evaluation(struct ast_node* tok, zval* operand);
 
 void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (tok == NULL) {
@@ -457,6 +458,12 @@ zval* evaluate_operand(zval* arr_head, zval* arr_cur, struct ast_node* tok, stru
   return evaluate_primary(operand, tmp_val, arr_head, arr_cur);
 }
 
+/* Only != operator can support undefined operand values (i.e. when a selector returns no result). This check is mostly
+ * an optimization, but is necessary to prevent compare_rgxp() from segfaulting on undefined values. */
+bool can_shortcut_binary_evaluation(struct ast_node* operator, zval * operand) {
+  return Z_TYPE_P(operand) == IS_UNDEF && operator->type != AST_NE;
+}
+
 BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   /* use stack-allocated zvals in order to avoid malloc, if possible */
   zval tmp_lh = {0}, tmp_rh = {0};
@@ -466,11 +473,20 @@ BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok)
 
   RETURN_ERR_IF_NULL(val_lh);
 
+  if (can_shortcut_binary_evaluation(tok, val_lh)) {
+    return false;
+  }
+
   zval* val_rh = evaluate_operand(arr_head, arr_cur, tok, rh_operand, &tmp_rh);
 
   if (val_rh == NULL) {
     free_primary_zvals(lh_operand, val_lh);
     return BOOL_ERR;
+  }
+
+  if (can_shortcut_binary_evaluation(tok, val_rh)) {
+    free_primary_zvals(lh_operand, val_lh);
+    return false;
   }
 
   bool ret = false;

@@ -30,7 +30,7 @@ echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `/` at position 9 in %s
+Fatal error: Uncaught RuntimeException: Missing closing regex / at position 9 in %s
 Stack trace:
 %s
 %s
