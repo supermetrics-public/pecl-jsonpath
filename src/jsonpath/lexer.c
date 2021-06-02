@@ -86,12 +86,13 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
             raise_error("Unexpected whitespace", json_path, *p);
             return false;
           case '\0':
-            /* The whole expression can end with a recursive descent operator, but not with a dot selector */
-            if (*(*p - 2) != '.') {
-              raise_error("Dot selector `.` must be followed by a node name or wildcard", json_path, *p - 1);
+            if (*(*p - 2) == '.') {
+              raise_error("Recursive descent operator `..` must be followed by a child selector, filter or wildcard", json_path, *p);
               return false;
             }
-            return true;
+
+            raise_error("Dot selector `.` must be followed by a node name or wildcard", json_path, *p - 1);
+            return false;
           default:
             if (CUR_CHAR() == '"' || CUR_CHAR() == '\'') {
               raise_error("Quoted node names must use the bracket notation `[`", json_path, *p);
