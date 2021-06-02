@@ -31,6 +31,7 @@ BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
 bool can_check_inequality(zval* lhs, zval* rhs);
+bool can_shortcut_binary_evaluation(struct ast_node* tok, zval* operand);
 
 void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (tok == NULL) {
@@ -274,43 +275,8 @@ int compare(zval* lh, zval* rh) {
   return (int)Z_LVAL(result);
 }
 
-void output(zval* zv_ptr) {
-  switch (Z_TYPE_P(zv_ptr)) {
-    case IS_NULL:
-      php_printf("NULL: null\n");
-      break;
-    case IS_TRUE:
-      php_printf("BOOL: true\n");
-      break;
-    case IS_FALSE:
-      php_printf("BOOL: false\n");
-      break;
-    case IS_LONG:
-      php_printf("LONG: %ld\n", Z_LVAL_P(zv_ptr));
-      break;
-    case IS_DOUBLE:
-      php_printf("DOUBLE: %g\n", Z_DVAL_P(zv_ptr));
-      break;
-    case IS_STRING:
-      php_printf("STRING: value=\"");
-      PHPWRITE(Z_STRVAL_P(zv_ptr), Z_STRLEN_P(zv_ptr));
-      php_printf("\", length=%zd\n", Z_STRLEN_P(zv_ptr));
-      break;
-    case IS_RESOURCE:
-      php_printf("RESOURCE: id=%d\n", Z_RES_HANDLE_P(zv_ptr));
-      break;
-    case IS_ARRAY:
-      php_printf("ARRAY: hashtable=%p\n", Z_ARRVAL_P(zv_ptr));
-      break;
-    case IS_OBJECT:
-      php_printf("OBJECT: object=%p\n", Z_OBJ_P(zv_ptr));
-      break;
-      EMPTY_SWITCH_DEFAULT_CASE()  // Assert that all types are handled.
-  }
-}
-
 bool compare_rgxp(zval* lh, zval* rh) {
-  if (Z_TYPE_P(lh) == IS_NULL || Z_TYPE_P(rh) == IS_NULL) {
+  if (Z_TYPE_P(lh) == IS_UNDEF || Z_TYPE_P(rh) == IS_UNDEF) {
     return false;
   }
 
@@ -496,6 +462,11 @@ zval* evaluate_operand(zval* arr_head, zval* arr_cur, struct ast_node* tok, stru
   return evaluate_primary(operand, tmp_val, arr_head, arr_cur);
 }
 
+/* Only != operator can support undefined operand values (i.e. when a selector returns no result) */
+bool can_shortcut_binary_evaluation(struct ast_node* operator, zval* operand) {
+  return Z_TYPE_P(operand) == IS_UNDEF && operator->type != AST_NE;
+}
+
 BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   /* use stack-allocated zvals in order to avoid malloc, if possible */
   zval tmp_lh = {0}, tmp_rh = {0};
@@ -505,11 +476,20 @@ BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok)
 
   RETURN_ERR_IF_NULL(val_lh);
 
+  if (can_shortcut_binary_evaluation(tok, val_lh)) {
+    return false;
+  }
+
   zval* val_rh = evaluate_operand(arr_head, arr_cur, tok, rh_operand, &tmp_rh);
 
   if (val_rh == NULL) {
     free_primary_zvals(lh_operand, val_lh);
     return BOOL_ERR;
+  }
+
+  if (can_shortcut_binary_evaluation(tok, val_rh)) {
+    free_primary_zvals(lh_operand, val_lh);
+    return false;
   }
 
   bool ret = false;
