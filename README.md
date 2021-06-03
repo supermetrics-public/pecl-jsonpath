@@ -217,7 +217,9 @@ To be added.
 
 ## Performance benchmarks
 
-To be added.
+![Chart showing a performance comparison between JsonPath-PHP, native PHP (JsonPath-PHP sometimes faster, sometimes slower), and the fastest tested PHP library (JsonPath-PHP always faster)](benchmark.png)
+
+If you want to run benchmarks yourself, have a look at the [jsonpath-benchmark](https://github.com/supermetrics-public/jsonpath-benchmark) repo.
 
 ## License
 
