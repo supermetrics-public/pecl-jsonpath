@@ -280,7 +280,6 @@ bool compare_rgxp(zval* lh, zval* rh) {
 
   if ((pce = pcre_get_compiled_regex_cache(Z_STR_P(rh))) == NULL) {
     zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Invalid regex pattern `%s`", Z_STRVAL_P(rh));
-    zval_ptr_dtor(rh);
     return false;
   }
 
