@@ -11,10 +11,8 @@ $data = true;
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
 Warning: JsonPath::find() expects parameter 1 to be array, bool given in %s004_php7.php on line %d
-Assertion 1
 NULL

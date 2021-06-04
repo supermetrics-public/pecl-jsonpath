@@ -35,7 +35,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$.words.@");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

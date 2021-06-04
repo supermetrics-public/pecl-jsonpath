@@ -17,11 +17,9 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[*].a");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(1) {
   [0]=>
   int(1)

@@ -20,7 +20,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$..");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

@@ -61,7 +61,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(@.d=={\"k\":\"v\"})]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

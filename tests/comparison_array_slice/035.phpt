@@ -14,11 +14,9 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, '$[-4:]');
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(3) {
   [0]=>
   string(5) "first"

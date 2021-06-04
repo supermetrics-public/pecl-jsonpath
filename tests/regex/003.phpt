@@ -18,7 +18,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, '$.test[?(@.val_str =~ "/invalid([a-]+/")]');
 
-echo "Assertion 1\n";
 var_dump($result);
 --EXPECTF--
 Warning: JsonPath::find(): Compilation failed: missing closing parenthesis at offset 13 in %s

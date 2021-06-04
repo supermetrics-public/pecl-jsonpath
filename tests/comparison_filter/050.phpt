@@ -40,7 +40,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(2 in @.d)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

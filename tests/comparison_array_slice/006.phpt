@@ -16,11 +16,9 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, '$[2:113667776004]');
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(3) {
   [0]=>
   string(5) "third"

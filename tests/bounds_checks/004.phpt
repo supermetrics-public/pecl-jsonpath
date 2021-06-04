@@ -35,7 +35,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$.words[?($.occurrences > 9223372036854775808)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--
