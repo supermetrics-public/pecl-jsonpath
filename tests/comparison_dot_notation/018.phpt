@@ -47,11 +47,9 @@ $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$.store..price");
 sortRecursively($result);
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(5) {
   [0]=>
   float(8.95)

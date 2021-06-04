@@ -37,12 +37,34 @@ static bool is_logical_operator(lex_token type);
 static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
 bool validate_expression_head(struct ast_node* tok);
 
-const char* AST_STR[] = {"AST_AND",         "AST_BOOL",      "AST_CUR_NODE", "AST_DOUBLE",     "AST_EQ",
-                         "AST_EXPR",        "AST_GT",        "AST_GTE",      "AST_INDEX_LIST", "AST_INDEX_SLICE",
-                         "AST_LITERAL",     "AST_LONG",      "AST_LT",       "AST_LTE",        "AST_NE",
-                         "AST_NEGATION",    "AST_NODE_LIST", "AST_NULL",     "AST_OR",         "AST_PAREN_LEFT",
-                         "AST_PAREN_RIGHT", "AST_RECURSE",   "AST_RGXP",     "AST_ROOT",       "AST_SELECTOR",
-                         "AST_WILD_CARD"};
+const char* AST_STR[] = {
+    "AST_AND",         /**/
+    "AST_BOOL",        /**/
+    "AST_CUR_NODE",    /**/
+    "AST_DOUBLE",      /**/
+    "AST_EQ",          /**/
+    "AST_EXPR",        /**/
+    "AST_GT",          /**/
+    "AST_GTE",         /**/
+    "AST_INDEX_LIST",  /**/
+    "AST_INDEX_SLICE", /**/
+    "AST_LITERAL",     /**/
+    "AST_LONG",        /**/
+    "AST_LT",          /**/
+    "AST_LTE",         /**/
+    "AST_NE",          /**/
+    "AST_NEGATION",    /**/
+    "AST_NODE_LIST",   /**/
+    "AST_NULL",        /**/
+    "AST_OR",          /**/
+    "AST_PAREN_LEFT",  /**/
+    "AST_PAREN_RIGHT", /**/
+    "AST_RECURSE",     /**/
+    "AST_RGXP",        /**/
+    "AST_ROOT",        /**/
+    "AST_SELECTOR",    /**/
+    "AST_WILD_CARD",   /**/
+};
 
 static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right) {
   struct ast_node* node = ast_alloc_node(NULL, type);
@@ -68,9 +90,8 @@ static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type
 static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
   int slice_count = 0;
 
-  /* assume filter type is an index list by default. this resolves type */
-  /* ambiguity of a filter containing no separators. */
-  /* example: treat level4[0] as an index filter, not a slice. */
+  /* assume filter type is an index list by default. this resolves type ambiguity of a filter containing no separators.
+   * example: treat level4[0] as an index filter, not a slice. */
   tok->type = AST_INDEX_LIST;
   /* used to determine if different separator types are present, default value is arbitrary */
   enum ast_type sep_found = AST_AND;
@@ -455,9 +476,8 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     }
   }
 
-  /* JSONPaths inside filter expressions may not contain operators or */
-  /* parens because otherwise the boundary between parent/child JSONPaths */
-  /* would be ambiguous. */
+  /* JSONPaths inside filter expressions may not contain operators or parens because otherwise the boundary between
+   * parent/child JSONPaths would be ambiguous. */
   if (CUR_TOKEN() == LEX_ROOT) {
     int start = CUR_POS();
     int stop = 0;
@@ -471,8 +491,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       CONSUME_TOKEN();
     }
 
-    /* Run parse_jsonpath on a subset of the lex stream, until the */
-    /* boundary of the sub-JSONPath */
+    /* Run parse_jsonpath on a subset of the lex stream, until the boundary of the sub-JSONPath */
     return parse_jsonpath(lex_tok, &start, stop);
   }
 

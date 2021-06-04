@@ -35,7 +35,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(@.key<3),?(@.key>6)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

@@ -529,9 +529,8 @@ BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok)
   return ret;
 }
 
-/* Determine if two zvals can be checked for inequality (>, <, >=, <=). */
-/* Specifically forbid comparing strings with numeric values in order to */
-/* avoid returning true for scenarios such as 42 > "value". */
+/* Determine if two zvals can be checked for inequality (>, <, >=, <=). Specifically forbid comparing strings with
+ * numeric values in order to avoid returning true for scenarios such as 42 > "value". */
 bool can_check_inequality(zval* lhs, zval* rhs) {
   bool lhs_is_numeric = (Z_TYPE_P(lhs) == IS_LONG || Z_TYPE_P(lhs) == IS_DOUBLE);
   bool rhs_is_numeric = (Z_TYPE_P(rhs) == IS_LONG || Z_TYPE_P(rhs) == IS_DOUBLE);

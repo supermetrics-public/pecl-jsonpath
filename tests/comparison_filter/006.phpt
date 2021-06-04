@@ -44,9 +44,7 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(@.key>0 && false)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 bool(false)

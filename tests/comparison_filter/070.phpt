@@ -22,7 +22,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(false)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

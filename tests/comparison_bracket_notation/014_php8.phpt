@@ -11,7 +11,6 @@ $data = "Hello World";
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, '$[0]');
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

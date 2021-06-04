@@ -26,7 +26,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(@.d in [2, 3])]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

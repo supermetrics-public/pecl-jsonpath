@@ -22,11 +22,9 @@ $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$.*");
 sortRecursively($result);
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(4) {
   [0]=>
   array(1) {

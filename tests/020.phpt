@@ -35,7 +35,6 @@ $data = [
 $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$.words[?(falsue == @.isAdjective)]");
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECTF--

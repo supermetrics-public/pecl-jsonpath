@@ -18,11 +18,9 @@ $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$[?(@.2 == 'second')]");
 sortRecursively($result);
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(1) {
   [0]=>
   array(3) {

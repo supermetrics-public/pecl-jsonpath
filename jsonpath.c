@@ -14,8 +14,6 @@
 #include "src/jsonpath/parser.h"
 #include "zend_exceptions.h"
 
-/* True global resources - no need for thread safety here */
-static int le_jsonpath;
 bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count);
 #ifdef JSONPATH_DEBUG
 void print_lex_tokens(struct jpath_token lex_tok[], int lex_tok_count, const char* m);
@@ -32,20 +30,18 @@ zend_class_entry* jsonpath_ce;
 #define LEX_TOK_ARR_LEN 64
 
 PHP_METHOD(JsonPath, find) {
-  /* parse php method parameters */
-
   char* j_path;
   size_t j_path_len;
-  char* j_path_work_copy;
   zval* search_target;
 
+  /* parse php method parameters */
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "as", &search_target, &j_path, &j_path_len) == FAILURE) {
     return;
   }
 
-  /* Keep the original parameter untouched for the stack trace and instead work with a copy */
-  /* that might be modified during processing, e.g. due to escaped quotes in string literals */
-  j_path_work_copy = strdup(j_path);
+  /* Keep the original parameter untouched for the stack trace and instead work with a copy that might be modified
+   * during processing, e.g. due to escaped quotes in string literals */
+  char* j_path_work_copy = strdup(j_path);
 
   /* tokenize JSON-path string */
 
@@ -142,32 +138,11 @@ PHP_MINIT_FUNCTION(jsonpath) {
 
   return SUCCESS;
 }
-
 /* }}} */
 
 /* {{{ PHP_MSHUTDOWN_FUNCTION
  */
-PHP_MSHUTDOWN_FUNCTION(jsonpath) {
-  /* uncomment this line if you have INI entries
-     UNREGISTER_INI_ENTRIES();
-   */
-  return SUCCESS;
-}
-
-/* }}} */
-
-/* Remove if there's nothing to do at request start */
-/* {{{ PHP_RINIT_FUNCTION
- */
-PHP_RINIT_FUNCTION(jsonpath) { return SUCCESS; }
-
-/* }}} */
-
-/* Remove if there's nothing to do at request end */
-/* {{{ PHP_RSHUTDOWN_FUNCTION
- */
-PHP_RSHUTDOWN_FUNCTION(jsonpath) { return SUCCESS; }
-
+PHP_MSHUTDOWN_FUNCTION(jsonpath) { return SUCCESS; }
 /* }}} */
 
 /* {{{ PHP_MINFO_FUNCTION
@@ -177,12 +152,7 @@ PHP_MINFO_FUNCTION(jsonpath) {
   php_info_print_table_row(2, "jsonpath support", "enabled");
   php_info_print_table_row(2, "jsonpath version", PHP_JSONPATH_VERSION);
   php_info_print_table_end();
-
-  /* Remove comments if you have entries in php.ini
-     DISPLAY_INI_ENTRIES();
-   */
 }
-
 /* }}} */
 
 /* {{{ jsonpath_functions[]
@@ -192,17 +162,22 @@ PHP_MINFO_FUNCTION(jsonpath) {
 const zend_function_entry jsonpath_functions[] = {
     PHP_FE_END /* Must be the last line in jsonpath_functions[] */
 };
-
 /* }}} */
 
 /* {{{ jsonpath_module_entry
  */
 zend_module_entry jsonpath_module_entry = {
-    STANDARD_MODULE_HEADER,  "jsonpath",           jsonpath_functions,        PHP_MINIT(jsonpath),
-    PHP_MSHUTDOWN(jsonpath), PHP_RINIT(jsonpath), /* Replace with NULL if there's nothing to do at request start */
-    PHP_RSHUTDOWN(jsonpath),                      /* Replace with NULL if there's nothing to do at request end */
-    PHP_MINFO(jsonpath),     PHP_JSONPATH_VERSION, STANDARD_MODULE_PROPERTIES};
-
+    STANDARD_MODULE_HEADER,    /**/
+    "jsonpath",                /**/
+    jsonpath_functions,        /**/
+    PHP_MINIT(jsonpath),       /**/
+    PHP_MSHUTDOWN(jsonpath),   /**/
+    NULL,                      /* nothing to do at request start */
+    NULL,                      /* nothing to do at request end */
+    PHP_MINFO(jsonpath),       /**/
+    PHP_JSONPATH_VERSION,      /**/
+    STANDARD_MODULE_PROPERTIES /**/
+};
 /* }}} */
 
 #ifdef COMPILE_DL_JSONPATH

@@ -34,11 +34,9 @@ $jsonPath = new JsonPath();
 $result = $jsonPath->find($data, "$..[?(@.id)]");
 sortRecursively($result);
 
-echo "Assertion 1\n";
 var_dump($result);
 ?>
 --EXPECT--
-Assertion 1
 array(5) {
   [0]=>
   array(1) {
