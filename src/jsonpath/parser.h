@@ -7,7 +7,7 @@
 
 #include "lexer.h"
 
-#define PARSE_BUF_LEN 50
+#define FILTER_ARR_LEN 8
 
 typedef enum {
   TYPE_OPERAND,
@@ -56,12 +56,12 @@ union ast_node_data {
   } d_expression;
   struct {
     int count;
-    int indexes[10]; /* todo check for max */
+    int indexes[FILTER_ARR_LEN];
   } d_list;
   struct {
     int count;
-    int len[10];   /* todo check for max */
-    char* str[10]; /* todo check for max */
+    int len[FILTER_ARR_LEN];
+    char* str[FILTER_ARR_LEN];
   } d_nodes;
   struct {
     char* val;
@@ -95,7 +95,7 @@ struct ast_node {
 void free_ast_nodes(struct ast_node* head);
 bool is_binary(enum ast_type type);
 bool is_unary(enum ast_type type);
-struct ast_node* parse_jsonpath(struct jpath_token lex_tok[PARSE_BUF_LEN], int* lex_idx, int lex_tok_count);
+struct ast_node* parse_jsonpath(struct jpath_token lex_tok[], int* lex_idx, int lex_tok_count);
 
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level);

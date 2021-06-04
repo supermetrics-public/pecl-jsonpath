@@ -14,7 +14,7 @@
 #define CUR_TOKEN() lex_tok[*lex_idx].type
 #define HAS_TOKEN() (*lex_idx < lex_tok_count)
 #define PARSER_ARGS lex_tok, lex_idx, lex_tok_count
-#define PARSER_PARAMS struct jpath_token lex_tok[PARSE_BUF_LEN], int *lex_idx, int lex_tok_count
+#define PARSER_PARAMS struct jpath_token lex_tok[], int *lex_idx, int lex_tok_count
 
 static struct ast_node* ast_alloc_binary(enum ast_type type, struct ast_node* left, struct ast_node* right);
 static struct ast_node* ast_alloc_node(struct ast_node* prev, enum ast_type type);
@@ -114,12 +114,21 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
         zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value", 0);
         return false;
       }
-
+      if (tok->data.d_list.count >= FILTER_ARR_LEN) {
+        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Index filter may contain no more than %d elements",
+                                FILTER_ARR_LEN);
+        return false;
+      }
       tok->data.d_list.indexes[tok->data.d_list.count] = idx;
       tok->data.d_list.count++;
     } else if (CUR_TOKEN() == LEX_LITERAL) {
       if (sep_found == AST_INDEX_SLICE) {
         zend_throw_exception(spl_ce_RuntimeException, "Array slice indexes must be integers", 0);
+        return false;
+      }
+      if (tok->data.d_nodes.count >= FILTER_ARR_LEN) {
+        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Union filter may contain no more than %d elements",
+                                FILTER_ARR_LEN);
         return false;
       }
       tok->type = sep_found = AST_NODE_LIST;

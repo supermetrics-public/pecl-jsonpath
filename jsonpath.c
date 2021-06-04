@@ -18,7 +18,7 @@
 static int le_jsonpath;
 bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count);
 #ifdef JSONPATH_DEBUG
-void print_lex_tokens(struct jpath_token lex_tok[PARSE_BUF_LEN], int lex_tok_count, const char* m);
+void print_lex_tokens(struct jpath_token lex_tok[], int lex_tok_count, const char* m);
 #endif
 
 zend_class_entry* jsonpath_ce;
@@ -28,6 +28,8 @@ zend_class_entry* jsonpath_ce;
 #else
 #include "jsonpath_arginfo.h"
 #endif
+
+#define LEX_TOK_ARR_LEN 64
 
 PHP_METHOD(JsonPath, find) {
   /* parse php method parameters */
@@ -47,7 +49,7 @@ PHP_METHOD(JsonPath, find) {
 
   /* tokenize JSON-path string */
 
-  struct jpath_token lex_tok[PARSE_BUF_LEN];
+  struct jpath_token lex_tok[LEX_TOK_ARR_LEN];
   int lex_tok_count = 0;
 
   bool scan_ok = scanTokens(j_path_work_copy, lex_tok, &lex_tok_count);
@@ -97,9 +99,9 @@ bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count) {
   int i = 0;
 
   while (*p != '\0') {
-    if (i >= PARSE_BUF_LEN) {
+    if (i >= LEX_TOK_ARR_LEN) {
       zend_throw_exception_ex(spl_ce_RuntimeException, 0,
-                              "The query is too long, token count exceeds maximum amount (%d)", PARSE_BUF_LEN);
+                              "The query is too long, token count exceeds maximum amount (%d)", LEX_TOK_ARR_LEN);
       return false;
     }
 
@@ -116,7 +118,7 @@ bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count) {
 }
 
 #ifdef JSONPATH_DEBUG
-void print_lex_tokens(struct jpath_token lex_tok[PARSE_BUF_LEN], int lex_tok_count, const char* m) {
+void print_lex_tokens(struct jpath_token lex_tok[], int lex_tok_count, const char* m) {
   printf("--------------------------------------\n");
   printf("%s\n\n", m);
 

@@ -87,7 +87,8 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
             return false;
           case '\0':
             if (*(*p - 2) == '.') {
-              raise_error("Recursive descent operator `..` must be followed by a child selector, filter or wildcard", json_path, *p);
+              raise_error("Recursive descent operator `..` must be followed by a child selector, filter or wildcard",
+                          json_path, *p);
               return false;
             }
 
