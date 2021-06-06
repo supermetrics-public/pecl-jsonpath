@@ -9,16 +9,20 @@
 
 #define CONSUME_TOKEN() (*lex_idx)++
 #define CUR_POS() *lex_idx
-#define CUR_TOKEN_LITERAL() lex_tok[*lex_idx].val
 #define CUR_TOKEN_LEN() lex_tok[*lex_idx].len
+#define CUR_TOKEN_LITERAL() lex_tok[*lex_idx].val
 #define CUR_TOKEN() lex_tok[*lex_idx].type
+#define GET_NODE(type) get_node_from_pool(pool, type)
+#define GET_BINARY_NODE(type, left, right) get_binary_node_from_pool(pool, type, left, right)
 #define HAS_TOKEN() (*lex_idx < lex_tok_count)
 #define PARSER_ARGS lex_tok, lex_idx, lex_tok_count, pool
 #define PARSER_PARAMS struct jpath_token lex_tok[], int *lex_idx, int lex_tok_count, struct node_pool *pool
+#define RETURN_IF_NULL(param) \
+  if (param == NULL) return NULL
 
-static struct ast_node* ast_alloc_binary(struct node_pool* pool, enum ast_type type, struct ast_node* left,
-                                         struct ast_node* right);
-static struct ast_node* ast_alloc_node(struct node_pool* pool, struct ast_node* prev, enum ast_type type);
+static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum ast_type type, struct ast_node* left,
+                                                  struct ast_node* right);
+static struct ast_node* get_node_from_pool(struct node_pool* pool, enum ast_type type);
 
 static struct ast_node* parse_and(PARSER_PARAMS);
 static struct ast_node* parse_childpath(PARSER_PARAMS);
@@ -67,25 +71,26 @@ const char* AST_STR[] = {
     "AST_WILD_CARD",   /**/
 };
 
-static struct ast_node* ast_alloc_binary(struct node_pool* pool, enum ast_type type, struct ast_node* left,
-                                         struct ast_node* right) {
-  struct ast_node* node = ast_alloc_node(pool, NULL, type);
-
+static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum ast_type type, struct ast_node* left,
+                                                  struct ast_node* right) {
+  struct ast_node* node = get_node_from_pool(pool, type);
+  if (node == NULL) {
+    return NULL;
+  }
   node->data.d_binary.left = left;
   node->data.d_binary.right = right;
-
   return node;
 }
 
-static struct ast_node* ast_alloc_node(struct node_pool* pool, struct ast_node* prev, enum ast_type type) {
-  struct ast_node* node = &(pool->nodes[pool->cur_index++]);
-  // memset(node, 0, sizeof(struct ast_node));
-
-  node->type = type;
-  if (prev != NULL) {
-    prev->next = node;
+static struct ast_node* get_node_from_pool(struct node_pool* pool, enum ast_type type) {
+  if (pool->cur_index >= NODE_POOL_LEN) {
+    zend_throw_exception_ex(
+        spl_ce_RuntimeException, 0,
+        "Expression requires more parser node slots than are available (%d), try a shorter expression", NODE_POOL_LEN);
+    return NULL;
   }
-
+  struct ast_node* node = &pool->nodes[pool->cur_index++];
+  node->type = type;
   return node;
 }
 
@@ -183,7 +188,8 @@ struct ast_node* parse_jsonpath(PARSER_PARAMS) {
     }
   }
 
-  struct ast_node* ret = ast_alloc_node(pool, NULL, AST_ROOT);
+  struct ast_node* ret = GET_NODE(AST_ROOT);
+  RETURN_IF_NULL(ret);
   ret->next = expr;
 
   return ret;
@@ -198,7 +204,8 @@ static struct ast_node* parse_operator(PARSER_PARAMS) {
 
   switch (CUR_TOKEN()) {
     case LEX_NODE:
-      expr = ast_alloc_node(pool, NULL, AST_SELECTOR);
+      expr = GET_NODE(AST_SELECTOR);
+      RETURN_IF_NULL(expr);
       expr->data.d_selector.val = CUR_TOKEN_LITERAL();
       expr->data.d_selector.len = CUR_TOKEN_LEN();
       CONSUME_TOKEN();
@@ -215,11 +222,13 @@ static struct ast_node* parse_operator(PARSER_PARAMS) {
       CONSUME_TOKEN();
       break;
     case LEX_DEEP_SCAN:
-      expr = ast_alloc_node(pool, NULL, AST_RECURSE);
+      expr = GET_NODE(AST_RECURSE);
+      RETURN_IF_NULL(expr);
       CONSUME_TOKEN();
       break;
     case LEX_WILD_CARD:
-      expr = ast_alloc_node(pool, NULL, AST_WILD_CARD);
+      expr = GET_NODE(AST_WILD_CARD);
+      RETURN_IF_NULL(expr);
       CONSUME_TOKEN();
       break;
     case LEX_ROOT:
@@ -255,7 +264,8 @@ static struct ast_node* parse_expression(PARSER_PARAMS) {
     return NULL;
   }
 
-  struct ast_node* expr = ast_alloc_node(pool, NULL, AST_EXPR);
+  struct ast_node* expr = GET_NODE(AST_EXPR);
+  RETURN_IF_NULL(expr);
   expr->data.d_expression.head = parse_or(PARSER_ARGS);
 
   if (!validate_expression_head(expr->data.d_expression.head)) {
@@ -280,13 +290,15 @@ static struct ast_node* parse_filter(PARSER_PARAMS) {
     case LEX_LITERAL_NUMERIC:
     case LEX_LITERAL:
     case LEX_SLICE:
-      expr = ast_alloc_node(pool, NULL, AST_INDEX_LIST);
+      expr = GET_NODE(AST_INDEX_LIST);
+      RETURN_IF_NULL(expr);
       if (!parse_filter_list(PARSER_ARGS, expr)) {
         return NULL;
       }
       break;
     case LEX_WILD_CARD:
-      expr = ast_alloc_node(pool, NULL, AST_WILD_CARD);
+      expr = GET_NODE(AST_WILD_CARD);
+      RETURN_IF_NULL(expr);
       break;
     case LEX_EXPR_END:
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter must not be empty");
@@ -314,7 +326,8 @@ static struct ast_node* parse_or(PARSER_PARAMS) {
 
     struct ast_node* right = parse_and(PARSER_ARGS);
 
-    expr = ast_alloc_binary(pool, AST_OR, expr, right);
+    expr = GET_BINARY_NODE(AST_OR, expr, right);
+    RETURN_IF_NULL(expr);
   }
 
   return expr;
@@ -328,7 +341,8 @@ static struct ast_node* parse_and(PARSER_PARAMS) {
 
     struct ast_node* right = parse_equality(PARSER_ARGS);
 
-    expr = ast_alloc_binary(pool, AST_AND, expr, right);
+    expr = GET_BINARY_NODE(AST_AND, expr, right);
+    RETURN_IF_NULL(expr);
   }
 
   return expr;
@@ -356,7 +370,8 @@ static struct ast_node* parse_equality(PARSER_PARAMS) {
       return NULL;
     }
 
-    expr = ast_alloc_binary(pool, type, expr, right);
+    expr = GET_BINARY_NODE(type, expr, right);
+    RETURN_IF_NULL(expr);
   }
 
   return expr;
@@ -390,7 +405,8 @@ static struct ast_node* parse_comparison(PARSER_PARAMS) {
       return NULL;
     }
 
-    expr = ast_alloc_binary(pool, type, expr, right);
+    expr = GET_BINARY_NODE(type, expr, right);
+    RETURN_IF_NULL(expr);
   }
 
   return expr;
@@ -399,7 +415,8 @@ static struct ast_node* parse_comparison(PARSER_PARAMS) {
 static struct ast_node* parse_unary(PARSER_PARAMS) {
   if (CUR_TOKEN() == LEX_NEGATION) {
     CONSUME_TOKEN();
-    struct ast_node* expr = ast_alloc_node(pool, NULL, AST_NEGATION);
+    struct ast_node* expr = GET_NODE(AST_NEGATION);
+    RETURN_IF_NULL(expr);
     expr->data.d_unary.right = parse_unary(PARSER_ARGS);
     return expr;
   }
@@ -409,7 +426,8 @@ static struct ast_node* parse_unary(PARSER_PARAMS) {
 
 static struct ast_node* parse_primary(PARSER_PARAMS) {
   if (CUR_TOKEN() == LEX_LITERAL) {
-    struct ast_node* ret = ast_alloc_node(pool, NULL, AST_LITERAL);
+    struct ast_node* ret = GET_NODE(AST_LITERAL);
+    RETURN_IF_NULL(ret);
 
     ret->data.d_literal.val = CUR_TOKEN_LITERAL();
     ret->data.d_literal.len = CUR_TOKEN_LEN();
@@ -419,7 +437,8 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   }
 
   if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
-    struct ast_node* ret = ast_alloc_node(pool, NULL, AST_DOUBLE);
+    struct ast_node* ret = GET_NODE(AST_DOUBLE);
+    RETURN_IF_NULL(ret);
     if (!make_numeric_node(ret, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN())) {
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric");
       return NULL;
@@ -429,7 +448,8 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   }
 
   if (CUR_TOKEN() == LEX_LITERAL_BOOL) {
-    struct ast_node* ret = ast_alloc_node(pool, NULL, AST_BOOL);
+    struct ast_node* ret = GET_NODE(AST_BOOL);
+    RETURN_IF_NULL(ret);
 
     if (strncasecmp("true", CUR_TOKEN_LITERAL(), 4) == 0) {
       ret->data.d_literal.value_bool = true;
@@ -444,7 +464,8 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   }
 
   if (CUR_TOKEN() == LEX_LITERAL_NULL) {
-    struct ast_node* ret = ast_alloc_node(pool, NULL, AST_NULL);
+    struct ast_node* ret = GET_NODE(AST_NULL);
+    RETURN_IF_NULL(ret);
     CONSUME_TOKEN();
     return ret;
   }
@@ -487,7 +508,8 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   }
 
   if (CUR_TOKEN() == LEX_CUR_NODE) {
-    struct ast_node* expr = ast_alloc_node(pool, NULL, AST_CUR_NODE);
+    struct ast_node* expr = GET_NODE(AST_CUR_NODE);
+    RETURN_IF_NULL(expr);
     CONSUME_TOKEN();
     if (HAS_TOKEN() && !is_logical_operator(CUR_TOKEN()) && CUR_TOKEN() != LEX_PAREN_CLOSE) {
       expr->next = parse_operator(PARSER_ARGS);
