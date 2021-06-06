@@ -62,7 +62,8 @@ PHP_METHOD(JsonPath, find) {
   /* assemble an array of query execution instructions from parsed tokens */
 
   int i = 0;
-  struct ast_node* head = parse_jsonpath(lex_tok, &i, lex_tok_count);
+  struct node_pool pool = {0};
+  struct ast_node* head = parse_jsonpath(lex_tok, &i, lex_tok_count, &pool);
 
   if (head == NULL) {
     free(j_path_work_copy);
@@ -79,7 +80,6 @@ PHP_METHOD(JsonPath, find) {
 
   eval_ast(search_target, search_target, head, return_value);
 
-  free_ast_nodes(head);
   free(j_path_work_copy);
 
   /* return false if no results were found by the JSON-path query */

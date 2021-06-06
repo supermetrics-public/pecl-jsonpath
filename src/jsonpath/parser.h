@@ -8,6 +8,7 @@
 #include "lexer.h"
 
 #define FILTER_ARR_LEN 8
+#define NODE_POOL_LEN 64
 
 typedef enum {
   TYPE_OPERAND,
@@ -92,10 +93,14 @@ struct ast_node {
   union ast_node_data data;
 };
 
-void free_ast_nodes(struct ast_node* head);
+struct node_pool {
+  struct ast_node nodes[NODE_POOL_LEN];
+  int cur_index;
+};
+
 bool is_binary(enum ast_type type);
 bool is_unary(enum ast_type type);
-struct ast_node* parse_jsonpath(struct jpath_token lex_tok[], int* lex_idx, int lex_tok_count);
+struct ast_node* parse_jsonpath(struct jpath_token lex_tok[], int* lex_idx, int lex_tok_count, struct node_pool* pool);
 
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level);
