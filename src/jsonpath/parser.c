@@ -429,8 +429,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     struct ast_node* ret = GET_NODE(AST_LITERAL);
     RETURN_IF_NULL(ret);
 
-    ret->data.d_literal.val = CUR_TOKEN_LITERAL();
-    ret->data.d_literal.len = CUR_TOKEN_LEN();
+    ret->data.d_literal.str = zend_string_init(CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN(), 0);
 
     CONSUME_TOKEN();
     return ret;
@@ -703,7 +702,7 @@ void print_ast(struct ast_node* head, const char* m, int level) {
         printf("\n");
         break;
       case AST_LITERAL:
-        printf(" [val=%.*s]\n", head->data.d_literal.len, head->data.d_literal.val);
+//        printf(" [val=%.*s]\n", head->data.d_literal.len, head->data.d_literal.val);
         break;
       case AST_INDEX_SLICE:
         printf(" [start=%d end=%d step=%d]\n", head->data.d_list.indexes[0], head->data.d_list.indexes[1],

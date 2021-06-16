@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <zend_types.h>
 
 #include "lexer.h"
 
@@ -65,9 +66,8 @@ union ast_node_data {
     char* str[FILTER_ARR_LEN];
   } d_nodes;
   struct {
-    char* val;
-    int len;
     bool value_bool;
+    zend_string* str;
   } d_literal;
   struct {
     char* val;

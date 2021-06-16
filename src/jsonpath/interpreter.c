@@ -308,7 +308,7 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
       ZVAL_DOUBLE(tmp_dest, src->data.d_double.value);
       return tmp_dest;
     case AST_LITERAL:
-      ZVAL_STRINGL(tmp_dest, src->data.d_literal.val, src->data.d_literal.len);
+      ZVAL_NEW_STR(tmp_dest, src->data.d_literal.str);
       return tmp_dest;
     case AST_LONG:
       ZVAL_LONG(tmp_dest, src->data.d_long.value);
