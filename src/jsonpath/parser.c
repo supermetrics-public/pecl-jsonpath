@@ -154,14 +154,13 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
         zend_throw_exception(spl_ce_RuntimeException, "Array slice indexes must be integers", 0);
         return false;
       }
-      if (tok->data.d_nodes.count >= FILTER_ARR_LEN) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Union filter may contain no more than %d elements",
-                                FILTER_ARR_LEN);
-        return false;
-      }
       tok->type = sep_found = AST_NODE_LIST;
-      tok->data.d_nodes.str[tok->data.d_nodes.count] = CUR_TOKEN_LITERAL();
-      tok->data.d_nodes.len[tok->data.d_nodes.count] = CUR_TOKEN_LEN();
+      if (tok->data.d_nodes.ht == NULL) {
+        tok->data.d_nodes.ht = zend_new_array(1);
+      }
+      zval tmp;
+      ZVAL_ARR(&tmp, tok->data.d_nodes.ht);
+      add_index_stringl(&tmp, tok->data.d_nodes.count, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN());
       tok->data.d_nodes.count++;
     } else {
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token `%s` in filter", LEX_STR[CUR_TOKEN()]);
@@ -644,6 +643,19 @@ static bool is_logical_operator(lex_token type) {
   }
 }
 
+/* Free zvals created by parser. */
+void free_zvals(struct node_pool* pool) {
+  int i;
+
+  for (i = 0; i < pool->cur_index; i++) {
+    if (pool->nodes[i].type == AST_LITERAL) {
+      zend_string_release(pool->nodes[i].data.d_literal.str);
+    } else if (pool->nodes[i].type == AST_NODE_LIST) {
+      zend_array_destroy(pool->nodes[i].data.d_nodes.ht);
+    }
+  }
+}
+
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level) {
   int i;
@@ -702,7 +714,7 @@ void print_ast(struct ast_node* head, const char* m, int level) {
         printf("\n");
         break;
       case AST_LITERAL:
-//        printf(" [val=%.*s]\n", head->data.d_literal.len, head->data.d_literal.val);
+        printf(" [val=%.*s]\n", (int)head->data.d_literal.str->len, head->data.d_literal.str->val);
         break;
       case AST_INDEX_SLICE:
         printf(" [start=%d end=%d step=%d]\n", head->data.d_list.indexes[0], head->data.d_list.indexes[1],

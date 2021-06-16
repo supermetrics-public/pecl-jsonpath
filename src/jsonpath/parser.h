@@ -62,8 +62,7 @@ union ast_node_data {
   } d_list;
   struct {
     int count;
-    int len[FILTER_ARR_LEN];
-    char* str[FILTER_ARR_LEN];
+    HashTable* ht;
   } d_nodes;
   struct {
     bool value_bool;
@@ -101,6 +100,7 @@ struct node_pool {
 bool is_binary(enum ast_type type);
 bool is_unary(enum ast_type type);
 struct ast_node* parse_jsonpath(struct jpath_token lex_tok[], int* lex_idx, int lex_tok_count, struct node_pool* pool);
+void free_zvals(struct node_pool* pool);
 
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level);

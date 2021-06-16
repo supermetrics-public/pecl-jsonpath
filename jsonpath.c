@@ -67,6 +67,7 @@ PHP_METHOD(JsonPath, find) {
 
   if (head == NULL) {
     free(j_path_work_copy);
+    free_zvals(&pool);
     return;
   }
 
@@ -81,6 +82,7 @@ PHP_METHOD(JsonPath, find) {
   eval_ast(search_target, search_target, head, return_value);
 
   free(j_path_work_copy);
+  free_zvals(&pool);
 
   /* return false if no results were found by the JSON-path query */
 
