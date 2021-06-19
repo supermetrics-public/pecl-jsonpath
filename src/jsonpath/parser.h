@@ -93,8 +93,9 @@ struct ast_node {
 };
 
 struct node_pool {
-  struct ast_node nodes[NODE_POOL_LEN];
+  struct ast_node * nodes;
   int cur_index;
+  int size;
 };
 
 bool is_binary(enum ast_type type);
