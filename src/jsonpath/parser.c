@@ -83,11 +83,15 @@ static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum a
 }
 
 static struct ast_node* get_node_from_pool(struct node_pool* pool, enum ast_type type) {
-  if (pool->cur_index >= NODE_POOL_LEN) {
-    zend_throw_exception_ex(
-        spl_ce_RuntimeException, 0,
-        "Expression requires more parser node slots than are available (%d), try a shorter expression", NODE_POOL_LEN);
-    return NULL;
+  if (pool->cur_index >= pool->size) {
+//    pool->size *= 2;
+    int size = pool->size * 2;
+    struct ast_node* tmp = (struct ast_node*)erealloc(pool->nodes, size);
+    pool->nodes = tmp;
+    pool->size = size;
+    if (pool->nodes == NULL) {
+      return NULL;
+    }
   }
   struct ast_node* node = &pool->nodes[pool->cur_index++];
   node->type = type;
@@ -643,8 +647,7 @@ static bool is_logical_operator(lex_token type) {
   }
 }
 
-/* Free zvals created by parser. */
-void free_zvals(struct node_pool* pool) {
+void free_php_resources(struct node_pool* pool) {
   int i;
 
   for (i = 0; i < pool->cur_index; i++) {
