@@ -95,12 +95,13 @@ struct node_pool {
   struct ast_node * nodes;
   int cur_index;
   int size;
+  struct node_pool* next;
 };
 
 bool is_binary(enum ast_type type);
 bool is_unary(enum ast_type type);
 struct ast_node* parse_jsonpath(struct jpath_token lex_tok[], int* lex_idx, int lex_tok_count, struct node_pool* pool);
-void free_php_resources(struct node_pool* pool);
+void free_node_pool(struct node_pool* head, bool is_head);
 
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level);

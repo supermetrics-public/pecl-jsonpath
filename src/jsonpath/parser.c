@@ -7,6 +7,8 @@
 
 #include "zend_exceptions.h"
 
+#define NODE_POOL_MAX_SIZE 32
+
 #define CONSUME_TOKEN() (*lex_idx)++
 #define CUR_POS() *lex_idx
 #define CUR_TOKEN_LEN() lex_tok[*lex_idx].len
@@ -82,18 +84,45 @@ static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum a
   return node;
 }
 
-static struct ast_node* get_node_from_pool(struct node_pool* pool, enum ast_type type) {
-  if (pool->cur_index >= pool->size) {
-//    pool->size *= 2;
-    int size = pool->size * 2;
-    struct ast_node* tmp = (struct ast_node*)erealloc(pool->nodes, size);
-    pool->nodes = tmp;
-    pool->size = size;
-    if (pool->nodes == NULL) {
+static struct ast_node* get_node_from_pool(struct node_pool* head, enum ast_type type) {
+  /* Use the first pool if there's room there */
+  if (head->cur_index < head->size) {
+    struct ast_node* node = &head->nodes[head->cur_index++];
+    node->type = type;
+    return node;
+  }
+
+  /* Jump to the last pool */
+  struct node_pool* body = head;
+  while (body->next != NULL) {
+    body = body->next;
+  }
+
+  /* Create a new pool if necessary */
+  if (body->cur_index >= body->size) {
+    int size = body->size * 2;
+
+    if (size > NODE_POOL_MAX_SIZE) {
+      size = NODE_POOL_MAX_SIZE;
+    }
+
+    struct node_pool* new_tail = (struct node_pool*) ecalloc(1, sizeof(struct node_pool));
+    new_tail->nodes = (struct ast_node*) ecalloc(size, sizeof(struct ast_node));
+    new_tail->size = size;
+    new_tail->cur_index = 0;
+    new_tail->next = NULL;
+
+    if (new_tail->nodes == NULL) {
       return NULL;
     }
+
+    body->next = new_tail;
+
+    body = body->next;
   }
-  struct ast_node* node = &pool->nodes[pool->cur_index++];
+
+  /* Add node to pool */
+  struct ast_node* node = &body->nodes[body->cur_index++];
   node->type = type;
   return node;
 }
@@ -156,6 +185,14 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
     } else if (CUR_TOKEN() == LEX_LITERAL) {
       if (sep_found == AST_INDEX_SLICE) {
         zend_throw_exception(spl_ce_RuntimeException, "Array slice indexes must be integers", 0);
+
+        /* If we end up here, we may already have parsed one or more string literals into the */
+        /* hash table under the assumption that we were dealing with an index filter. Free those. */
+        if (tok->data.d_nodes.ht != NULL) {
+          zend_array_destroy(tok->data.d_nodes.ht);
+          tok->data.d_nodes.count = 0;
+        }
+
         return false;
       }
       tok->type = sep_found = AST_NODE_LIST;
@@ -647,8 +684,13 @@ static bool is_logical_operator(lex_token type) {
   }
 }
 
-void free_php_resources(struct node_pool* pool) {
+void free_node_pool(struct node_pool* pool, bool is_head) {
   int i;
+  struct node_pool* tmp;
+
+  if (pool == NULL) {
+    return;
+  }
 
   for (i = 0; i < pool->cur_index; i++) {
     if (pool->nodes[i].type == AST_LITERAL) {
@@ -656,6 +698,16 @@ void free_php_resources(struct node_pool* pool) {
     } else if (pool->nodes[i].type == AST_NODE_LIST) {
       zend_array_destroy(pool->nodes[i].data.d_nodes.ht);
     }
+  }
+
+  tmp = pool;
+
+  free_node_pool(pool->next, false);
+  tmp->next = NULL;
+
+  if (!is_head) {
+    efree(tmp->nodes);
+    efree(tmp);
   }
 }
 
