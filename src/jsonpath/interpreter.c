@@ -23,8 +23,6 @@ void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* re
 void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur);
-void copy_index_list_to_array(struct ast_node* tok, zval* val);
-void free_primary_zvals(struct ast_node* tok, zval* val);
 bool break_if_result_found(zval* return_value);
 void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
 BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
@@ -128,17 +126,16 @@ void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok,
 }
 
 void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
-  int i;
   zend_ulong idx;
   zval* data;
 
-  for (i = 0; i < tok->data.d_nodes.count; i++) {
-    if (ZEND_HANDLE_NUMERIC_STR(tok->data.d_nodes.str[i], tok->data.d_nodes.len[i], idx)) {
+  ZEND_HASH_FOREACH_VAL(tok->data.d_nodes.ht, data) {
+    if (ZEND_HANDLE_NUMERIC_STR(Z_STRVAL_P(data), Z_STRLEN_P(data), idx)) {
       /* look up numeric index */
       data = zend_hash_index_find(HASH_OF(arr_cur), idx);
     } else {
       /* look up string index */
-      data = zend_hash_str_find(HASH_OF(arr_cur), tok->data.d_nodes.str[i], tok->data.d_nodes.len[i]);
+      data = zend_hash_str_find(HASH_OF(arr_cur), Z_STRVAL_P(data), Z_STRLEN_P(data));
     }
     if (data != NULL) {
       copy_result_or_continue(arr_head, data, tok, return_value);
@@ -147,6 +144,7 @@ void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval*
       }
     }
   }
+  ZEND_HASH_FOREACH_END();
 }
 
 void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
@@ -308,7 +306,7 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
       ZVAL_DOUBLE(tmp_dest, src->data.d_double.value);
       return tmp_dest;
     case AST_LITERAL:
-      ZVAL_STRINGL(tmp_dest, src->data.d_literal.val, src->data.d_literal.len);
+      ZVAL_NEW_STR(tmp_dest, src->data.d_literal.str);
       return tmp_dest;
     case AST_LONG:
       ZVAL_LONG(tmp_dest, src->data.d_long.value);
@@ -334,28 +332,11 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
       }
       return Z_INDIRECT_P(tmp_dest);
     case AST_NODE_LIST:
-      copy_index_list_to_array(src, tmp_dest);
+      ZVAL_ARR(tmp_dest, src->data.d_nodes.ht);
       return tmp_dest;
     default:
       zend_throw_exception(spl_ce_RuntimeException, "Unsupported expression operand", 0);
       return NULL;
-  }
-}
-
-void copy_index_list_to_array(struct ast_node* tok, zval* val) {
-  array_init(val);
-  int i;
-  for (i = 0; i < tok->data.d_nodes.count; i++) {
-    add_index_stringl(val, i, tok->data.d_nodes.str[i], tok->data.d_nodes.len[i]);
-  }
-}
-
-/* free zvals created by evaluate_primary() */
-void free_primary_zvals(struct ast_node* tok, zval* val) {
-  if (tok->type == AST_LITERAL) {
-    zval_ptr_dtor(val);
-  } else if (tok->type == AST_NODE_LIST) {
-    zend_array_destroy(Z_ARR_P(val));
   }
 }
 
@@ -479,54 +460,36 @@ BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok)
   zval* val_rh = evaluate_operand(arr_head, arr_cur, tok, rh_operand, &tmp_rh);
 
   if (val_rh == NULL) {
-    free_primary_zvals(lh_operand, val_lh);
     return BOOL_ERR;
   }
 
   if (can_shortcut_binary_evaluation(tok, val_rh)) {
-    free_primary_zvals(lh_operand, val_lh);
     return false;
   }
 
-  bool ret = false;
-
   switch (tok->type) {
     case AST_EQ:
-      ret = fast_is_identical_function(val_lh, val_rh);
-      break;
+      return fast_is_identical_function(val_lh, val_rh);
     case AST_NE:
-      ret = !fast_is_identical_function(val_lh, val_rh);
-      break;
+      return !fast_is_identical_function(val_lh, val_rh);
     case AST_LT:
-      ret = can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) < 0;
-      break;
+      return can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) < 0;
     case AST_LTE:
-      ret = can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) <= 0;
-      break;
+      return can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) <= 0;
     case AST_OR:
-      ret = (Z_TYPE_P(val_lh) == IS_TRUE) || (Z_TYPE_P(val_rh) == IS_TRUE);
-      break;
+      return (Z_TYPE_P(val_lh) == IS_TRUE) || (Z_TYPE_P(val_rh) == IS_TRUE);
     case AST_AND:
-      ret = (Z_TYPE_P(val_lh) == IS_TRUE) && (Z_TYPE_P(val_rh) == IS_TRUE);
-      break;
+      return (Z_TYPE_P(val_lh) == IS_TRUE) && (Z_TYPE_P(val_rh) == IS_TRUE);
     case AST_GT:
-      ret = can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) > 0;
-      break;
+      return can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) > 0;
     case AST_GTE:
-      ret = can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) >= 0;
-      break;
+      return can_check_inequality(val_lh, val_rh) && compare(val_lh, val_rh) >= 0;
     case AST_RGXP:
-      ret = compare_rgxp(val_lh, val_rh);
-      break;
+      return compare_rgxp(val_lh, val_rh);
     default:
       assert(0);
-      break;
+      return false;
   }
-
-  free_primary_zvals(lh_operand, val_lh);
-  free_primary_zvals(rh_operand, val_rh);
-
-  return ret;
 }
 
 /* Determine if two zvals can be checked for inequality (>, <, >=, <=). Specifically forbid comparing strings with
