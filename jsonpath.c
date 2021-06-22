@@ -3,18 +3,16 @@
 #include "config.h"
 #endif
 
-#include <ext/spl/spl_exceptions.h>
-
+#include "ext/spl/spl_exceptions.h"
 #include "ext/standard/info.h"
 #include "php.h"
-#include "php_ini.h"
 #include "php_jsonpath.h"
 #include "src/jsonpath/interpreter.h"
 #include "src/jsonpath/lexer.h"
 #include "src/jsonpath/parser.h"
 #include "zend_exceptions.h"
 
-bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count);
+static bool scan_tokens(char* json_path, struct jpath_token* tok, int* tok_count);
 #ifdef JSONPATH_DEBUG
 void print_lex_tokens(struct jpath_token lex_tok[], int lex_tok_count, const char* m);
 #endif
@@ -48,7 +46,7 @@ PHP_METHOD(JsonPath, find) {
   struct jpath_token lex_tok[LEX_TOK_ARR_LEN];
   int lex_tok_count = 0;
 
-  bool scan_ok = scanTokens(j_path_work_copy, lex_tok, &lex_tok_count);
+  bool scan_ok = scan_tokens(j_path_work_copy, lex_tok, &lex_tok_count);
 
   if (!scan_ok) {
     free(j_path_work_copy);
@@ -92,7 +90,7 @@ PHP_METHOD(JsonPath, find) {
   }
 }
 
-bool scanTokens(char* json_path, struct jpath_token tok[], int* tok_count) {
+static bool scan_tokens(char* json_path, struct jpath_token* tok, int* tok_count) {
   char* p = json_path;
   int i = 0;
 
@@ -144,7 +142,9 @@ PHP_MINIT_FUNCTION(jsonpath) {
 
 /* {{{ PHP_MSHUTDOWN_FUNCTION
  */
-PHP_MSHUTDOWN_FUNCTION(jsonpath) { return SUCCESS; }
+PHP_MSHUTDOWN_FUNCTION(jsonpath) {
+  return SUCCESS;
+}
 /* }}} */
 
 /* {{{ PHP_MINFO_FUNCTION

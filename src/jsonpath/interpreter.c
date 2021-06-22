@@ -1,8 +1,7 @@
 #include "interpreter.h"
 
-#include <ext/pcre/php_pcre.h>
-#include <ext/spl/spl_exceptions.h>
-
+#include "ext/pcre/php_pcre.h"
+#include "ext/spl/spl_exceptions.h"
 #include "lexer.h"
 #include "zend_exceptions.h"
 
@@ -13,23 +12,23 @@
   if (val < 0) return NULL
 #define BOOL_OR_ERR int
 
-int compare(zval* lh, zval* rh);
-bool compare_rgxp(zval* lh, zval* rh);
-void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur);
-bool break_if_result_found(zval* return_value);
-void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
-BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
-BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
-BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
-bool can_check_inequality(zval* lhs, zval* rhs);
-bool can_shortcut_binary_evaluation(struct ast_node* tok, zval* operand);
+static BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+static BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+static BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok);
+static bool break_if_result_found(zval* return_value);
+static bool can_check_inequality(zval* lhs, zval* rhs);
+static bool can_shortcut_binary_evaluation(struct ast_node* operator, zval * operand);
+static bool compare_rgxp(zval* lh, zval* rh);
+static int compare(zval* lh, zval* rh);
+static void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+static void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+static void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+static void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+static void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+static void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+static void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+static void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value);
+static zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur);
 
 void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (tok == NULL) {
@@ -68,7 +67,7 @@ void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_
   }
 }
 
-void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+static void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
@@ -88,17 +87,14 @@ void exec_selector(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* re
   }
 }
 
-void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+static void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
 
   zval* data;
-  zval* zv_dest;
-  zend_string* key;
-  zend_ulong num_key;
 
-  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr_cur), num_key, key, data) {
+  ZEND_HASH_FOREACH_VAL_IND(HASH_OF(arr_cur), data) {
     copy_result_or_continue(arr_head, data, tok, return_value);
     if (break_if_result_found(return_value)) {
       break;
@@ -107,25 +103,22 @@ void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* re
   ZEND_HASH_FOREACH_END();
 }
 
-void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+static void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
 
-  zval* data;
-  zval* zv_dest;
-  zend_string* key;
-  zend_ulong num_key;
-
   eval_ast(arr_head, arr_cur, tok, return_value);
 
-  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr_cur), num_key, key, data) {
+  zval* data;
+
+  ZEND_HASH_FOREACH_VAL_IND(HASH_OF(arr_cur), data) {
     exec_recursive_descent(arr_head, data, tok, return_value);
   }
   ZEND_HASH_FOREACH_END();
 }
 
-void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+static void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   zend_ulong idx;
   zval* data;
 
@@ -147,7 +140,7 @@ void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval*
   ZEND_HASH_FOREACH_END();
 }
 
-void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+static void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   int i;
 
   for (i = 0; i < zend_hash_num_elements(tok->data.d_list.ht); i++) {
@@ -165,7 +158,7 @@ void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval
   }
 }
 
-void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+static void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
@@ -174,14 +167,11 @@ void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* retur
   int i;
 
   int data_length = zend_hash_num_elements(HASH_OF(arr_cur));
+  int slice_length = zend_hash_num_elements(tok->data.d_list.ht);
 
   int range_start = Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, 0));
-  int range_end = zend_hash_num_elements(tok->data.d_list.ht) > 1
-                      ? (int)Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, 1))
-                      : INT_MAX;
-  int range_step = zend_hash_num_elements(tok->data.d_list.ht) > 2
-                       ? (int)Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, 2))
-                       : 1;
+  int range_end = slice_length > 1 ? (int)Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, 1)) : INT_MAX;
+  int range_step = slice_length > 2 ? (int)Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, 2)) : 1;
 
   /* Zero-steps are not allowed, abort */
   if (range_step == 0) {
@@ -245,16 +235,14 @@ void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* retur
   }
 }
 
-void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+static void exec_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
 
-  zend_ulong num_key;
-  zend_string* key;
   zval* data;
 
-  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(arr_cur), num_key, key, data) {
+  ZEND_HASH_FOREACH_VAL_IND(HASH_OF(arr_cur), data) {
     int res = evaluate_expression(arr_head, data, tok->data.d_expression.head);
     if (res == BOOL_ERR) {
       return;
@@ -277,7 +265,7 @@ int compare(zval* lh, zval* rh) {
   return (int)Z_LVAL(result);
 }
 
-bool compare_rgxp(zval* lh, zval* rh) {
+static bool compare_rgxp(zval* lh, zval* rh) {
   pcre_cache_entry* pce;
 
   if ((pce = pcre_get_compiled_regex_cache(Z_STR_P(rh))) == NULL) {
@@ -301,7 +289,7 @@ bool compare_rgxp(zval* lh, zval* rh) {
   return Z_LVAL(retval) > 0;
 }
 
-zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur) {
+static zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zval* arr_cur) {
   switch (src->type) {
     case AST_BOOL:
       ZVAL_BOOL(tmp_dest, src->data.d_literal.value_bool);
@@ -344,11 +332,11 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
   }
 }
 
-bool break_if_result_found(zval* return_value) {
+static bool break_if_result_found(zval* return_value) {
   return Z_TYPE_P(return_value) == IS_INDIRECT && Z_INDIRECT_P(return_value) != NULL;
 }
 
-void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+static void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   if (tok->next == NULL) {
     if (Z_TYPE_P(return_value) == IS_ARRAY) {
       zval tmp;
@@ -363,7 +351,7 @@ void copy_result_or_continue(zval* arr_head, zval* arr_cur, struct ast_node* tok
   }
 }
 
-BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
+static BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   if (is_binary(tok->type)) {
     return evaluate_binary(arr_head, arr_cur, tok);
   }
@@ -391,7 +379,7 @@ BOOL_OR_ERR evaluate_expression(zval* arr_head, zval* arr_cur, struct ast_node* 
   return false;
 }
 
-BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
+static BOOL_OR_ERR evaluate_unary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   zval tmp = {0};
 
   if (is_unary(tok->data.d_unary.right->type)) {
@@ -444,11 +432,11 @@ zval* evaluate_operand(zval* arr_head, zval* arr_cur, struct ast_node* tok, stru
 
 /* Only != operator can support undefined operand values (i.e. when a selector returns no result). This check is mostly
  * an optimization, but is necessary to prevent compare_rgxp() from segfaulting on undefined values. */
-bool can_shortcut_binary_evaluation(struct ast_node* operator, zval * operand) {
+static bool can_shortcut_binary_evaluation(struct ast_node* operator, zval * operand) {
   return Z_TYPE_P(operand) == IS_UNDEF && operator->type != AST_NE;
 }
 
-BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
+static BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok) {
   /* use stack-allocated zvals in order to avoid malloc, if possible */
   zval tmp_lh = {0}, tmp_rh = {0};
   struct ast_node *lh_operand = tok->data.d_binary.left, *rh_operand = tok->data.d_binary.right;
@@ -498,7 +486,7 @@ BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_node* tok)
 
 /* Determine if two zvals can be checked for inequality (>, <, >=, <=). Specifically forbid comparing strings with
  * numeric values in order to avoid returning true for scenarios such as 42 > "value". */
-bool can_check_inequality(zval* lhs, zval* rhs) {
+static bool can_check_inequality(zval* lhs, zval* rhs) {
   bool lhs_is_numeric = (Z_TYPE_P(lhs) == IS_LONG || Z_TYPE_P(lhs) == IS_DOUBLE);
   bool rhs_is_numeric = (Z_TYPE_P(rhs) == IS_LONG || Z_TYPE_P(rhs) == IS_DOUBLE);
 
