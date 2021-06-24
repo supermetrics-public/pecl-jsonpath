@@ -129,7 +129,7 @@ void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval*
   zend_ulong idx;
   zval* data;
 
-  ZEND_HASH_FOREACH_VAL(tok->data.d_nodes.ht, data) {
+  ZEND_HASH_FOREACH_VAL(tok->data.d_list.ht, data) {
     if (ZEND_HANDLE_NUMERIC_STR(Z_STRVAL_P(data), Z_STRLEN_P(data), idx)) {
       /* look up numeric index */
       data = zend_hash_index_find(HASH_OF(arr_cur), idx);
@@ -150,8 +150,8 @@ void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval*
 void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
   int i;
 
-  for (i = 0; i < tok->data.d_list.count; i++) {
-    int index = tok->data.d_list.indexes[i];
+  for (i = 0; i < zend_hash_num_elements(tok->data.d_list.ht); i++) {
+    int index = Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, i));
     if (index < 0) {
       index = zend_hash_num_elements(HASH_OF(arr_cur)) - abs(index);
     }
@@ -175,9 +175,13 @@ void exec_slice(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* retur
 
   int data_length = zend_hash_num_elements(HASH_OF(arr_cur));
 
-  int range_start = tok->data.d_list.indexes[0];
-  int range_end = tok->data.d_list.count > 1 ? tok->data.d_list.indexes[1] : INT_MAX;
-  int range_step = tok->data.d_list.count > 2 ? tok->data.d_list.indexes[2] : 1;
+  int range_start = Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, 0));
+  int range_end = zend_hash_num_elements(tok->data.d_list.ht) > 1
+                      ? (int)Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, 1))
+                      : INT_MAX;
+  int range_step = zend_hash_num_elements(tok->data.d_list.ht) > 2
+                       ? (int)Z_LVAL_P(zend_hash_index_find(tok->data.d_list.ht, 2))
+                       : 1;
 
   /* Zero-steps are not allowed, abort */
   if (range_step == 0) {
@@ -332,7 +336,7 @@ zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_head, zva
       }
       return Z_INDIRECT_P(tmp_dest);
     case AST_NODE_LIST:
-      ZVAL_ARR(tmp_dest, src->data.d_nodes.ht);
+      ZVAL_ARR(tmp_dest, src->data.d_list.ht);
       return tmp_dest;
     default:
       zend_throw_exception(spl_ce_RuntimeException, "Unsupported expression operand", 0);

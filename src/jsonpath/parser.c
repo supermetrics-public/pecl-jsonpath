@@ -23,6 +23,8 @@
 static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum ast_type type, struct ast_node* left,
                                                   struct ast_node* right);
 static struct ast_node* get_node_from_pool(struct node_pool* pool, enum ast_type type);
+static void ht_append_long(HashTable* ht, long val);
+static void ht_append_string(HashTable* ht, char* str, int len);
 
 static struct ast_node* parse_and(PARSER_PARAMS);
 static struct ast_node* parse_childpath(PARSER_PARAMS);
@@ -94,12 +96,25 @@ static struct ast_node* get_node_from_pool(struct node_pool* pool, enum ast_type
   return node;
 }
 
+static void ht_append_long(HashTable* ht, long val) {
+  zval tmp;
+  ZVAL_ARR(&tmp, ht);
+  add_index_long(&tmp, zend_hash_num_elements(ht), val);
+}
+
+static void ht_append_string(HashTable* ht, char* str, int len) {
+  zval tmp;
+  ZVAL_ARR(&tmp, ht);
+  add_index_stringl(&tmp, zend_hash_num_elements(ht), str, len);
+}
+
 static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
   int slice_count = 0;
 
   /* assume filter type is an index list by default. this resolves type ambiguity of a filter containing no separators.
    * example: treat level4[0] as an index filter, not a slice. */
   tok->type = AST_INDEX_LIST;
+  tok->data.d_list.ht = zend_new_array(1);
   /* used to determine if different separator types are present, default value is arbitrary */
   enum ast_type sep_found = AST_AND;
 
@@ -127,13 +142,12 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
       slice_count++;
       /* [:a] => [0:a] */
       /* [a::] => [a:0:] */
-      if (slice_count > tok->data.d_list.count) {
+      if (slice_count > zend_hash_num_elements(tok->data.d_list.ht)) {
         if (slice_count == 1) {
-          tok->data.d_list.indexes[tok->data.d_list.count] = INT_MAX;
+          ht_append_long(tok->data.d_list.ht, INT_MAX);
         } else if (slice_count == 2) {
-          tok->data.d_list.indexes[tok->data.d_list.count] = INT_MAX;
+          ht_append_long(tok->data.d_list.ht, INT_MAX);
         }
-        tok->data.d_list.count++;
       }
     } else if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
       long idx = 0;
@@ -142,26 +156,14 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
         zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value", 0);
         return false;
       }
-      if (tok->data.d_list.count >= FILTER_ARR_LEN) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Index filter may contain no more than %d elements",
-                                FILTER_ARR_LEN);
-        return false;
-      }
-      tok->data.d_list.indexes[tok->data.d_list.count] = idx;
-      tok->data.d_list.count++;
+      ht_append_long(tok->data.d_list.ht, idx);
     } else if (CUR_TOKEN() == LEX_LITERAL) {
       if (sep_found == AST_INDEX_SLICE) {
         zend_throw_exception(spl_ce_RuntimeException, "Array slice indexes must be integers", 0);
         return false;
       }
       tok->type = sep_found = AST_NODE_LIST;
-      if (tok->data.d_nodes.ht == NULL) {
-        tok->data.d_nodes.ht = zend_new_array(1);
-      }
-      zval tmp;
-      ZVAL_ARR(&tmp, tok->data.d_nodes.ht);
-      add_index_stringl(&tmp, tok->data.d_nodes.count, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN());
-      tok->data.d_nodes.count++;
+      ht_append_string(tok->data.d_list.ht, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN());
     } else {
       zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token `%s` in filter", LEX_STR[CUR_TOKEN()]);
       return false;
@@ -649,8 +651,9 @@ void free_php_objects(struct node_pool* pool) {
   for (i = 0; i < pool->cur_index; i++) {
     if (pool->nodes[i].type == AST_LITERAL) {
       zend_string_release(pool->nodes[i].data.d_literal.str);
-    } else if (pool->nodes[i].type == AST_NODE_LIST) {
-      zend_array_destroy(pool->nodes[i].data.d_nodes.ht);
+    } else if (pool->nodes[i].type == AST_NODE_LIST || pool->nodes[i].type == AST_INDEX_LIST ||
+               pool->nodes[i].type == AST_INDEX_SLICE) {
+      zend_array_destroy(pool->nodes[i].data.d_list.ht);
     }
   }
 }
@@ -716,8 +719,9 @@ void print_ast(struct ast_node* head, const char* m, int level) {
         printf(" [val=%.*s]\n", (int)head->data.d_literal.str->len, head->data.d_literal.str->val);
         break;
       case AST_INDEX_SLICE:
-        printf(" [start=%d end=%d step=%d]\n", head->data.d_list.indexes[0], head->data.d_list.indexes[1],
-               head->data.d_list.indexes[2]);
+        printf(" [start=%d end=%d step=%d]\n", (int)Z_LVAL_P(zend_hash_index_find(head->data.d_list.ht, 0)),
+               (int)Z_LVAL_P(zend_hash_index_find(head->data.d_list.ht, 1)),
+               (int)Z_LVAL_P(zend_hash_index_find(head->data.d_list.ht, 2)));
         break;
       case AST_NEGATION:
         printf("\n");

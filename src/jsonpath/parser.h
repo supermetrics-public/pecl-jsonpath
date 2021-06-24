@@ -8,7 +8,6 @@
 
 #include "lexer.h"
 
-#define FILTER_ARR_LEN 8
 #define NODE_POOL_LEN 64
 
 typedef enum {
@@ -57,13 +56,8 @@ union ast_node_data {
     struct ast_node* head;
   } d_expression;
   struct {
-    int count;
-    int indexes[FILTER_ARR_LEN];
-  } d_list;
-  struct {
-    int count;
     HashTable* ht;
-  } d_nodes;
+  } d_list;
   struct {
     bool value_bool;
     zend_string* str;
