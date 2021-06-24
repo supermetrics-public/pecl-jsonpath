@@ -4,10 +4,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <zend_types.h>
 
 #include "lexer.h"
 
-#define FILTER_ARR_LEN 8
+#define NODE_POOL_LEN 64
 
 typedef enum {
   TYPE_OPERAND,
@@ -55,18 +56,11 @@ union ast_node_data {
     struct ast_node* head;
   } d_expression;
   struct {
-    int count;
-    int indexes[FILTER_ARR_LEN];
+    HashTable* ht;
   } d_list;
   struct {
-    int count;
-    int len[FILTER_ARR_LEN];
-    char* str[FILTER_ARR_LEN];
-  } d_nodes;
-  struct {
-    char* val;
-    int len;
     bool value_bool;
+    zend_string* str;
   } d_literal;
   struct {
     char* val;
@@ -92,10 +86,15 @@ struct ast_node {
   union ast_node_data data;
 };
 
-void free_ast_nodes(struct ast_node* head);
+struct node_pool {
+  struct ast_node nodes[NODE_POOL_LEN];
+  int cur_index;
+};
+
 bool is_binary(enum ast_type type);
 bool is_unary(enum ast_type type);
-struct ast_node* parse_jsonpath(struct jpath_token lex_tok[], int* lex_idx, int lex_tok_count);
+struct ast_node* parse_jsonpath(struct jpath_token lex_tok[], int* lex_idx, int lex_tok_count, struct node_pool* pool);
+void free_php_objects(struct node_pool* pool);
 
 #ifdef JSONPATH_DEBUG
 void print_ast(struct ast_node* head, const char* m, int level);
