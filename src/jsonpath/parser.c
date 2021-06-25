@@ -1,33 +1,32 @@
 #include "parser.h"
 
 #include <limits.h>
-#include <stdio.h>
 
-#include <ext/spl/spl_exceptions.h>
-
+#include "ext/spl/spl_exceptions.h"
 #include "zend_exceptions.h"
 
-#define CONSUME_TOKEN() (*lex_idx)++
 #define CUR_POS() *lex_idx
-#define CUR_TOKEN_LEN() lex_tok[*lex_idx].len
-#define CUR_TOKEN_LITERAL() lex_tok[*lex_idx].val
-#define CUR_TOKEN() lex_tok[*lex_idx].type
+#define CONSUME_TOKEN() (CUR_POS())++
+#define CUR_TOKEN_LEN() lex_tok[CUR_POS()].len
+#define CUR_TOKEN_LITERAL() lex_tok[CUR_POS()].val
+#define CUR_TOKEN() lex_tok[CUR_POS()].type
 #define GET_NODE(type) get_node_from_pool(pool, type)
 #define GET_BINARY_NODE(type, left, right) get_binary_node_from_pool(pool, type, left, right)
-#define HAS_TOKEN() (*lex_idx < lex_tok_count)
+#define HAS_TOKEN() (CUR_POS() < lex_tok_count)
 #define PARSER_ARGS lex_tok, lex_idx, lex_tok_count, pool
 #define PARSER_PARAMS struct jpath_token lex_tok[], int *lex_idx, int lex_tok_count, struct node_pool *pool
 #define RETURN_IF_NULL(param) \
   if (param == NULL) return NULL
 
+static bool is_logical_operator(lex_token type);
+static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
+static bool numeric_to_long(char* str, int str_len, long* dest);
+static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok);
+static bool validate_expression_head(struct ast_node* tok);
 static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum ast_type type, struct ast_node* left,
                                                   struct ast_node* right);
 static struct ast_node* get_node_from_pool(struct node_pool* pool, enum ast_type type);
-static void ht_append_long(HashTable* ht, long val);
-static void ht_append_string(HashTable* ht, char* str, int len);
-
 static struct ast_node* parse_and(PARSER_PARAMS);
-static struct ast_node* parse_childpath(PARSER_PARAMS);
 static struct ast_node* parse_comparison(PARSER_PARAMS);
 static struct ast_node* parse_equality(PARSER_PARAMS);
 static struct ast_node* parse_expression(PARSER_PARAMS);
@@ -36,13 +35,8 @@ static struct ast_node* parse_operator(PARSER_PARAMS);
 static struct ast_node* parse_or(PARSER_PARAMS);
 static struct ast_node* parse_primary(PARSER_PARAMS);
 static struct ast_node* parse_unary(PARSER_PARAMS);
-
-static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok);
-
-static bool numeric_to_long(char* str, int str_len, long* dest);
-static bool is_logical_operator(lex_token type);
-static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
-bool validate_expression_head(struct ast_node* tok);
+static void ht_append_long(HashTable* ht, long val);
+static void ht_append_string(HashTable* ht, char* str, int len);
 
 const char* AST_STR[] = {
     "AST_AND",         /**/
@@ -64,14 +58,16 @@ const char* AST_STR[] = {
     "AST_NODE_LIST",   /**/
     "AST_NULL",        /**/
     "AST_OR",          /**/
-    "AST_PAREN_LEFT",  /**/
-    "AST_PAREN_RIGHT", /**/
     "AST_RECURSE",     /**/
     "AST_RGXP",        /**/
     "AST_ROOT",        /**/
     "AST_SELECTOR",    /**/
     "AST_WILD_CARD",   /**/
 };
+
+bool is_unary(enum ast_type type) {
+  return type == AST_NEGATION;
+}
 
 static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum ast_type type, struct ast_node* left,
                                                   struct ast_node* right) {
@@ -143,9 +139,7 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
       /* [:a] => [0:a] */
       /* [a::] => [a:0:] */
       if (slice_count > zend_hash_num_elements(tok->data.d_list.ht)) {
-        if (slice_count == 1) {
-          ht_append_long(tok->data.d_list.ht, INT_MAX);
-        } else if (slice_count == 2) {
+        if (slice_count == 1 || slice_count == 2) {
           ht_append_long(tok->data.d_list.ht, INT_MAX);
         }
       }
@@ -540,16 +534,7 @@ bool is_binary(enum ast_type type) {
   }
 }
 
-bool is_unary(enum ast_type type) {
-  switch (type) {
-    case AST_NEGATION:
-      return true;
-    default:
-      return false;
-  }
-}
-
-bool validate_expression_head(struct ast_node* tok) {
+static bool validate_expression_head(struct ast_node* tok) {
   if (tok == NULL) {
     return false;
   }
@@ -597,9 +582,9 @@ static bool make_numeric_node(struct ast_node* tok, char* str, int str_len) {
       tok->type = AST_DOUBLE;
       tok->data.d_double.value = dval;
       return true;
+    default:
+      return false;
   }
-
-  return false;
 }
 
 static bool numeric_to_long(char* str, int str_len, long* dest) {

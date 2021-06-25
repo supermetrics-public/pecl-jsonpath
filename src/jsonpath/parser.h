@@ -4,17 +4,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <zend_types.h>
 
 #include "lexer.h"
+#include "zend_types.h"
 
 #define NODE_POOL_LEN 64
-
-typedef enum {
-  TYPE_OPERAND,
-  TYPE_OPERATOR,
-  TYPE_PAREN,
-} operator_type;
 
 enum ast_type {
   AST_AND,
@@ -36,8 +30,6 @@ enum ast_type {
   AST_NODE_LIST,
   AST_NULL,
   AST_OR,
-  AST_PAREN_LEFT,
-  AST_PAREN_RIGHT,
   AST_RECURSE,
   AST_RGXP,
   AST_ROOT,
@@ -66,9 +58,6 @@ union ast_node_data {
     char* val;
     int len;
   } d_selector;
-  struct {
-    struct ast_node* head;
-  } d_value;
   struct {
     double value;
   } d_double;
