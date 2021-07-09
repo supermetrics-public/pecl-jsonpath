@@ -2,6 +2,8 @@
 Test regex without a match
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
+--INI--
+pcre.jit=0
 --FILE--
 <?php
 

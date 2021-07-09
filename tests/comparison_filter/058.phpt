@@ -4,6 +4,8 @@ Test filter expression with regular expression from member
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --DESCRIPTION--
 JSONPath node selectors are not interpolated within regex patterns.
+--INI--
+pcre.jit=0
 --FILE--
 <?php
 
