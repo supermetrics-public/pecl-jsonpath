@@ -52,7 +52,7 @@ $ sudo service php-fpm restart
 ```php
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 // Query a data array using a JSONPath expression string.
 // Returns an array of matching elements, or false if nothing was found.
@@ -101,7 +101,7 @@ JSON;
 
 $data = json_decode($json, true);
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 echo "Example 1: - The authors of all books in the store: \n";
 echo json_encode($jsonPath->find($data, "$.store.book[*].author"), JSON_PRETTY_PRINT);
