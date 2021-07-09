@@ -10,7 +10,7 @@ $data = [
     1,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.key");
 
 var_dump($result);

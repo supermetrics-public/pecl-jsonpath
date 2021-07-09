@@ -9,7 +9,7 @@ $data = [
     "key" => "value",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.missing");
 
 var_dump($result);

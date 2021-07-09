@@ -8,11 +8,11 @@ Test bracket notation with number on string
 
 $data = "Hello World";
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[0]');
 
 var_dump($result);
 ?>
 --EXPECTF--
-Warning: JsonPath::find() expects parameter 1 to be array, string given in %s014_php7.php on line %d
+Warning: JsonPath\JsonPath::find() expects parameter 1 to be array, string given in %s014_php7.php on line %d
 NULL

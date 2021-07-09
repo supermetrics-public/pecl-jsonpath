@@ -18,7 +18,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[0]['c','d']");
 
 var_dump($result);

@@ -12,7 +12,7 @@ $data = [
     "" => 4,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$. a");
 
 var_dump($result);

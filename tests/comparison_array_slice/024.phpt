@@ -10,7 +10,7 @@ $data = [
     "more" => "string",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[:]');
 
 var_dump($result);

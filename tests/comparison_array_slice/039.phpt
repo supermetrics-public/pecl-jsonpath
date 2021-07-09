@@ -34,7 +34,7 @@ $data = [
     25,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[010:024:010]');
 
 var_dump($result);

@@ -5,7 +5,7 @@ Ensure exception is thrown for missing closing bracket
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $jsonPath->find([], "$.testl['test'");
 --EXPECTF--

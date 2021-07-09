@@ -16,7 +16,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@[1]=='b')]");
 
 var_dump($result);

@@ -5,6 +5,8 @@
  * @generate-legacy-arginfo
  */
 
+namespace JsonPath;
+
 class JsonPath
 {
     /**

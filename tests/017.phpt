@@ -5,7 +5,7 @@ Test array slice with mix of unquoted string and numbers as start, end, and step
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $data = [
   'words' => [
@@ -22,7 +22,7 @@ $data = [
   ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.words[first:-1:2]");
 
 var_dump($result);

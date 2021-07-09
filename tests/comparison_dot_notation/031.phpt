@@ -9,7 +9,7 @@ $data = [
     "屬性" => "value",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.屬性");
 
 var_dump($result);

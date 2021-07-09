@@ -9,7 +9,7 @@ $data = [
     "in" => "value",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.in");
 
 var_dump($result);

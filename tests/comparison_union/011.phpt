@@ -13,7 +13,7 @@ $data = [
     5,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[4,1]");
 
 var_dump($result);

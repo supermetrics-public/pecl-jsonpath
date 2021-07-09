@@ -7,7 +7,7 @@ Test dot notation with wildcard on empty array
 
 $data = [];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.*");
 
 var_dump($result);

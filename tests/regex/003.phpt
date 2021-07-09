@@ -15,12 +15,12 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$.test[?(@.val_str =~ "/invalid([a-]+/")]');
 
 var_dump($result);
 --EXPECTF--
-Warning: JsonPath::find(): Compilation failed: missing closing parenthesis at offset 13 in %s
+Warning: JsonPath\JsonPath::find(): Compilation failed: missing closing parenthesis at offset 13 in %s
 
 Fatal error: Uncaught RuntimeException: Invalid regex pattern `/invalid([a-]+/` in %s
 Stack trace:

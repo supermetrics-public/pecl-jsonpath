@@ -17,7 +17,7 @@ $data = [
     "two'.'some" => "43",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$['two'.'some']");
 
 var_dump($result);

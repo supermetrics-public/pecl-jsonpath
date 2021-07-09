@@ -58,7 +58,7 @@ $data = [
     "v",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@.d=={\"k\":\"v\"})]");
 
 var_dump($result);

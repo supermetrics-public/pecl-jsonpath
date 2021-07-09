@@ -61,7 +61,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[?(@.d==[100,200])]');
 
 var_dump($result);

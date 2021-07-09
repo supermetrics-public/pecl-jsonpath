@@ -59,7 +59,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@.key==\"value\")]");
 
 var_dump($result);

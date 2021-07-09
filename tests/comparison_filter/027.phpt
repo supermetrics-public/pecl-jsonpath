@@ -9,7 +9,7 @@ $data = [
     "id" => 2,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@.id==2)]");
 
 var_dump($result);

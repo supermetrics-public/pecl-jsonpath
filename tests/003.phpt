@@ -5,7 +5,7 @@ Test typical use cases
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $obj = array(
 	'id' => 1234,

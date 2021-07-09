@@ -39,7 +39,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$..*[?(@.id>2)]");
 sortRecursively($result);
 

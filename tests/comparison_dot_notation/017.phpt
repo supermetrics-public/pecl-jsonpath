@@ -23,7 +23,7 @@ $data = [
     "key" => "top",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$..key");
 sortRecursively($result);
 

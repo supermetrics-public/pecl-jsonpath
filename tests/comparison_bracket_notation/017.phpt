@@ -7,7 +7,7 @@ Test bracket notation with number -1 on empty array
 
 $data = [];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[-1]');
 
 var_dump($result);

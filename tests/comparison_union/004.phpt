@@ -32,7 +32,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@.key<3),?(@.key>6)]");
 
 var_dump($result);

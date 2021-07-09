@@ -54,7 +54,7 @@ $json = array(
     )
 );
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 print_r($jsonPath->find($json, '$..book[?(@.author==$.authors[2])].isbn'));
 

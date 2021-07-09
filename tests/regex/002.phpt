@@ -7,7 +7,7 @@ pcre.jit=0
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $obj = array (
   'test' => array(

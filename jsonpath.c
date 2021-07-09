@@ -27,7 +27,7 @@ zend_class_entry* jsonpath_ce;
 
 #define LEX_TOK_ARR_LEN 64
 
-PHP_METHOD(JsonPath, find) {
+PHP_METHOD(JsonPath_JsonPath, find) {
   char* j_path;
   size_t j_path_len;
   zval* search_target;
@@ -132,7 +132,7 @@ void print_lex_tokens(struct jpath_token lex_tok[], int lex_tok_count, const cha
  */
 PHP_MINIT_FUNCTION(jsonpath) {
   zend_class_entry jsonpath_class_entry;
-  INIT_CLASS_ENTRY(jsonpath_class_entry, "JsonPath", class_JsonPath_methods);
+  INIT_NS_CLASS_ENTRY(jsonpath_class_entry, "JsonPath", "JsonPath", class_JsonPath_JsonPath_methods);
 
   jsonpath_ce = zend_register_internal_class(&jsonpath_class_entry);
 

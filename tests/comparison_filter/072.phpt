@@ -19,7 +19,7 @@ $data = [
     "",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(null)]");
 
 var_dump($result);

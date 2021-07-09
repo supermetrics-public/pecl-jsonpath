@@ -8,11 +8,11 @@ Test root on scalar
 
 $data = 42;
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$");
 
 var_dump($result);
 ?>
 --EXPECTF--
-Warning: JsonPath::find() expects parameter 1 to be array, int given in %s002_php7.php on line %d
+Warning: JsonPath\JsonPath::find() expects parameter 1 to be array, int given in %s002_php7.php on line %d
 NULL

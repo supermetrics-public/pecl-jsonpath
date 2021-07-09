@@ -8,14 +8,14 @@ Test bracket notation with number on string
 
 $data = "Hello World";
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[0]');
 
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught TypeError: JsonPath::find(): Argument #1 ($data) must be of type array, string given in %s014_php8.php:%d
+Fatal error: Uncaught TypeError: JsonPath\JsonPath::find(): Argument #1 ($data) must be of type array, string given in %s014_php8.php:%d
 Stack trace:
-#0 %s014_php8.php(%d): JsonPath->find('Hello World', '$[0]')
-#1 {main}
-  thrown in %s014_php8.php on line %d
+%s
+%s
+%s

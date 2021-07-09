@@ -5,7 +5,7 @@ Test broken boolean as right-hand operand
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $data = [
   'words' => [
@@ -32,7 +32,7 @@ $data = [
   ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.words[?(@.isAdjective == truse)]");
 
 var_dump($result);

@@ -38,7 +38,7 @@ $data = [
     [],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@.a && @.b || @.c)]");
 
 var_dump($result);

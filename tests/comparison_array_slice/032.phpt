@@ -10,7 +10,7 @@ $data = [
     "second",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[0:1]');
 
 var_dump($result);
