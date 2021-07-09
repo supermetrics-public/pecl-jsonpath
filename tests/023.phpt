@@ -2,6 +2,8 @@
 Test filter expression with regular expression that contains escaped slash
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
+--INI--
+pcre.jit=0
 --FILE--
 <?php
 
