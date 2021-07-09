@@ -5,7 +5,7 @@ Ensure order of operations are enforced
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $obj = [
 	'test' => [

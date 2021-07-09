@@ -5,7 +5,7 @@ Testing >, <, >= <= operators
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $obj = array (
   'test' => array(

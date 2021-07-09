@@ -5,7 +5,7 @@ Ensure queries that contain more than LEX_TOK_ARR_LEN tokens safely fail
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 try {
     // This query contains 51 tokens (root selector $ plus 50 dot selectors), which exceeds LEX_TOK_ARR_LEN

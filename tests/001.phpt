@@ -89,7 +89,7 @@ $obj = array (
          ),
        );
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 echo "Assertion 1\n";
 print_r($jsonPath->find($obj, '$.store.book'));

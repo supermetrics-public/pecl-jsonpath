@@ -5,7 +5,7 @@ Ensure no segfault if filtering on object instead of array
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $obj = array(
 	'test' => array(

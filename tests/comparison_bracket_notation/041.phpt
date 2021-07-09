@@ -11,7 +11,7 @@ $data = [
     42,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[*]");
 
 var_dump($result);

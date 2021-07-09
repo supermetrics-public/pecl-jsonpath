@@ -31,7 +31,7 @@ $obj = array(
     )
 );
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 print_r($jsonPath->find($obj, '$.book[?(@["id"]["isbn"] && @.author == "Nigel Rees")]'));
 

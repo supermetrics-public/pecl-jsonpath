@@ -61,7 +61,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[?(@.d==["v1","v2"])]');
 
 var_dump($result);

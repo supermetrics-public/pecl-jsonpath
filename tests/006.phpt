@@ -5,7 +5,7 @@ Ensure no "Array to string conversion" notice when selecting non-scalar
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $obj = array(
 	'test' => array(

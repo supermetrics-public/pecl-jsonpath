@@ -17,7 +17,7 @@ $data = [
     100,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@==42)]");
 
 var_dump($result);

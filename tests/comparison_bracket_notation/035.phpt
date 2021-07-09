@@ -11,7 +11,7 @@ $data = [
     "mice" => 100,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$['ni.*']");
 
 var_dump($result);

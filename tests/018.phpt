@@ -5,7 +5,7 @@ Test array slice with wildcard as end
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $data = [
   'words' => [
@@ -22,7 +22,7 @@ $data = [
   ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.words[0:*:2]");
 
 var_dump($result);

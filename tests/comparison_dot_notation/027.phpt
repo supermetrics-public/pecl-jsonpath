@@ -11,7 +11,7 @@ $data = [
     6,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.length");
 
 var_dump($result);

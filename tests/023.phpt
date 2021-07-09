@@ -20,7 +20,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@.name=~/hello\/.*/)]");
 
 var_dump($result);

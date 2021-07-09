@@ -30,7 +30,7 @@ $data = [
     3,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@.*==[1,2])]");
 
 var_dump($result);

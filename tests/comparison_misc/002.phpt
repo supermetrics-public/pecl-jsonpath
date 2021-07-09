@@ -11,7 +11,7 @@ $data = [
     "more" => 3,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$(key,more)");
 
 var_dump($result);

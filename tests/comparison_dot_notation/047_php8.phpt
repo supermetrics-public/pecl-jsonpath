@@ -8,14 +8,14 @@ Test dot notation with wildcard after recursive descent on scalar
 
 $data = 42;
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$..*");
 
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught TypeError: JsonPath::find(): Argument #1 ($data) must be of type array, int given in %s047_php8.php:%d
+Fatal error: Uncaught TypeError: JsonPath\JsonPath::find(): Argument #1 ($data) must be of type array, int given in %s047_php8.php:%d
 Stack trace:
-#0 %s047_php8.php(%d): JsonPath->find(42, '$..*')
-#1 {main}
-  thrown in %s047_php8.php on line %d
+%s
+%s
+%s

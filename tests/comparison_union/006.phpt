@@ -10,7 +10,7 @@ $data = [
     "another" => "entry",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$['missing','key']");
 
 var_dump($result);

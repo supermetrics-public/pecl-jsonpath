@@ -5,7 +5,7 @@ Ensure exception is thrown for missing double ||
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $jsonPath->find([], '$.book[?(@.id.isbn == "684832674" | @.author == "Herman Melville")]');
 --EXPECTF--

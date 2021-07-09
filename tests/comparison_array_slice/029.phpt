@@ -14,7 +14,7 @@ $data = [
     "nice",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[3:-2]');
 
 var_dump($result);

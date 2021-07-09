@@ -13,7 +13,7 @@ $data = [
     "fifth",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[113667776004:2:-1]');
 
 var_dump($result);

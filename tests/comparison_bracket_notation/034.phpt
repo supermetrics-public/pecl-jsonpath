@@ -17,7 +17,7 @@ $data = [
     "\"a\"" => 9,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[ 'a' ]");
 
 var_dump($result);

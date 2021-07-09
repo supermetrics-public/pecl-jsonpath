@@ -9,7 +9,7 @@ $data = [
     "key" => "value",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "key");
 
 var_dump($result);

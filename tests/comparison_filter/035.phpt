@@ -22,7 +22,7 @@ $data = [
     2,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@[0:1]==1)]");
 
 var_dump($result);

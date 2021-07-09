@@ -11,7 +11,7 @@ $data = [
     "''" => "nice",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.");
 
 var_dump($result);

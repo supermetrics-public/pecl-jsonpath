@@ -28,7 +28,7 @@ $data = [
     "'key'" => 42,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$..'key'");
 
 var_dump($result);

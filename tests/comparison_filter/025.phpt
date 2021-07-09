@@ -11,7 +11,7 @@ $data = [
     ]
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$[?(@.key==43)]");
 
 var_dump($result);

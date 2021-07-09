@@ -5,7 +5,7 @@ Test array slice with overflowing values for start, end, and stop
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $data = [
   'words' => [
@@ -22,7 +22,7 @@ $data = [
   ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.words[9223372036854775808:9223372036854775809:9223372036854775810]");
 
 var_dump($result);

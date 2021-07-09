@@ -5,7 +5,7 @@ Test regex with a match
 --FILE--
 <?php
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 
 $obj = array (
   'test' => array(

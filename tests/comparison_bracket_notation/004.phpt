@@ -9,7 +9,7 @@ $data = [
     "ü" => 42,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$['ü']");
 
 var_dump($result);

@@ -11,7 +11,7 @@ $data = [
     "\"\"" => 222,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, '$[]');
 
 var_dump($result);
@@ -19,6 +19,6 @@ var_dump($result);
 --EXPECTF--
 Fatal error: Uncaught RuntimeException: Filter must not be empty in %s007.php:%d
 Stack trace:
-#0 %s007.php(%d): JsonPath->find(Array, '$[]')
-#1 {main}
-  thrown in %s007.php on line %d
+%s
+%s
+%s

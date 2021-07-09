@@ -35,7 +35,7 @@ $data = [
     ],
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.x[?(@[*]>=$.y[*])]");
 
 var_dump($result);

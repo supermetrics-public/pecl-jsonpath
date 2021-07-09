@@ -13,7 +13,7 @@ $data = [
     "'some.key'" => 43,
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$.'some.key'");
 
 var_dump($result);

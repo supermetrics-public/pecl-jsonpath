@@ -9,7 +9,7 @@ $data = [
     "single'quote" => "value",
 ];
 
-$jsonPath = new JsonPath();
+$jsonPath = new \JsonPath\JsonPath();
 $result = $jsonPath->find($data, "$['single'quote']");
 
 var_dump($result);
