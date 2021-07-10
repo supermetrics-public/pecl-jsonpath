@@ -16,7 +16,7 @@ $result = $jsonPath->find($data, "");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: JSONPath must start with a root operator `$` in %s
+Fatal error: Uncaught JsonPath\JsonPathException: JSONPath must start with a root operator `$` in %s
 Stack trace:
 %s
 %s

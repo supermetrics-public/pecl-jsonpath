@@ -18,7 +18,7 @@ $result = $jsonPath->find($data, "$. a");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unexpected whitespace at position 2 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unexpected whitespace at position 2 in %s
 Stack trace:
 %s
 %s

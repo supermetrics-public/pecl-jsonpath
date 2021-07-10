@@ -9,7 +9,7 @@ $jsonPath = new \JsonPath\JsonPath();
 
 $jsonPath->find([], '$.book[?(@.id.isbn == "684832674" | @.author == "Herman Melville")]');
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: OR operator must be double pipe `||` at position 35 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: OR operator must be double pipe `||` at position 35 in %s
 Stack trace:
 %s
 %s

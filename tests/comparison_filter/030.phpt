@@ -36,7 +36,7 @@ $result = $jsonPath->find($data, "$[?(@.*==[1,2])]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unsupported expression operand in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unsupported expression operand in %s
 Stack trace:
 %s
 %s

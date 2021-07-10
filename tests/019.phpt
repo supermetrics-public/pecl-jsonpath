@@ -38,7 +38,7 @@ $result = $jsonPath->find($data, "$.words[?(@.isAdjective == truse)]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Expected `true` or `false` for boolean token in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Expected `true` or `false` for boolean token in %s
 Stack trace:
 %s
 %s

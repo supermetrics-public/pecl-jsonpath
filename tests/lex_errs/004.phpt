@@ -9,7 +9,7 @@ $jsonPath = new \JsonPath\JsonPath();
 
 $jsonPath->find([], '$.book[?(@.id.isbn == "684832674" & @.author == "Herman Melville")]');
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: AND operator must be double ampersand `&&` at position 35 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: AND operator must be double ampersand `&&` at position 35 in %s
 Stack trace:
 %s
 %s

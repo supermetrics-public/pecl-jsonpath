@@ -38,7 +38,7 @@ $result = $jsonPath->find($data, "$.words.@");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Expecting child node, filter, expression, or recursive node in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Expecting child node, filter, expression, or recursive node in %s
 Stack trace:
 %s
 %s

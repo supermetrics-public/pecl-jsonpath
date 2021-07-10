@@ -22,7 +22,7 @@ $result = $jsonPath->find($data, "$.key..");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Recursive descent operator `..` must be followed by a child selector, filter or wildcard at position 7 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Recursive descent operator `..` must be followed by a child selector, filter or wildcard at position 7 in %s
 Stack trace:
 %s
 %s

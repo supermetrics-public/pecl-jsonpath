@@ -29,7 +29,7 @@ $result = $jsonPath->find($data, "$[?(@.key/10==5)]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing closing regex / at position 9 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Missing closing regex / at position 9 in %s
 Stack trace:
 %s
 %s

@@ -29,7 +29,7 @@ $result = $jsonPath->find($data, "$[?(@.key*2==100)]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `*` at position 9 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `*` at position 9 in %s
 Stack trace:
 %s
 %s

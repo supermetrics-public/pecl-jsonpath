@@ -80,7 +80,7 @@ $result = $jsonPath->find($data, "$[?@.key==42]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing opening paren `(` in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Missing opening paren `(` in %s
 Stack trace:
 %s
 %s

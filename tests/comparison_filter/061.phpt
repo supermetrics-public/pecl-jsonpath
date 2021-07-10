@@ -80,7 +80,7 @@ $result = $jsonPath->find($data, "$[?(@.key=42)]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Invalid character after `=`, valid values are `==` and `=~` at position 10 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Invalid character after `=`, valid values are `==` and `=~` at position 10 in %s
 Stack trace:
 %s
 %s

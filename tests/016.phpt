@@ -28,7 +28,7 @@ $result = $jsonPath->find($data, "$.words[first:last:two]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `l` at position 14 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `l` at position 14 in %s
 Stack trace:
 %s
 %s

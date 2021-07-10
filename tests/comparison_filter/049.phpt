@@ -29,7 +29,7 @@ $result = $jsonPath->find($data, "$[?(@.d in [2, 3])]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `i` at position 8 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `i` at position 8 in %s
 Stack trace:
 %s
 %s

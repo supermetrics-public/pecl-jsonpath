@@ -67,7 +67,7 @@ $result = $jsonPath->find($data, '$[?(@.d==[100,200])]');
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unsupported expression operand in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unsupported expression operand in %s
 Stack trace:
 %s
 %s

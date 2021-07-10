@@ -28,7 +28,7 @@ $result = $jsonPath->find($data, "$.words[9223372036854775808:922337203685477580
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unable to parse filter index value in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unable to parse filter index value in %s
 Stack trace:
 %s
 %s

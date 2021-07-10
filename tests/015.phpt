@@ -28,7 +28,7 @@ $result = $jsonPath->find($data, "$.words['first':'last':'two']");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Array slice indexes must be integers in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Array slice indexes must be integers in %s
 Stack trace:
 %s
 %s

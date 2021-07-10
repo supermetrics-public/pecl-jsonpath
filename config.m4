@@ -14,6 +14,7 @@ PHP_ARG_ENABLE([code-coverage],
   [no])
 
 JSONPATH_SOURCES="\
+    src/jsonpath/exceptions.c \
     src/jsonpath/lexer.c \
     src/jsonpath/parser.c \
     src/jsonpath/interpreter.c \

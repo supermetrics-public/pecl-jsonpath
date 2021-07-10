@@ -16,7 +16,7 @@ $result = $jsonPath->find($data, "\$a");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `a` at position 1 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `a` at position 1 in %s
 Stack trace:
 %s
 %s

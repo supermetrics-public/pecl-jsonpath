@@ -64,7 +64,7 @@ $result = $jsonPath->find($data, "$[?(@.d=={\"k\":\"v\"})]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `{` at position 9 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `{` at position 9 in %s
 Stack trace:
 %s
 %s

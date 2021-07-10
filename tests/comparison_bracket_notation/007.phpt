@@ -17,7 +17,7 @@ $result = $jsonPath->find($data, '$[]');
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Filter must not be empty in %s007.php:%d
+Fatal error: Uncaught JsonPath\JsonPathException: Filter must not be empty in %s007.php:%d
 Stack trace:
 %s
 %s

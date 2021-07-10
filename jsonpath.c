@@ -7,6 +7,7 @@
 #include "ext/standard/info.h"
 #include "php.h"
 #include "php_jsonpath.h"
+#include "src/jsonpath/exceptions.h"
 #include "src/jsonpath/interpreter.h"
 #include "src/jsonpath/lexer.h"
 #include "src/jsonpath/parser.h"
@@ -18,6 +19,7 @@ void print_lex_tokens(struct jpath_token lex_tok[], int lex_tok_count, const cha
 #endif
 
 zend_class_entry* jsonpath_ce;
+zend_class_entry *jsonpath_exception_ce;
 
 #if PHP_VERSION_ID < 80000
 #include "jsonpath_legacy_arginfo.h"
@@ -96,8 +98,7 @@ static bool scan_tokens(char* json_path, struct jpath_token* tok, int* tok_count
 
   while (*p != '\0') {
     if (i >= LEX_TOK_ARR_LEN) {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0,
-                              "The query is too long, token count exceeds maximum amount (%d)", LEX_TOK_ARR_LEN);
+      throw_jsonpath_exception("The query is too long, token count exceeds maximum amount (%d)", LEX_TOK_ARR_LEN);
       return false;
     }
 
@@ -131,10 +132,9 @@ void print_lex_tokens(struct jpath_token lex_tok[], int lex_tok_count, const cha
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(jsonpath) {
-  zend_class_entry jsonpath_class_entry;
-  INIT_NS_CLASS_ENTRY(jsonpath_class_entry, "JsonPath", "JsonPath", class_JsonPath_JsonPath_methods);
+  jsonpath_ce = register_class_JsonPath_JsonPath();
 
-  jsonpath_ce = zend_register_internal_class(&jsonpath_class_entry);
+  jsonpath_exception_ce = register_class_JsonPath_JsonPathException(spl_ce_RuntimeException);
 
   return SUCCESS;
 }

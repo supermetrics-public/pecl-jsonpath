@@ -1,9 +1,9 @@
 #include "interpreter.h"
 
 #include "ext/pcre/php_pcre.h"
-#include "ext/spl/spl_exceptions.h"
+
+#include "exceptions.h"
 #include "lexer.h"
-#include "zend_exceptions.h"
 
 #define BOOL_ERR -1
 #define RETURN_ERR_IF_NULL(val) \
@@ -269,7 +269,7 @@ static bool compare_rgxp(zval* lh, zval* rh) {
   pcre_cache_entry* pce;
 
   if ((pce = pcre_get_compiled_regex_cache(Z_STR_P(rh))) == NULL) {
-    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Invalid regex pattern `%s`", Z_STRVAL_P(rh));
+    throw_jsonpath_exception("Invalid regex pattern `%s`", Z_STRVAL_P(rh));
     return false;
   }
 
@@ -327,7 +327,7 @@ static zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_he
       ZVAL_ARR(tmp_dest, src->data.d_list.ht);
       return tmp_dest;
     default:
-      zend_throw_exception(spl_ce_RuntimeException, "Unsupported expression operand", 0);
+      throw_jsonpath_exception("Unsupported expression operand");
       return NULL;
   }
 }
