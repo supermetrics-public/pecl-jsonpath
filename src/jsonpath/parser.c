@@ -2,9 +2,8 @@
 
 #include <limits.h>
 
-#include "php.h"
-
 #include "exceptions.h"
+#include "php.h"
 
 #define CUR_POS() *lex_idx
 #define CONSUME_TOKEN() (CUR_POS())++

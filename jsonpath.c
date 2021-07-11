@@ -19,7 +19,7 @@ void print_lex_tokens(struct jpath_token lex_tok[], int lex_tok_count, const cha
 #endif
 
 zend_class_entry* jsonpath_ce;
-zend_class_entry *jsonpath_exception_ce;
+zend_class_entry* jsonpath_exception_ce;
 
 #if PHP_VERSION_ID < 80000
 #include "jsonpath_legacy_arginfo.h"

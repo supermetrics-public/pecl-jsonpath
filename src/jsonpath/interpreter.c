@@ -1,8 +1,7 @@
 #include "interpreter.h"
 
-#include "ext/pcre/php_pcre.h"
-
 #include "exceptions.h"
+#include "ext/pcre/php_pcre.h"
 #include "lexer.h"
 
 #define BOOL_ERR -1

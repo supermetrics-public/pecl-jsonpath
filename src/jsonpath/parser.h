@@ -5,9 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "zend_types.h"
-
 #include "lexer.h"
+#include "zend_types.h"
 
 #define NODE_POOL_LEN 64
 

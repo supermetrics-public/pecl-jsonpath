@@ -7,7 +7,7 @@
 
 extern zend_class_entry *jsonpath_exception_ce;
 
-void throw_jsonpath_exception(const char* msg, ...) {
+void throw_jsonpath_exception(const char *msg, ...) {
   va_list args;
   char *formatted_msg = NULL;
 
