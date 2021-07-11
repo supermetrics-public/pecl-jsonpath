@@ -9,7 +9,7 @@ $jsonPath = new \JsonPath\JsonPath();
 
 $jsonPath->find([], '$.testl["test"');
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing filter end `]` in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Missing filter end `]` in %s
 Stack trace:
 %s
 %s

@@ -24,7 +24,7 @@ $result = $jsonPath->find($data, "$.*[0,:5]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Multiple filter list separators `,` and `:` found, only one type is allowed in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Multiple filter list separators `,` and `:` found, only one type is allowed in %s
 Stack trace:
 %s
 %s

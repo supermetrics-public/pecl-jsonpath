@@ -27,35 +27,34 @@ extern zend_module_entry jsonpath_module_entry;
 #define PHP_JSONPATH_VERSION "0.9.1"
 
 #ifdef PHP_WIN32
-#	define PHP_JSONPATH_API __declspec(dllexport)
+#define PHP_JSONPATH_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
-#	define PHP_JSONPATH_API __attribute__ ((visibility("default")))
+#define PHP_JSONPATH_API __attribute__((visibility("default")))
 #else
-#	define PHP_JSONPATH_API
+#define PHP_JSONPATH_API
 #endif
 
-/* 
-  	Declare any global variables you may need between the BEGIN
-	and END macros here:     
+/*
+        Declare any global variables you may need between the BEGIN
+        and END macros here:
 
 ZEND_BEGIN_MODULE_GLOBALS(jsonpath)
-	long  global_value;
-	char *global_string;
+        long  global_value;
+        char *global_string;
 ZEND_END_MODULE_GLOBALS(jsonpath)
 */
 
-/* In every utility function you add that needs to use variables 
-   in php_jsonpath_globals, call TSRMLS_FETCH(); after declaring other 
+/* In every utility function you add that needs to use variables
+   in php_jsonpath_globals, call TSRMLS_FETCH(); after declaring other
    variables used by that function, or better yet, pass in TSRMLS_CC
    after the last function argument and declare your utility function
    with TSRMLS_DC after the last declared argument.  Always refer to
-   the globals in your function as JSONPATH_G(variable).  You are 
+   the globals in your function as JSONPATH_G(variable).  You are
    encouraged to rename these macros something shorter, see
    examples in any other php module directory.
 */
 
-#endif	/* PHP_JSONPATH_H */
-
+#endif /* PHP_JSONPATH_H */
 
 /*
  * Local variables:

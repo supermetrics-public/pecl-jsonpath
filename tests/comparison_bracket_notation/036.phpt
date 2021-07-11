@@ -23,7 +23,7 @@ $result = $jsonPath->find($data, "$['two'.'some']");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Quoted node names must use the bracket notation `[` at position 8 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Quoted node names must use the bracket notation `[` at position 8 in %s
 Stack trace:
 %s
 %s

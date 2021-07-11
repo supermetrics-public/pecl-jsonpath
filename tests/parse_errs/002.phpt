@@ -9,7 +9,7 @@ $jsonPath = new \JsonPath\JsonPath();
 
 $jsonPath->find([], '$.store.book[?(@.author == "Evelyn Waugh"');
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Missing closing paren `)` in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Missing closing paren `)` in %s
 Stack trace:
 %s
 %s

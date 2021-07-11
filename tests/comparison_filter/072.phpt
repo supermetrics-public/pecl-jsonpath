@@ -25,7 +25,7 @@ $result = $jsonPath->find($data, "$[?(null)]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Invalid expression. in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Invalid expression. in %s
 Stack trace:
 %s
 %s

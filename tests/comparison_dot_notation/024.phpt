@@ -17,7 +17,7 @@ $result = $jsonPath->find($data, "$.");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Dot selector `.` must be followed by a node name or wildcard at position 1 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Dot selector `.` must be followed by a node name or wildcard at position 1 in %s
 Stack trace:
 %s
 %s

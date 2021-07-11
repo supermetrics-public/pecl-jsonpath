@@ -20,7 +20,7 @@ $result = $jsonPath->find($data, "$.[key]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `k` at position 3 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `k` at position 3 in %s
 Stack trace:
 %s
 %s

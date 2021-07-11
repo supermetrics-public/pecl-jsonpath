@@ -22,7 +22,7 @@ $result = $jsonPath->find($data, "$[two.some]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unexpected filter element in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unexpected filter element in %s
 Stack trace:
 %s
 %s

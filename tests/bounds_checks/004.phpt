@@ -38,7 +38,7 @@ $result = $jsonPath->find($data, "$.words[?($.occurrences > 9223372036854775808)
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unable to parse numeric in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unable to parse numeric in %s
 Stack trace:
 %s
 %s

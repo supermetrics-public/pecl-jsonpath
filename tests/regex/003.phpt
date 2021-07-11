@@ -22,7 +22,7 @@ var_dump($result);
 --EXPECTF--
 Warning: JsonPath\JsonPath::find(): Compilation failed: missing closing parenthesis at offset 13 in %s
 
-Fatal error: Uncaught RuntimeException: Invalid regex pattern `/invalid([a-]+/` in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Invalid regex pattern `/invalid([a-]+/` in %s
 Stack trace:
 %s
 %s

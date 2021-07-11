@@ -19,7 +19,7 @@ $result = $jsonPath->find($data, "$[*,1]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Wildcard filter contains an invalid character, expected `]` at position 3 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Wildcard filter contains an invalid character, expected `]` at position 3 in %s
 Stack trace:
 %s
 %s

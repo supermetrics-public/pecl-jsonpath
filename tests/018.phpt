@@ -28,7 +28,7 @@ $result = $jsonPath->find($data, "$.words[0:*:2]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `*` at position 10 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `*` at position 10 in %s
 Stack trace:
 %s
 %s

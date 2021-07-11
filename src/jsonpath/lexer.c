@@ -5,8 +5,7 @@
 #include <ctype.h>
 #endif
 
-#include "ext/spl/spl_exceptions.h"
-#include "zend_exceptions.h"
+#include "exceptions.h"
 
 #define CUR_CHAR() **p
 #define NEXT_CHAR() (*p)++
@@ -245,8 +244,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
         NEXT_CHAR();
         break;
       default:
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unrecognized token `%c` at position %ld", CUR_CHAR(),
-                                (*p - json_path));
+        throw_jsonpath_exception("Unrecognized token `%c` at position %ld", CUR_CHAR(), (*p - json_path));
         return false;
     }
   }
@@ -255,7 +253,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
 }
 
 static void raise_error(const char* msg, char* json_path, char* cur_pos) {
-  zend_throw_exception_ex(spl_ce_RuntimeException, 0, "%s at position %ld", msg, (cur_pos - json_path));
+  throw_jsonpath_exception("%s at position %ld", msg, (cur_pos - json_path));
 }
 
 /* Extract contents of string bounded by either single or double quotes */

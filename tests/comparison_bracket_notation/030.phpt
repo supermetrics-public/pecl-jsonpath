@@ -15,7 +15,7 @@ $result = $jsonPath->find($data, "$['single'quote']");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `q` at position 10 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `q` at position 10 in %s
 Stack trace:
 %s
 %s

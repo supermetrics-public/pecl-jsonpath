@@ -38,7 +38,7 @@ $result = $jsonPath->find($data, "$[?(@.key<3),?(@.key>6)]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught RuntimeException: Unrecognized token `?` at position 13 in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Unrecognized token `?` at position 13 in %s
 Stack trace:
 %s
 %s

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @generate-function-entries
+ * @generate-class-entries
  * @generate-legacy-arginfo
  */
 
@@ -14,6 +14,12 @@ class JsonPath
      * @param string $expression
      *
      * @return array|bool
+     *
+     * @throws JsonPathException
      */
     public function find(array $data, string $expression): array|bool;
+}
+
+class JsonPathException extends \RuntimeException
+{
 }

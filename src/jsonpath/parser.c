@@ -2,8 +2,8 @@
 
 #include <limits.h>
 
-#include "ext/spl/spl_exceptions.h"
-#include "zend_exceptions.h"
+#include "exceptions.h"
+#include "php.h"
 
 #define CUR_POS() *lex_idx
 #define CONSUME_TOKEN() (CUR_POS())++
@@ -82,8 +82,7 @@ static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum a
 
 static struct ast_node* get_node_from_pool(struct node_pool* pool, enum ast_type type) {
   if (pool->cur_index >= NODE_POOL_LEN) {
-    zend_throw_exception_ex(
-        spl_ce_RuntimeException, 0,
+    throw_jsonpath_exception(
         "Expression requires more parser node slots than are available (%d), try a shorter expression", NODE_POOL_LEN);
     return NULL;
   }
@@ -121,15 +120,13 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
       break;
     } else if (CUR_TOKEN() == LEX_CHILD_SEP) {
       if (sep_found == AST_INDEX_SLICE) {
-        zend_throw_exception(spl_ce_RuntimeException,
-                             "Multiple filter list separators `,` and `:` found, only one type is allowed", 0);
+        throw_jsonpath_exception("Multiple filter list separators `,` and `:` found, only one type is allowed");
         return false;
       }
       tok->type = sep_found = AST_INDEX_LIST;
     } else if (CUR_TOKEN() == LEX_SLICE) {
       if (sep_found == AST_INDEX_LIST) {
-        zend_throw_exception(spl_ce_RuntimeException,
-                             "Multiple filter list separators `,` and `:` found, only one type is allowed", 0);
+        throw_jsonpath_exception("Multiple filter list separators `,` and `:` found, only one type is allowed");
         return false;
       }
 
@@ -147,19 +144,19 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
       long idx = 0;
 
       if (!numeric_to_long(CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN(), &idx)) {
-        zend_throw_exception(spl_ce_RuntimeException, "Unable to parse filter index value", 0);
+        throw_jsonpath_exception("Unable to parse filter index value");
         return false;
       }
       ht_append_long(tok->data.d_list.ht, idx);
     } else if (CUR_TOKEN() == LEX_LITERAL) {
       if (sep_found == AST_INDEX_SLICE) {
-        zend_throw_exception(spl_ce_RuntimeException, "Array slice indexes must be integers", 0);
+        throw_jsonpath_exception("Array slice indexes must be integers");
         return false;
       }
       tok->type = sep_found = AST_NODE_LIST;
       ht_append_string(tok->data.d_list.ht, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN());
     } else {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected token `%s` in filter", LEX_STR[CUR_TOKEN()]);
+      throw_jsonpath_exception("Unexpected token `%s` in filter", LEX_STR[CUR_TOKEN()]);
       return false;
     }
   }
@@ -168,7 +165,7 @@ static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
 
 struct ast_node* parse_jsonpath(PARSER_PARAMS) {
   if (!HAS_TOKEN() || CUR_TOKEN() != LEX_ROOT) {
-    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "JSONPath must start with a root operator `$`");
+    throw_jsonpath_exception("JSONPath must start with a root operator `$`");
     return NULL;
   }
 
@@ -229,13 +226,11 @@ static struct ast_node* parse_operator(PARSER_PARAMS) {
     case LEX_ROOT:
       /* Expressions like $.$ and $.node$ are not allowed. Bracket notation $['$'] and $['node$'] should be used
        * instead. */
-      zend_throw_exception(
-          spl_ce_RuntimeException,
-          "Unexpected root `$` in node name, use bracket notation for node names with special characters", 0);
+      throw_jsonpath_exception(
+          "Unexpected root `$` in node name, use bracket notation for node names with special characters");
       return NULL;
     default:
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0,
-                              "Expecting child node, filter, expression, or recursive node");
+      throw_jsonpath_exception("Expecting child node, filter, expression, or recursive node");
       return NULL;
   }
 
@@ -255,7 +250,7 @@ static struct ast_node* parse_expression(PARSER_PARAMS) {
   CONSUME_TOKEN(); /* LEX_EXPR_START */
 
   if (CUR_TOKEN() != LEX_PAREN_OPEN) {
-    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing opening paren `(`");
+    throw_jsonpath_exception("Missing opening paren `(`");
     return NULL;
   }
 
@@ -274,7 +269,7 @@ static struct ast_node* parse_filter(PARSER_PARAMS) {
   CONSUME_TOKEN();
 
   if (!HAS_TOKEN()) {
-    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end `]`");
+    throw_jsonpath_exception("Missing filter end `]`");
     return NULL;
   }
 
@@ -296,17 +291,17 @@ static struct ast_node* parse_filter(PARSER_PARAMS) {
       RETURN_IF_NULL(expr);
       break;
     case LEX_EXPR_END:
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Filter must not be empty");
+      throw_jsonpath_exception("Filter must not be empty");
       return NULL;
     default:
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unexpected filter element");
+      throw_jsonpath_exception("Unexpected filter element");
       return NULL;
   }
 
   CONSUME_TOKEN();
 
   if (!HAS_TOKEN() || CUR_TOKEN() != LEX_EXPR_END) {
-    zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing filter end `]`");
+    throw_jsonpath_exception("Missing filter end `]`");
     return NULL;
   }
 
@@ -434,7 +429,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     struct ast_node* ret = GET_NODE(AST_DOUBLE);
     RETURN_IF_NULL(ret);
     if (!make_numeric_node(ret, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN())) {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unable to parse numeric");
+      throw_jsonpath_exception("Unable to parse numeric");
       return NULL;
     }
     CONSUME_TOKEN();
@@ -450,7 +445,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     } else if (strncasecmp("false", CUR_TOKEN_LITERAL(), 5) == 0) {
       ret->data.d_literal.value_bool = false;
     } else {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Expected `true` or `false` for boolean token");
+      throw_jsonpath_exception("Expected `true` or `false` for boolean token");
       return NULL;
     }
     CONSUME_TOKEN();
@@ -477,7 +472,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
       CONSUME_TOKEN();
       return expr;
     } else {
-      zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Missing closing paren `)`");
+      throw_jsonpath_exception("Missing closing paren `)`");
       return NULL;
     }
   }
@@ -551,7 +546,7 @@ static bool validate_expression_head(struct ast_node* tok) {
     return true;
   }
 
-  zend_throw_exception(spl_ce_RuntimeException, "Invalid expression.", 0);
+  throw_jsonpath_exception("Invalid expression.");
 
   return false;
 }
