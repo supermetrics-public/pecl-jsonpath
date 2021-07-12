@@ -248,6 +248,32 @@ $ make lcov
 
 You can then find a coverage report in the `lcov_html/` directory.
 
+## Code Quality Tooling
+
+Please run the code formatter and linter (and fix any issues reported by the linter) before filing a pull request.
+
+You may check the code format and linter automatically before committing by setting up a pre-commit hook:
+
+```bash
+make setup-pre-commit
+```
+
+### Formatting
+
+Code formatting requires [clang-format](https://clang.llvm.org/docs/index.html).
+
+```bash
+make format-code
+```
+
+### Linting
+
+Linting requires [cppcheck](http://cppcheck.sourceforge.net/).
+
+```bash
+make lint-code
+```
+
 ## Contributors
 
 JsonPath-PHP is created by [Mike Kaminski](https://github.com/mkaminski1988) and maintained by 
