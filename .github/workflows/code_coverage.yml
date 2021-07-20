@@ -69,7 +69,7 @@ jobs:
                 with:
                     auth: ${{ secrets.GIST_SECRET }}
                     gistID: 5ceb08845fe95635fc41af2f4c86c631
-                    filename: php-ext-jsonpath__${{ env.BRANCH_NAME }}.json
+                    filename: pecl-jsonpath__${{ env.BRANCH_NAME }}.json
                     label: Coverage
                     message: ${{ env.COVERAGE }}
                     color: green
