@@ -223,7 +223,7 @@ If you want to run benchmarks yourself, have a look at the [jsonpath-benchmark](
 
 ## License
 
-JsonPath-PHP is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+JsonPath-PHP is open-sourced software licensed under the [PHP License 3.01](https://opensource.org/licenses/PHP-3.01).
 
 ## Tests
 
