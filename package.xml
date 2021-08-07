@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.0" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+ <name>jsonpath</name>
+ <channel>pecl.php.net</channel>
+ <summary>Extract data using JSONPath notation</summary>
+ <description>This extension allows you to use the versatile JSONPath query language to extract the properties that you want from a decoded JSON document.</description>
+ <lead>
+  <name>Viktor Djupsjöbacka</name>
+  <user>viktor</user>
+  <email>viktor.djupsjobacka@supermetrics.com</email>
+  <active>yes</active>
+ </lead>
+ <date>2021-08-07</date>
+ <version>
+  <release>0.9.3</release>
+  <api>0.9.3</api>
+ </version>
+ <stability>
+  <release>alpha</release>
+  <api>alpha</api>
+ </stability>
+ <license uri="http://www.php.net/license/3_0.txt">PHP License</license>
+ <notes>
+## Changes
+
+- Bump version to 0.9.3 for initial PECL release @crocodele (#134)
+ </notes>
+ <contents>
+  <dir name="/">
+   <file name="config.m4" role="src"/>
+   <file name="jsonpath.c" role="src"/>
+   <file name="jsonpath_arginfo.h" role="src"/>
+   <file name="jsonpath_legacy_arginfo.h" role="src"/>
+   <file name="LICENSE" role="doc"/>
+   <file name="php_jsonpath.h" role="src"/>
+   <file name="README.md" role="doc"/>
+   <dir name="src">
+    <dir name="jsonpath">
+     <file name="exceptions.c" role="src"/>
+     <file name="exceptions.h" role="src"/>
+     <file name="interpreter.c" role="src"/>
+     <file name="interpreter.h" role="src"/>
+     <file name="lexer.c" role="src"/>
+     <file name="lexer.h" role="src"/>
+     <file name="parser.c" role="src"/>
+     <file name="parser.h" role="src"/>
+    </dir>
+   </dir>
+   <dir name="tests">
+    <file name="001.phpt" role="test"/>
+    <file name="002.phpt" role="test"/>
+    <file name="003.phpt" role="test"/>
+    <file name="004.phpt" role="test"/>
+    <file name="005.phpt" role="test"/>
+    <file name="006.phpt" role="test"/>
+    <file name="007.phpt" role="test"/>
+    <file name="008.phpt" role="test"/>
+    <file name="009.phpt" role="test"/>
+    <file name="010.phpt" role="test"/>
+    <file name="011.phpt" role="test"/>
+    <file name="012.phpt" role="test"/>
+    <file name="013.phpt" role="test"/>
+    <file name="014.phpt" role="test"/>
+    <file name="015.phpt" role="test"/>
+    <file name="016.phpt" role="test"/>
+    <file name="017.phpt" role="test"/>
+    <file name="018.phpt" role="test"/>
+    <file name="019.phpt" role="test"/>
+    <file name="020.phpt" role="test"/>
+    <file name="021.phpt" role="test"/>
+    <file name="022.phpt" role="test"/>
+    <file name="023.phpt" role="test"/>
+    <dir name="bounds_checks">
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
+    </dir>
+    <dir name="comparison_array_slice">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
+     <file name="005.phpt" role="test"/>
+     <file name="006.phpt" role="test"/>
+     <file name="007.phpt" role="test"/>
+     <file name="008.phpt" role="test"/>
+     <file name="009.phpt" role="test"/>
+     <file name="010.phpt" role="test"/>
+     <file name="011.phpt" role="test"/>
+     <file name="012.phpt" role="test"/>
+     <file name="013.phpt" role="test"/>
+     <file name="014.phpt" role="test"/>
+     <file name="015.phpt" role="test"/>
+     <file name="016.phpt" role="test"/>
+     <file name="017.phpt" role="test"/>
+     <file name="018.phpt" role="test"/>
+     <file name="019.phpt" role="test"/>
+     <file name="020.phpt" role="test"/>
+     <file name="021.phpt" role="test"/>
+     <file name="022.phpt" role="test"/>
+     <file name="023.phpt" role="test"/>
+     <file name="024.phpt" role="test"/>
+     <file name="025.phpt" role="test"/>
+     <file name="026.phpt" role="test"/>
+     <file name="027.phpt" role="test"/>
+     <file name="028.phpt" role="test"/>
+     <file name="029.phpt" role="test"/>
+     <file name="030.phpt" role="test"/>
+     <file name="031.phpt" role="test"/>
+     <file name="032.phpt" role="test"/>
+     <file name="033.phpt" role="test"/>
+     <file name="034.phpt" role="test"/>
+     <file name="035.phpt" role="test"/>
+     <file name="036.phpt" role="test"/>
+     <file name="037.phpt" role="test"/>
+     <file name="038.phpt" role="test"/>
+     <file name="039.phpt" role="test"/>
+     <file name="040.phpt" role="test"/>
+     <file name="041.phpt" role="test"/>
+     <file name="042.phpt" role="test"/>
+    </dir>
+    <dir name="comparison_bracket_notation">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
+     <file name="005.phpt" role="test"/>
+     <file name="006.phpt" role="test"/>
+     <file name="007.phpt" role="test"/>
+     <file name="008.phpt" role="test"/>
+     <file name="009.phpt" role="test"/>
+     <file name="010.phpt" role="test"/>
+     <file name="011.phpt" role="test"/>
+     <file name="012.phpt" role="test"/>
+     <file name="013.phpt" role="test"/>
+     <file name="014_php7.phpt" role="test"/>
+     <file name="014_php8.phpt" role="test"/>
+     <file name="015.phpt" role="test"/>
+     <file name="016.phpt" role="test"/>
+     <file name="017.phpt" role="test"/>
+     <file name="018.phpt" role="test"/>
+     <file name="019.phpt" role="test"/>
+     <file name="020.phpt" role="test"/>
+     <file name="021.phpt" role="test"/>
+     <file name="022.phpt" role="test"/>
+     <file name="023.phpt" role="test"/>
+     <file name="024.phpt" role="test"/>
+     <file name="025.phpt" role="test"/>
+     <file name="026.phpt" role="test"/>
+     <file name="027.phpt" role="test"/>
+     <file name="028.phpt" role="test"/>
+     <file name="029.phpt" role="test"/>
+     <file name="030.phpt" role="test"/>
+     <file name="031.phpt" role="test"/>
+     <file name="032.phpt" role="test"/>
+     <file name="033.phpt" role="test"/>
+     <file name="034.phpt" role="test"/>
+     <file name="035.phpt" role="test"/>
+     <file name="036.phpt" role="test"/>
+     <file name="037.phpt" role="test"/>
+     <file name="038.phpt" role="test"/>
+     <file name="039.phpt" role="test"/>
+     <file name="040.phpt" role="test"/>
+     <file name="041.phpt" role="test"/>
+     <file name="042.phpt" role="test"/>
+     <file name="043.phpt" role="test"/>
+     <file name="044.phpt" role="test"/>
+     <file name="045.phpt" role="test"/>
+     <file name="046.phpt" role="test"/>
+    </dir>
+    <dir name="comparison_dot_notation">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
+     <file name="005.phpt" role="test"/>
+     <file name="006.phpt" role="test"/>
+     <file name="007.phpt" role="test"/>
+     <file name="008.phpt" role="test"/>
+     <file name="009.phpt" role="test"/>
+     <file name="010.phpt" role="test"/>
+     <file name="011.phpt" role="test"/>
+     <file name="012.phpt" role="test"/>
+     <file name="013.phpt" role="test"/>
+     <file name="014.phpt" role="test"/>
+     <file name="015.phpt" role="test"/>
+     <file name="016.phpt" role="test"/>
+     <file name="017.phpt" role="test"/>
+     <file name="018.phpt" role="test"/>
+     <file name="019.phpt" role="test"/>
+     <file name="020.phpt" role="test"/>
+     <file name="021.phpt" role="test"/>
+     <file name="022.phpt" role="test"/>
+     <file name="023.phpt" role="test"/>
+     <file name="024.phpt" role="test"/>
+     <file name="025.phpt" role="test"/>
+     <file name="026.phpt" role="test"/>
+     <file name="027.phpt" role="test"/>
+     <file name="028.phpt" role="test"/>
+     <file name="029.phpt" role="test"/>
+     <file name="030.phpt" role="test"/>
+     <file name="031.phpt" role="test"/>
+     <file name="032.phpt" role="test"/>
+     <file name="033.phpt" role="test"/>
+     <file name="034.phpt" role="test"/>
+     <file name="035.phpt" role="test"/>
+     <file name="036.phpt" role="test"/>
+     <file name="037.phpt" role="test"/>
+     <file name="038.phpt" role="test"/>
+     <file name="039.phpt" role="test"/>
+     <file name="040.phpt" role="test"/>
+     <file name="041.phpt" role="test"/>
+     <file name="042.phpt" role="test"/>
+     <file name="043.phpt" role="test"/>
+     <file name="044.phpt" role="test"/>
+     <file name="045.phpt" role="test"/>
+     <file name="046.phpt" role="test"/>
+     <file name="047_php7.phpt" role="test"/>
+     <file name="047_php8.phpt" role="test"/>
+     <file name="048.phpt" role="test"/>
+     <file name="049.phpt" role="test"/>
+     <file name="050.phpt" role="test"/>
+    </dir>
+    <dir name="comparison_filter">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
+     <file name="005.phpt" role="test"/>
+     <file name="006.phpt" role="test"/>
+     <file name="007.phpt" role="test"/>
+     <file name="008.phpt" role="test"/>
+     <file name="009.phpt" role="test"/>
+     <file name="010.phpt" role="test"/>
+     <file name="011.phpt" role="test"/>
+     <file name="012.phpt" role="test"/>
+     <file name="013.phpt" role="test"/>
+     <file name="014.phpt" role="test"/>
+     <file name="015.phpt" role="test"/>
+     <file name="016.phpt" role="test"/>
+     <file name="017.phpt" role="test"/>
+     <file name="018.phpt" role="test"/>
+     <file name="019.phpt" role="test"/>
+     <file name="020.phpt" role="test"/>
+     <file name="021.phpt" role="test"/>
+     <file name="022.phpt" role="test"/>
+     <file name="023.phpt" role="test"/>
+     <file name="024.phpt" role="test"/>
+     <file name="025.phpt" role="test"/>
+     <file name="026.phpt" role="test"/>
+     <file name="027.phpt" role="test"/>
+     <file name="028.phpt" role="test"/>
+     <file name="029.phpt" role="test"/>
+     <file name="030.phpt" role="test"/>
+     <file name="031.phpt" role="test"/>
+     <file name="032.phpt" role="test"/>
+     <file name="033.phpt" role="test"/>
+     <file name="034.phpt" role="test"/>
+     <file name="035.phpt" role="test"/>
+     <file name="036.phpt" role="test"/>
+     <file name="037.phpt" role="test"/>
+     <file name="038.phpt" role="test"/>
+     <file name="039.phpt" role="test"/>
+     <file name="040.phpt" role="test"/>
+     <file name="041.phpt" role="test"/>
+     <file name="042.phpt" role="test"/>
+     <file name="043.phpt" role="test"/>
+     <file name="044.phpt" role="test"/>
+     <file name="045.phpt" role="test"/>
+     <file name="046.phpt" role="test"/>
+     <file name="047.phpt" role="test"/>
+     <file name="048.phpt" role="test"/>
+     <file name="049.phpt" role="test"/>
+     <file name="050.phpt" role="test"/>
+     <file name="051.phpt" role="test"/>
+     <file name="052.phpt" role="test"/>
+     <file name="053.phpt" role="test"/>
+     <file name="054.phpt" role="test"/>
+     <file name="055.phpt" role="test"/>
+     <file name="056.phpt" role="test"/>
+     <file name="057.phpt" role="test"/>
+     <file name="058.phpt" role="test"/>
+     <file name="059.phpt" role="test"/>
+     <file name="060.phpt" role="test"/>
+     <file name="061.phpt" role="test"/>
+     <file name="062.phpt" role="test"/>
+     <file name="063.phpt" role="test"/>
+     <file name="064.phpt" role="test"/>
+     <file name="065.phpt" role="test"/>
+     <file name="066.phpt" role="test"/>
+     <file name="067.phpt" role="test"/>
+     <file name="068.phpt" role="test"/>
+     <file name="069.phpt" role="test"/>
+     <file name="070.phpt" role="test"/>
+     <file name="071.phpt" role="test"/>
+     <file name="072.phpt" role="test"/>
+     <file name="073.phpt" role="test"/>
+     <file name="074.phpt" role="test"/>
+     <file name="075.phpt" role="test"/>
+    </dir>
+    <dir name="comparison_misc">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+    </dir>
+    <dir name="comparison_recursive_descent">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+    </dir>
+    <dir name="comparison_root">
+     <file name="001.phpt" role="test"/>
+     <file name="002_php7.phpt" role="test"/>
+     <file name="002_php8.phpt" role="test"/>
+     <file name="003_php7.phpt" role="test"/>
+     <file name="003_php8.phpt" role="test"/>
+     <file name="004_php7.phpt" role="test"/>
+     <file name="004_php8.phpt" role="test"/>
+    </dir>
+    <dir name="comparison_union">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
+     <file name="005.phpt" role="test"/>
+     <file name="006.phpt" role="test"/>
+     <file name="007.phpt" role="test"/>
+     <file name="008.phpt" role="test"/>
+     <file name="009.phpt" role="test"/>
+     <file name="010.phpt" role="test"/>
+     <file name="011.phpt" role="test"/>
+     <file name="012.phpt" role="test"/>
+     <file name="013.phpt" role="test"/>
+     <file name="014.phpt" role="test"/>
+     <file name="015.phpt" role="test"/>
+    </dir>
+    <dir name="expressions">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+    </dir>
+    <dir name="extension_info">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+    </dir>
+    <dir name="isset">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+    </dir>
+    <dir name="issue_27">
+     <file name="001.phpt" role="test"/>
+    </dir>
+    <dir name="lex_errs">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
+     <file name="005.phpt" role="test"/>
+    </dir>
+    <dir name="parse_errs">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+    </dir>
+    <dir name="regex">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+    </dir>
+   </dir>
+  </dir>
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>7.4.0</min>
+   </php>
+   <pearinstaller>
+    <min>1.10.0</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <providesextension>jsonpath</providesextension>
+ <extsrcrelease/>
+ <changelog>
+  <release>
+   <date>2021-08-07</date>
+   <time>12:51:27</time>
+   <version>
+    <release>0.9.3</release>
+    <api>0.9.3</api>
+   </version>
+   <stability>
+    <release>alpha</release>
+    <api>alpha</api>
+   </stability>
+   <license uri="http://www.php.net/license/3_0.txt">PHP License</license>
+   <notes>
+## Changes
+
+- Bump version to 0.9.3 for initial PECL release @crocodele (#134)
+   </notes>
+  </release>
+ </changelog>
+</package>
