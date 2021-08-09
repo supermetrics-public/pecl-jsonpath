@@ -19,7 +19,7 @@
   <release>alpha</release>
   <api>alpha</api>
  </stability>
- <license uri="http://www.php.net/license/3_0.txt">PHP License</license>
+ <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
 ## Changes
 
@@ -29,6 +29,7 @@
   <dir name="/">
    <file name="config.m4" role="src"/>
    <file name="jsonpath.c" role="src"/>
+   <file name="jsonpath.stub.php" role="src"/>
    <file name="jsonpath_arginfo.h" role="src"/>
    <file name="jsonpath_legacy_arginfo.h" role="src"/>
    <file name="LICENSE" role="doc"/>
@@ -365,6 +366,9 @@
      <file name="001.phpt" role="test"/>
      <file name="002.phpt" role="test"/>
      <file name="003.phpt" role="test"/>
+    </dir>
+    <dir name="utils">
+     <file name="sort_recursively.php" role="test"/>
     </dir>
    </dir>
   </dir>
