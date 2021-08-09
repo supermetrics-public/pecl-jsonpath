@@ -28,6 +28,7 @@
  <contents>
   <dir name="/">
    <file name="config.m4" role="src"/>
+   <file name="config.w32" role="src"/>
    <file name="jsonpath.c" role="src"/>
    <file name="jsonpath.stub.php" role="src"/>
    <file name="jsonpath_arginfo.h" role="src"/>
