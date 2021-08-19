@@ -10,10 +10,15 @@
   <email>viktor.djupsjobacka@supermetrics.com</email>
   <active>yes</active>
  </lead>
- <date>2021-08-07</date>
+ <lead>
+  <name>Mike Kaminski</name>
+  <user>mikek</user>
+  <active>yes</active>
+ </lead>
+ <date>2021-08-19</date>
  <version>
-  <release>0.9.3</release>
-  <api>0.9.3</api>
+  <release>0.9.4</release>
+  <api>0.9.4</api>
  </version>
  <stability>
   <release>alpha</release>
@@ -22,8 +27,13 @@
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
 ## Changes
+- missing file and license uri @remicollet (#137)
 
-- Bump version to 0.9.3 for initial PECL release @crocodele (#134)
+## Bug fixes
+- Add missing config.w32 entry to package.xml to make PECL builds on Windows possible @crocodele (#138)
+
+## Maintenance
+- Add Mike to list of PECL extension developers, release version 0.9.4 @crocodele (#139)
  </notes>
  <contents>
   <dir name="/">
@@ -387,6 +397,29 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2021-08-19</date>
+   <time>18:25:15</time>
+   <version>
+    <release>0.9.4</release>
+    <api>0.9.4</api>
+   </version>
+   <stability>
+    <release>alpha</release>
+    <api>alpha</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+## Changes
+- missing file and license uri @remicollet (#137)
+
+## Bug fixes
+- Add missing config.w32 entry to package.xml to make PECL builds on Windows possible @crocodele (#138)
+
+## Maintenance
+- Add Mike to list of PECL extension developers, release version 0.9.4 @crocodele (#139)
+   </notes>
+  </release>
   <release>
    <date>2021-08-07</date>
    <time>12:51:27</time>
