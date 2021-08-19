@@ -13,6 +13,7 @@
  <lead>
   <name>Mike Kaminski</name>
   <user>mikek</user>
+  <email></email>
   <active>yes</active>
  </lead>
  <date>2021-08-19</date>
@@ -31,6 +32,7 @@
 
 ## Bug fixes
 - Add missing config.w32 entry to package.xml to make PECL builds on Windows possible @crocodele (#138)
+- Add required email tag to lead details @crocodele (#140)
 
 ## Maintenance
 - Add Mike to list of PECL extension developers, release version 0.9.4 @crocodele (#139)
@@ -415,6 +417,7 @@
 
 ## Bug fixes
 - Add missing config.w32 entry to package.xml to make PECL builds on Windows possible @crocodele (#138)
+- Add required email tag to lead details @crocodele (#140)
 
 ## Maintenance
 - Add Mike to list of PECL extension developers, release version 0.9.4 @crocodele (#139)
