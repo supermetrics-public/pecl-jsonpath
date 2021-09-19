@@ -22,8 +22,17 @@ PHP implementations like [this](https://github.com/SoftCreatR/JSONPath), [this](
 
 ## Installation
 
-The only installation option available for now is a [manual build process](https://www.php.net/manual/en/install.pecl.phpize.php).
-PECL and binaries are forthcoming.
+### Option 1: Build using PECL
+
+```bash
+$ pecl install jsonpath-alpha
+```
+
+For more instructions on how to use PECL, [see the PECL documentation](https://www.php.net/manual/en/install.pecl.php).
+
+### Option 2: Build manually
+
+Clone this repository to the directory of your choice, then run:
 
 ```bash
 $ phpize
@@ -33,7 +42,7 @@ $ TEST_PHP_ARGS="-q" make test
 $ sudo make install
 ```
 
-Make sure PHP knows about the extension:
+### Enable the extension
 
 ```bash
 $ sudo touch /etc/php.d/jsonpath.ini
