@@ -24,7 +24,7 @@ $result = $jsonPath->find($data, "$.*[0,:5]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught JsonPath\JsonPathException: Multiple filter list separators `,` and `:` found, only one type is allowed in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Expected integer, got LEX_SLICE in index union filter in %s
 Stack trace:
 %s
 %s

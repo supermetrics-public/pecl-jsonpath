@@ -34,13 +34,13 @@ void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_
     return;
   }
   switch (tok->type) {
-    case AST_NODE_LIST:
+    case AST_UNION_KEY:
       exec_node_filter(arr_head, arr_cur, tok, return_value);
       break;
-    case AST_INDEX_LIST:
+    case AST_UNION_INDEX:
       exec_index_filter(arr_head, arr_cur, tok, return_value);
       break;
-    case AST_INDEX_SLICE:
+    case AST_UNION_SLICE:
       exec_slice(arr_head, arr_cur, tok, return_value);
       break;
     case AST_CUR_NODE:
@@ -326,7 +326,7 @@ static zval* evaluate_primary(struct ast_node* src, zval* tmp_dest, zval* arr_he
         return tmp_dest;
       }
       return Z_INDIRECT_P(tmp_dest);
-    case AST_NODE_LIST:
+    case AST_UNION_KEY:
       ZVAL_ARR(tmp_dest, src->data.d_list.ht);
       return tmp_dest;
     default:

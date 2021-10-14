@@ -10,8 +10,10 @@
 #define CUR_TOKEN_LEN() lex_tok[CUR_POS()].len
 #define CUR_TOKEN_LITERAL() lex_tok[CUR_POS()].val
 #define CUR_TOKEN() lex_tok[CUR_POS()].type
+#define PEEK_TOKEN() lex_tok[CUR_POS() + 1].type
 #define GET_NODE(type) get_node_from_pool(pool, type)
 #define GET_BINARY_NODE(type, left, right) get_binary_node_from_pool(pool, type, left, right)
+#define HAS_NEXT_TOKEN() (CUR_POS() < lex_tok_count - 1)
 #define HAS_TOKEN() (CUR_POS() < lex_tok_count)
 #define PARSER_ARGS lex_tok, lex_idx, lex_tok_count, pool
 #define PARSER_PARAMS struct jpath_token lex_tok[], int *lex_idx, int lex_tok_count, struct node_pool *pool
@@ -21,7 +23,6 @@
 static bool is_logical_operator(lex_token type);
 static bool make_numeric_node(struct ast_node* tok, char* str, int str_len);
 static bool numeric_to_long(char* str, int str_len, long* dest);
-static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok);
 static bool validate_expression_head(struct ast_node* tok);
 static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum ast_type type, struct ast_node* left,
                                                   struct ast_node* right);
@@ -35,6 +36,10 @@ static struct ast_node* parse_operator(PARSER_PARAMS);
 static struct ast_node* parse_or(PARSER_PARAMS);
 static struct ast_node* parse_primary(PARSER_PARAMS);
 static struct ast_node* parse_unary(PARSER_PARAMS);
+static struct ast_node* parse_union_filter(PARSER_PARAMS);
+static struct ast_node* parse_union_filter_index(PARSER_PARAMS);
+static struct ast_node* parse_union_filter_key(PARSER_PARAMS);
+static struct ast_node* parse_union_filter_slice(PARSER_PARAMS);
 static void ht_append_long(HashTable* ht, long val);
 static void ht_append_string(HashTable* ht, char* str, int len);
 
@@ -47,21 +52,21 @@ const char* AST_STR[] = {
     "AST_EXPR",        /**/
     "AST_GT",          /**/
     "AST_GTE",         /**/
-    "AST_INDEX_LIST",  /**/
-    "AST_INDEX_SLICE", /**/
     "AST_LITERAL",     /**/
     "AST_LONG",        /**/
     "AST_LT",          /**/
     "AST_LTE",         /**/
     "AST_NE",          /**/
     "AST_NEGATION",    /**/
-    "AST_NODE_LIST",   /**/
     "AST_NULL",        /**/
     "AST_OR",          /**/
     "AST_RECURSE",     /**/
     "AST_RGXP",        /**/
     "AST_ROOT",        /**/
     "AST_SELECTOR",    /**/
+    "AST_UNION_INDEX", /**/
+    "AST_UNION_KEY",   /**/
+    "AST_UNION_SLICE", /**/
     "AST_WILD_CARD",   /**/
 };
 
@@ -102,64 +107,118 @@ static void ht_append_string(HashTable* ht, char* str, int len) {
   add_index_stringl(&tmp, zend_hash_num_elements(ht), str, len);
 }
 
-static bool parse_filter_list(PARSER_PARAMS, struct ast_node* tok) {
+static struct ast_node* parse_union_filter(PARSER_PARAMS) {
+  if (CUR_TOKEN() == LEX_SLICE || (HAS_NEXT_TOKEN() && PEEK_TOKEN() == LEX_SLICE)) {
+    return parse_union_filter_slice(PARSER_ARGS);
+  }
+  if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
+    return parse_union_filter_index(PARSER_ARGS);
+  }
+  return parse_union_filter_key(PARSER_ARGS);
+}
+
+static struct ast_node* parse_union_filter_index(PARSER_PARAMS) {
+  struct ast_node* ret = GET_NODE(AST_UNION_INDEX);
+  ret->data.d_list.ht = zend_new_array(1);
+
+  while (HAS_TOKEN()) {
+    if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
+      long idx = 0;
+      if (!numeric_to_long(CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN(), &idx)) {
+        throw_jsonpath_exception("Unable to parse filter index value");
+        return NULL;
+      }
+      ht_append_long(ret->data.d_list.ht, idx);
+    } else {
+      throw_jsonpath_exception("Expected integer, got %s in index union filter", LEX_STR[CUR_TOKEN()]);
+      return NULL;
+    }
+
+    if (!HAS_NEXT_TOKEN() || PEEK_TOKEN() == LEX_EXPR_END) {
+      break;
+    }
+
+    CONSUME_TOKEN();
+
+    if (CUR_TOKEN() != LEX_CHILD_SEP) {
+      throw_jsonpath_exception("Expected comma `,` separator, got %s in index union filter", LEX_STR[CUR_TOKEN()]);
+      return NULL;
+    }
+
+    CONSUME_TOKEN();
+  }
+
+  return ret;
+}
+
+static struct ast_node* parse_union_filter_key(PARSER_PARAMS) {
+  struct ast_node* ret = GET_NODE(AST_UNION_KEY);
+  ret->data.d_list.ht = zend_new_array(1);
+
+  while (HAS_TOKEN()) {
+    if (CUR_TOKEN() == LEX_LITERAL) {
+      ret->type = AST_UNION_KEY;
+      ht_append_string(ret->data.d_list.ht, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN());
+    } else {
+      throw_jsonpath_exception("Expected string literal, got %s in key union filter", LEX_STR[CUR_TOKEN()]);
+      return NULL;
+    }
+
+    if (!HAS_NEXT_TOKEN() || PEEK_TOKEN() == LEX_EXPR_END) {
+      break;
+    }
+
+    CONSUME_TOKEN();
+
+    if (CUR_TOKEN() != LEX_CHILD_SEP) {
+      throw_jsonpath_exception("Expected comma `,` separator, got %s in union filter", LEX_STR[CUR_TOKEN()]);
+      return NULL;
+    }
+
+    CONSUME_TOKEN();
+  }
+
+  return ret;
+}
+
+static struct ast_node* parse_union_filter_slice(PARSER_PARAMS) {
+  struct ast_node* ret = GET_NODE(AST_UNION_SLICE);
+  ret->data.d_list.ht = zend_new_array(1);
+
   int slice_count = 0;
 
-  /* assume filter type is an index list by default. this resolves type ambiguity of a filter containing no separators.
-   * example: treat level4[0] as an index filter, not a slice. */
-  tok->type = AST_INDEX_LIST;
-  tok->data.d_list.ht = zend_new_array(1);
-  /* used to determine if different separator types are present, default value is arbitrary */
-  enum ast_type sep_found = AST_AND;
-
-  for (; *lex_idx < lex_tok_count; (*lex_idx)++) {
-    if (CUR_TOKEN() == LEX_EXPR_END) {
-      /* lex_idx must point to LEX_EXPR_END after function returns */
-      (*lex_idx)--;
-      break;
-    } else if (CUR_TOKEN() == LEX_CHILD_SEP) {
-      if (sep_found == AST_INDEX_SLICE) {
-        throw_jsonpath_exception("Multiple filter list separators `,` and `:` found, only one type is allowed");
-        return false;
-      }
-      tok->type = sep_found = AST_INDEX_LIST;
-    } else if (CUR_TOKEN() == LEX_SLICE) {
-      if (sep_found == AST_INDEX_LIST) {
-        throw_jsonpath_exception("Multiple filter list separators `,` and `:` found, only one type is allowed");
-        return false;
-      }
-
-      tok->type = sep_found = AST_INDEX_SLICE;
-
-      slice_count++;
-      /* [:a] => [0:a] */
-      /* [a::] => [a:0:] */
-      if (slice_count > zend_hash_num_elements(tok->data.d_list.ht)) {
-        if (slice_count == 1 || slice_count == 2) {
-          ht_append_long(tok->data.d_list.ht, INT_MAX);
-        }
-      }
-    } else if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
+  while (HAS_TOKEN()) {
+    if (CUR_TOKEN() == LEX_LITERAL_NUMERIC) {
       long idx = 0;
 
       if (!numeric_to_long(CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN(), &idx)) {
         throw_jsonpath_exception("Unable to parse filter index value");
-        return false;
+        return NULL;
       }
-      ht_append_long(tok->data.d_list.ht, idx);
-    } else if (CUR_TOKEN() == LEX_LITERAL) {
-      if (sep_found == AST_INDEX_SLICE) {
-        throw_jsonpath_exception("Array slice indexes must be integers");
-        return false;
+      ht_append_long(ret->data.d_list.ht, idx);
+    } else if (CUR_TOKEN() == LEX_SLICE) {
+      slice_count++;
+      /* [:a] => [0:a] */
+      /* [a::] => [a:0:] */
+      if (slice_count > zend_hash_num_elements(ret->data.d_list.ht)) {
+        if (slice_count == 1 || slice_count == 2) {
+          ht_append_long(ret->data.d_list.ht, INT_MAX);
+        }
       }
-      tok->type = sep_found = AST_NODE_LIST;
-      ht_append_string(tok->data.d_list.ht, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN());
     } else {
-      throw_jsonpath_exception("Unexpected token `%s` in filter", LEX_STR[CUR_TOKEN()]);
-      return false;
+      throw_jsonpath_exception("Expected slice separator `:` or integer, got %s in slice union filter",
+                               LEX_STR[CUR_TOKEN()]);
+      return NULL;
     }
+
+    if (HAS_NEXT_TOKEN() && PEEK_TOKEN() == LEX_EXPR_END) {
+      break;
+    }
+
+    CONSUME_TOKEN();
   }
-  return true;
+
+  return ret;
 }
 
 struct ast_node* parse_jsonpath(PARSER_PARAMS) {
@@ -273,11 +332,8 @@ static struct ast_node* parse_filter(PARSER_PARAMS) {
     case LEX_LITERAL_NUMERIC:
     case LEX_LITERAL:
     case LEX_SLICE:
-      expr = GET_NODE(AST_INDEX_LIST);
+      expr = parse_union_filter(PARSER_ARGS);
       RETURN_IF_NULL(expr);
-      if (!parse_filter_list(PARSER_ARGS, expr)) {
-        return NULL;
-      }
       break;
     case LEX_WILD_CARD:
       expr = GET_NODE(AST_WILD_CARD);
@@ -617,8 +673,8 @@ void free_php_objects(struct node_pool* pool) {
   for (i = 0; i < pool->cur_index; i++) {
     if (pool->nodes[i].type == AST_LITERAL) {
       zend_string_release(pool->nodes[i].data.d_literal.str);
-    } else if (pool->nodes[i].type == AST_NODE_LIST || pool->nodes[i].type == AST_INDEX_LIST ||
-               pool->nodes[i].type == AST_INDEX_SLICE) {
+    } else if (pool->nodes[i].type == AST_UNION_KEY || pool->nodes[i].type == AST_UNION_INDEX ||
+               pool->nodes[i].type == AST_UNION_SLICE) {
       zend_array_destroy(pool->nodes[i].data.d_list.ht);
     }
   }
@@ -684,7 +740,7 @@ void print_ast(struct ast_node* head, const char* m, int level) {
       case AST_LITERAL:
         printf(" [val=%.*s]\n", (int)head->data.d_literal.str->len, head->data.d_literal.str->val);
         break;
-      case AST_INDEX_SLICE:
+      case AST_UNION_SLICE:
         printf(" [start=%d end=%d step=%d]\n", (int)Z_LVAL_P(zend_hash_index_find(head->data.d_list.ht, 0)),
                (int)Z_LVAL_P(zend_hash_index_find(head->data.d_list.ht, 1)),
                (int)Z_LVAL_P(zend_hash_index_find(head->data.d_list.ht, 2)));
