@@ -140,6 +140,10 @@ static void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok
 }
 
 static void exec_index_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+  if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
+    return;
+  }
+
   int i;
 
   for (i = 0; i < zend_hash_num_elements(tok->data.d_list.ht); i++) {
