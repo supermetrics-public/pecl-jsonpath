@@ -1,7 +1,7 @@
 --TEST--
 Test index filter query on input that contains a non-array element
 --DESCRIPTION--
-https://github.com/supermetrics-public/pecl-jsonpath/issues/143
+https://github.com/supermetrics-public/pecl-jsonpath/issues/145
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
 --FILE--

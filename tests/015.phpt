@@ -28,7 +28,7 @@ $result = $jsonPath->find($data, "$.words['first':'last':'two']");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught JsonPath\JsonPathException: Array slice indexes must be integers in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Expected slice separator `:` or integer, got LEX_LITERAL in slice union filter in %s
 Stack trace:
 %s
 %s

@@ -19,7 +19,7 @@ $result = $jsonPath->find($data, "$[1:3,4]");
 var_dump($result);
 ?>
 --EXPECTF--
-Fatal error: Uncaught JsonPath\JsonPathException: Multiple filter list separators `,` and `:` found, only one type is allowed in %s
+Fatal error: Uncaught JsonPath\JsonPathException: Expected slice separator `:` or integer, got LEX_CHILD_SEP in slice union filter in %s
 Stack trace:
 %s
 %s
