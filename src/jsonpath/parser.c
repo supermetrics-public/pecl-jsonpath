@@ -72,9 +72,8 @@ bool is_unary(enum ast_type type) {
 static struct ast_node* get_binary_node_from_pool(struct node_pool* pool, enum ast_type type, struct ast_node* left,
                                                   struct ast_node* right) {
   struct ast_node* node = get_node_from_pool(pool, type);
-  if (node == NULL) {
-    return NULL;
-  }
+  RETURN_IF_NULL(node);
+
   node->data.d_binary.left = left;
   node->data.d_binary.right = right;
   return node;
@@ -175,9 +174,7 @@ struct ast_node* parse_jsonpath(PARSER_PARAMS) {
 
   if (HAS_TOKEN()) {
     expr = parse_operator(PARSER_ARGS);
-    if (expr == NULL) {
-      return NULL;
-    }
+    RETURN_IF_NULL(expr);
   }
 
   struct ast_node* ret = GET_NODE(AST_ROOT);
@@ -208,9 +205,7 @@ static struct ast_node* parse_operator(PARSER_PARAMS) {
       break;
     case LEX_EXPR_START:
       expr = parse_expression(PARSER_ARGS);
-      if (expr == NULL) {
-        return NULL;
-      }
+      RETURN_IF_NULL(expr);
       CONSUME_TOKEN();
       break;
     case LEX_DEEP_SCAN:
@@ -238,9 +233,7 @@ static struct ast_node* parse_operator(PARSER_PARAMS) {
     /* Make sure the next call to parse_operator() returns NULL only if the there's an error, not because the token type
      * isn't an operator. */
     expr->next = parse_operator(PARSER_ARGS);
-    if (expr->next == NULL) {
-      return NULL;
-    }
+    RETURN_IF_NULL(expr->next);
   }
 
   return expr;
@@ -310,12 +303,13 @@ static struct ast_node* parse_filter(PARSER_PARAMS) {
 
 static struct ast_node* parse_or(PARSER_PARAMS) {
   struct ast_node* expr = parse_and(PARSER_ARGS);
+  RETURN_IF_NULL(expr);
 
   while (HAS_TOKEN() && CUR_TOKEN() == LEX_OR) {
     CONSUME_TOKEN();
 
     struct ast_node* right = parse_and(PARSER_ARGS);
-
+    RETURN_IF_NULL(right);
     expr = GET_BINARY_NODE(AST_OR, expr, right);
     RETURN_IF_NULL(expr);
   }
@@ -325,11 +319,13 @@ static struct ast_node* parse_or(PARSER_PARAMS) {
 
 static struct ast_node* parse_and(PARSER_PARAMS) {
   struct ast_node* expr = parse_equality(PARSER_ARGS);
+  RETURN_IF_NULL(expr);
 
   while (HAS_TOKEN() && CUR_TOKEN() == LEX_AND) {
     CONSUME_TOKEN();
 
     struct ast_node* right = parse_equality(PARSER_ARGS);
+    RETURN_IF_NULL(right);
 
     expr = GET_BINARY_NODE(AST_AND, expr, right);
     RETURN_IF_NULL(expr);
@@ -340,6 +336,7 @@ static struct ast_node* parse_and(PARSER_PARAMS) {
 
 static struct ast_node* parse_equality(PARSER_PARAMS) {
   struct ast_node* expr = parse_comparison(PARSER_ARGS);
+  RETURN_IF_NULL(expr);
 
   while (HAS_TOKEN()) {
     enum ast_type type;
@@ -355,10 +352,7 @@ static struct ast_node* parse_equality(PARSER_PARAMS) {
     CONSUME_TOKEN();
 
     struct ast_node* right = parse_comparison(PARSER_ARGS);
-
-    if (right == NULL) {
-      return NULL;
-    }
+    RETURN_IF_NULL(right);
 
     expr = GET_BINARY_NODE(type, expr, right);
     RETURN_IF_NULL(expr);
@@ -369,6 +363,7 @@ static struct ast_node* parse_equality(PARSER_PARAMS) {
 
 static struct ast_node* parse_comparison(PARSER_PARAMS) {
   struct ast_node* expr = parse_unary(PARSER_ARGS);
+  RETURN_IF_NULL(expr);
 
   while (HAS_TOKEN()) {
     enum ast_type type;
@@ -390,10 +385,7 @@ static struct ast_node* parse_comparison(PARSER_PARAMS) {
     CONSUME_TOKEN();
 
     struct ast_node* right = parse_unary(PARSER_ARGS);
-
-    if (right == NULL) {
-      return NULL;
-    }
+    RETURN_IF_NULL(right);
 
     expr = GET_BINARY_NODE(type, expr, right);
     RETURN_IF_NULL(expr);
@@ -462,11 +454,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
   if (CUR_TOKEN() == LEX_PAREN_OPEN) {
     CONSUME_TOKEN();
     struct ast_node* expr = parse_or(PARSER_ARGS);
-
-    /* Abort if parsing the expression resulted in an exception */
-    if (expr == NULL) {
-      return NULL;
-    }
+    RETURN_IF_NULL(expr);
 
     if (HAS_TOKEN() && CUR_TOKEN() == LEX_PAREN_CLOSE) {
       CONSUME_TOKEN();
@@ -502,9 +490,7 @@ static struct ast_node* parse_primary(PARSER_PARAMS) {
     CONSUME_TOKEN();
     if (HAS_TOKEN() && !is_logical_operator(CUR_TOKEN()) && CUR_TOKEN() != LEX_PAREN_CLOSE) {
       expr->next = parse_operator(PARSER_ARGS);
-      if (expr->next == NULL) {
-        return NULL;
-      }
+      RETURN_IF_NULL(expr->next);
     }
     return expr;
   }
