@@ -13,12 +13,12 @@
  <lead>
   <name>Mike Kaminski</name>
   <user>mikek</user>
-  <email></email>
+  <email/>
   <active>yes</active>
  </lead>
- <date>2021-08-19</date>
+ <date>2021-10-31</date>
  <version>
-  <release>0.9.4</release>
+  <release>0.9.5</release>
   <api>0.9.4</api>
  </version>
  <stability>
@@ -27,15 +27,12 @@
  </stability>
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
-## Changes
-- missing file and license uri @remicollet (#137)
-
 ## Bug fixes
-- Add missing config.w32 entry to package.xml to make PECL builds on Windows possible @crocodele (#138)
-- Add required email tag to lead details @crocodele (#140)
+- Fix issues 143, 145, 146 @mkaminski1988 (#147)
 
 ## Maintenance
-- Add Mike to list of PECL extension developers, release version 0.9.4 @crocodele (#139)
+- Add PECL release process @crocodele (#148)
+- Add instructions for building the extension with PECL @crocodele (#141)
  </notes>
  <contents>
   <dir name="/">
@@ -365,6 +362,12 @@
     <dir name="issue_27">
      <file name="001.phpt" role="test"/>
     </dir>
+    <dir name="issues">
+     <file name="00143.phpt" role="test"/>
+     <file name="00145.phpt" role="test"/>
+     <file name="00146-1.phpt" role="test"/>
+     <file name="00146-2.phpt" role="test"/>
+    </dir>
     <dir name="lex_errs">
      <file name="001.phpt" role="test"/>
      <file name="002.phpt" role="test"/>
@@ -399,6 +402,27 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2021-10-31</date>
+   <time>16:06:55</time>
+   <version>
+    <release>0.9.5</release>
+    <api>0.9.4</api>
+   </version>
+   <stability>
+    <release>alpha</release>
+    <api>alpha</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+## Bug fixes
+- Fix issues 143, 145, 146 @mkaminski1988 (#147)
+
+## Maintenance
+- Add PECL release process @crocodele (#148)
+- Add instructions for building the extension with PECL @crocodele (#141)
+   </notes>
+  </release>
   <release>
    <date>2021-08-19</date>
    <time>18:25:15</time>
