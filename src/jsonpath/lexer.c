@@ -17,7 +17,7 @@ static bool extract_regex(char** p, char* json_path, struct jpath_token* token);
 static void extract_boolean_or_null_literal(char** p, struct jpath_token* token);
 static void extract_unbounded_literal(char** p, struct jpath_token* token);
 static void extract_unbounded_numeric_literal(char** p, struct jpath_token* token);
-static void raise_error(const char* msg, char* json_path, char* cur_pos);
+static void raise_error(const char* msg, const char* json_path, const char* cur_pos);
 
 const char* LEX_STR[] = {
     "LEX_AND",             /* && */
