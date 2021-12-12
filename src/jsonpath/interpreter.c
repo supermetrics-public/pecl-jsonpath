@@ -51,7 +51,6 @@ void eval_ast(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_
       copy_result_or_continue(arr_head, arr_cur, tok, return_value);
       break;
     case AST_RECURSE:
-      tok = tok->next;
       exec_recursive_descent(arr_head, arr_cur, tok, return_value);
       break;
     case AST_SELECTOR:
@@ -106,18 +105,16 @@ static void exec_wildcard(zval* arr_head, zval* arr_cur, struct ast_node* tok, z
 }
 
 static void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
-  ZVAL_DEREF(arr_cur);
-
   if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
     return;
   }
 
-  eval_ast(arr_head, arr_cur, tok, return_value);
+  eval_ast(arr_head, arr_cur, tok->next, return_value);
 
   zval* data;
 
   ZEND_HASH_FOREACH_VAL_IND(HASH_OF(arr_cur), data) {
-    exec_recursive_descent(arr_head, data, tok, return_value);
+    eval_ast(arr_head, data, tok, return_value);
   }
   ZEND_HASH_FOREACH_END();
 }
