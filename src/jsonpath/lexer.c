@@ -252,7 +252,7 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
   return false;
 }
 
-static void raise_error(const char* msg, char* json_path, char* cur_pos) {
+static void raise_error(const char* msg, const char* json_path, const char* cur_pos) {
   throw_jsonpath_exception("%s at position %ld", msg, (cur_pos - json_path));
 }
 
