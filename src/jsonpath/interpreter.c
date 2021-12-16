@@ -287,11 +287,11 @@ static bool compare_rgxp(zval* lh, zval* rh) {
   ZVAL_NULL(&retval);
   ZVAL_NULL(&subpats);
 
-  zend_string* s_lh = zend_string_copy(Z_STR_P(lh));
+  zend_string* zs_lh = zend_string_copy(Z_STR_P(lh));
 
-  php_pcre_match_impl(pce, s_lh, &retval, &subpats, 0, 0, 0, 0);
+  php_pcre_match_impl(pce, zs_lh, &retval, &subpats, 0, 0, 0, 0);
 
-  zend_string_release_ex(s_lh, 0);
+  zend_string_release_ex(zs_lh, 0);
   zval_ptr_dtor(&subpats);
 
   return Z_LVAL(retval) > 0;
