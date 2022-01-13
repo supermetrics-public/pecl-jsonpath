@@ -16,9 +16,9 @@
   <email/>
   <active>yes</active>
  </lead>
- <date>2021-10-31</date>
+ <date>2022-01-13</date>
  <version>
-  <release>0.9.5</release>
+  <release>0.9.6</release>
   <api>0.9.4</api>
  </version>
  <stability>
@@ -27,12 +27,13 @@
  </stability>
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
-## Bug fixes
-- Fix issues 143, 145, 146 @mkaminski1988 (#147)
+## Changes
+- Basic Windows CI (build and test) @cmb69 (#154)
+- Fix Windows builds @cmb69 (#153)
+- Revert "Issue #150 - pass AST\_RECURSE token to exec\_recursive\_descent()" @mkaminski1988 (#152)
 
-## Maintenance
-- Add PECL release process @crocodele (#148)
-- Add instructions for building the extension with PECL @crocodele (#141)
+## Bug fixes
+- Dereference values to always get the underlying value @crocodele (#151)
  </notes>
  <contents>
   <dir name="/">
@@ -378,6 +379,14 @@
      <file name="001.phpt" role="test"/>
      <file name="002.phpt" role="test"/>
     </dir>
+    <dir name="references">
+     <file name="001.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
+     <file name="005.phpt" role="test"/>
+     <file name="006.phpt" role="test"/>
+    </dir>
     <dir name="regex">
      <file name="001.phpt" role="test"/>
      <file name="002.phpt" role="test"/>
@@ -402,6 +411,28 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2022-01-13</date>
+   <time>12:59:18</time>
+   <version>
+    <release>0.9.6</release>
+    <api>0.9.4</api>
+   </version>
+   <stability>
+    <release>alpha</release>
+    <api>alpha</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+## Changes
+- Basic Windows CI (build and test) @cmb69 (#154)
+- Fix Windows builds @cmb69 (#153)
+- Revert "Issue #150 - pass AST\_RECURSE token to exec\_recursive\_descent()" @mkaminski1988 (#152)
+
+## Bug fixes
+- Dereference values to always get the underlying value @crocodele (#151)
+   </notes>
+  </release>
   <release>
    <date>2021-10-31</date>
    <time>16:06:55</time>
