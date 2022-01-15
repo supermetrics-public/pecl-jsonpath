@@ -260,6 +260,7 @@ static struct ast_node* parse_operator(PARSER_PARAMS) {
       break;
     case LEX_FILTER_START:
       expr = parse_filter(PARSER_ARGS);
+      RETURN_IF_NULL(expr);
       CONSUME_TOKEN();
       break;
     case LEX_EXPR_START:
@@ -456,6 +457,7 @@ static struct ast_node* parse_unary(PARSER_PARAMS) {
     struct ast_node* expr = GET_NODE(AST_NEGATION);
     RETURN_IF_NULL(expr);
     expr->data.d_unary.right = parse_unary(PARSER_ARGS);
+    RETURN_IF_NULL(expr->data.d_unary.right);
     return expr;
   }
 
