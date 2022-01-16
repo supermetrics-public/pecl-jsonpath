@@ -123,6 +123,10 @@ static void exec_recursive_descent(zval* arr_head, zval* arr_cur, struct ast_nod
 }
 
 static void exec_node_filter(zval* arr_head, zval* arr_cur, struct ast_node* tok, zval* return_value) {
+  if (arr_cur == NULL || Z_TYPE_P(arr_cur) != IS_ARRAY) {
+    return;
+  }
+
   zend_ulong idx;
   zval* data;
 
