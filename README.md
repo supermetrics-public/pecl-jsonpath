@@ -204,7 +204,16 @@ echo "\n\n";
 ]
 */
 
-echo "Example 6 - Lookup by ISBN:\n";
+echo "Example 6 - The title of the last book:\n";
+echo json_encode($jsonPath->find($data, "$..book[-1].title"), JSON_PRETTY_PRINT);
+echo "\n\n";
+/*
+[
+    "The Lord of the Rings"
+]
+*/
+
+echo "Example 7 - Lookup by ISBN:\n";
 echo json_encode($jsonPath->find($data, "$.store.book[?(@.isbn == '0-395-19395-8')]"), JSON_PRETTY_PRINT);
 echo "\n\n";
 /*
@@ -218,11 +227,70 @@ echo "\n\n";
     }
 ]
 */
+
+echo "Example 8 - Lookup by category and price:\n";
+echo json_encode($jsonPath->find($data, "$.store.book[?(@.category == 'fiction' && @.price <= 15.00)]"), JSON_PRETTY_PRINT);
+echo "\n\n";
+/*
+[
+    {
+        "category": "fiction",
+        "author": "Evelyn Waugh",
+        "title": "Sword of Honour",
+        "price": 12.99
+    },
+    {
+        "category": "fiction",
+        "author": "Herman Melville",
+        "title": "Moby Dick",
+        "isbn": "0-553-21311-3",
+        "price": 8.99
+    }
+]
+*/
+
+echo "Example 9 - Lookup by author using regular expression:\n";
+echo json_encode($jsonPath->find($data, "$.store.book[?(@.author =~ /Tolkien$/)]"), JSON_PRETTY_PRINT);
+echo "\n\n";
+/*
+[
+    {
+        "category": "fiction",
+        "author": "J. R. R. Tolkien",
+        "title": "The Lord of the Rings",
+        "isbn": "0-395-19395-8",
+        "price": 22.99
+    }
+]
+*/
+
+echo "Example 10 - The titles of books without an ISBN:\n";
+echo json_encode($jsonPath->find($data, "$.store.book[?(!@.isbn)].title"), JSON_PRETTY_PRINT);
+echo "\n\n";
+/*
+[
+    "Sayings of the Century",
+    "Sword of Honour"
+]
+*/
 ```
 
 ## JSONPath expression syntax
 
-To be added.
+| Notation                     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `$`                          | References the root element.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `@`                          | References the current element. Often used in filter expressions.                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `.property`                  | Picks the child element with the given property name, using dot notation.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `["property"]`               | Picks the child element with the given property name, using bracket notation. Use this when the property name contains special characters.                                                                                                                                                                                                                                                                                                                                             |
+| `[n]`                        | Picks the array element at index _n_. Use a negative index to count from the end of the array.                                                                                                                                                                                                                                                                                                                                                                                         |
+| `[start:end:step]`           | Picks every _step_ array elements from index _start_ to index _end_, end exclusive. Use negative indexes to count from the end of the array, `-1` denoting the last item. Examples:<br/><ul><li>`$.list[0:3]` - Takes the first three elements</li><li>`$.list[1:]` - Leaves out the first element</li><li>`$.list[1:-1]` - Leaves out the first and last elements</li><li>`$.list[::2]` - Takes every second element</li></ul>                                                        |
+| `["property1", "property2"]` | Picks the given properties from an array.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `*`                          | Picks all elements in an array.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `..property`                 | Recursively picks all elements with the given property name.                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `[?(expression)]`            | Picks all elements in an array that match the given filter. Use `@` to reference the current element. Supported filter operators: <ul><li>`==`: Equals</li><li>`!=`: Does not equal</li><li>`=~ /REGEX/`: Matches the given regular expression _REGEX_</li><li>`>`: Is greater than</li><li>`>=`: Is greater than or equal to</li><li>`<`: Is less than</li><li>`<=`: Is less than or equal to</li><li>`!`: Negation</li><li>`&&`: AND</li><li><code>&#124;&#124;</code>: OR</li></ul> |
+
+Also see the [examples](#examples).
 
 ## Performance benchmarks
 
