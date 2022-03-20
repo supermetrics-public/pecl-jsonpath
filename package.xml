@@ -16,24 +16,27 @@
   <email/>
   <active>yes</active>
  </lead>
- <date>2022-01-13</date>
+ <date>2022-03-20</date>
  <version>
-  <release>0.9.6</release>
-  <api>0.9.4</api>
+  <release>1.0.0</release>
+  <api>1.0.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
 ## Changes
-- Basic Windows CI (build and test) @cmb69 (#154)
-- Fix Windows builds @cmb69 (#153)
-- Revert "Issue #150 - pass AST\_RECURSE token to exec\_recursive\_descent()" @mkaminski1988 (#152)
 
 ## Bug fixes
-- Dereference values to always get the underlying value @crocodele (#151)
+- Issue #158 - Skip child filter check on non-arrays @mkaminski1988 (#159)
+- Issue #156 - Bubble up filter parsing error @mkaminski1988 (#157)
+
+## Maintenance
+- Remove alpha suffix from PECL install command as we release version 1.0.0 @crocodele (#162)
+- Add documentation to describe the notation, along with more examples @crocodele (#160)
+- Include PHP 8.2 nightly as a version for test runs on Linux @crocodele (#161)
  </notes>
  <contents>
   <dir name="/">
@@ -368,6 +371,8 @@
      <file name="00145.phpt" role="test"/>
      <file name="00146-1.phpt" role="test"/>
      <file name="00146-2.phpt" role="test"/>
+     <file name="00156.phpt" role="test"/>
+     <file name="00158.phpt" role="test"/>
     </dir>
     <dir name="lex_errs">
      <file name="001.phpt" role="test"/>
@@ -411,6 +416,31 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2022-03-20</date>
+   <time>11:43:19</time>
+   <version>
+    <release>1.0.0</release>
+    <api>1.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+## Changes
+
+## Bug fixes
+- Issue #158 - Skip child filter check on non-arrays @mkaminski1988 (#159)
+- Issue #156 - Bubble up filter parsing error @mkaminski1988 (#157)
+
+## Maintenance
+- Remove alpha suffix from PECL install command as we release version 1.0.0 @crocodele (#162)
+- Add documentation to describe the notation, along with more examples @crocodele (#160)
+- Include PHP 8.2 nightly as a version for test runs on Linux @crocodele (#161)
+   </notes>
+  </release>
   <release>
    <date>2022-01-13</date>
    <time>12:59:18</time>
