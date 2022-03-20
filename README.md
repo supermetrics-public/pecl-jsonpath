@@ -25,7 +25,7 @@ PHP implementations like [this](https://github.com/SoftCreatR/JSONPath), [this](
 ### Option 1: Build using PECL
 
 ```bash
-$ pecl install jsonpath-alpha
+$ pecl install jsonpath
 ```
 
 For more instructions on how to use PECL, [see the PECL documentation](https://www.php.net/manual/en/install.pecl.php).
