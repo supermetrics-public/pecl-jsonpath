@@ -1,12 +1,10 @@
 #include "lexer.h"
 
-#include <string.h>
 #ifndef S_SPLINT_S
 #include <ctype.h>
 #endif
 
 #include "exceptions.h"
-
 #define CUR_CHAR() **p
 #define NEXT_CHAR() (*p)++
 #define EAT_WHITESPACE() for (; CUR_CHAR() == ' '; NEXT_CHAR())
@@ -20,33 +18,34 @@ static void extract_unbounded_numeric_literal(char** p, struct jpath_token* toke
 static void raise_error(const char* msg, const char* json_path, const char* cur_pos);
 
 const char* LEX_STR[] = {
-    "LEX_AND",             /* && */
-    "LEX_CHILD_SEP",       /* , */
-    "LEX_CUR_NODE",        /* @ */
-    "LEX_DEEP_SCAN",       /* .. */
-    "LEX_EQ",              /* == */
-    "LEX_EXPR_END",        /* ] */
-    "LEX_EXPR_START",      /* ? */
-    "LEX_FILTER_START",    /* [ */
-    "LEX_GT",              /* > */
-    "LEX_GTE",             /* >= */
-    "LEX_LITERAL",         /* "some string" 'some string' */
-    "LEX_LITERAL_BOOL",    /* true, false */
-    "LEX_LITERAL_NULL",    /* null */
-    "LEX_LITERAL_NUMERIC", /* long, double */
-    "LEX_LT",              /* < */
-    "LEX_LTE",             /* <= */
-    "LEX_NEGATION",        /* !@.value */
-    "LEX_NEQ",             /* != */
-    "LEX_NODE",            /* .child, ['child'] */
-    "LEX_NOT_FOUND",       /* Token not found */
-    "LEX_OR",              /* || */
-    "LEX_PAREN_CLOSE",     /* ) */
-    "LEX_PAREN_OPEN",      /* ( */
-    "LEX_RGXP",            /* =~ */
-    "LEX_ROOT",            /* $ */
-    "LEX_SLICE",           /* : */
-    "LEX_WILD_CARD",       /* * */
+    "LEX_AND",               /* && */
+    "LEX_CHILD_SEP",         /* , */
+    "LEX_CUR_NODE",          /* @ */
+    "LEX_DEEP_SCAN",         /* .. */
+    "LEX_EQ",                /* == */
+    "LEX_EXPR_END",          /* ] */
+    "LEX_EXPR_START",        /* ? */
+    "LEX_FILTER_START",      /* [ */
+    "LEX_GT",                /* > */
+    "LEX_GTE",               /* >= */
+    "LEX_LITERAL",           /* "some string" 'some string' */
+    "LEX_LITERAL_BOOL",      /* true, false */
+    "LEX_LITERAL_NULL",      /* null */
+    "LEX_LITERAL_NUMERIC",   /* long, double */
+    "LEX_LITERAL_UNESCAPED", /* "some \"string\"" 'some \'string\'' */
+    "LEX_LT",                /* < */
+    "LEX_LTE",               /* <= */
+    "LEX_NEGATION",          /* !@.value */
+    "LEX_NEQ",               /* != */
+    "LEX_NODE",              /* .child, ['child'] */
+    "LEX_NOT_FOUND",         /* Token not found */
+    "LEX_OR",                /* || */
+    "LEX_PAREN_CLOSE",       /* ) */
+    "LEX_PAREN_OPEN",        /* ( */
+    "LEX_RGXP",              /* =~ */
+    "LEX_ROOT",              /* $ */
+    "LEX_SLICE",             /* : */
+    "LEX_WILD_CARD",         /* * */
 };
 
 bool scan(char** p, struct jpath_token* token, char* json_path) {
@@ -207,7 +206,6 @@ bool scan(char** p, struct jpath_token* token, char* json_path) {
         if (!extract_quoted_literal(p, json_path, token)) {
           return false;
         }
-        token->type = LEX_LITERAL;
         return true;
       case 't':
       case 'T':
@@ -282,11 +280,12 @@ static bool extract_quoted_literal(char** p, char* json_path, struct jpath_token
   token->type = LEX_LITERAL;
 
   while (CUR_CHAR() != '\0') {
-    /* Find escaped quotes and backslashes and remove the escaping by shifting the string */
+    /* Find escaped quotes and backslashes */
     if (CUR_CHAR() == '\\') {
       if (PEEK_CHAR() == '\\' || PEEK_CHAR() == '\'' || PEEK_CHAR() == '"') {
-        memmove(*p, *p + 1, strlen(*p));
-        token->len++;
+        token->type = LEX_LITERAL_UNESCAPED;
+        token->len += 2;
+        NEXT_CHAR();
         NEXT_CHAR();
         continue;
       }
