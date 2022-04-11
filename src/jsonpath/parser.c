@@ -1,9 +1,10 @@
 #include "parser.h"
 
 #include <limits.h>
+#include <php.h>
 
 #include "exceptions.h"
-#include "php.h"
+#include "ext/standard/php_string.h"
 
 #define CUR_POS() *lex_idx
 #define CONSUME_TOKEN() (CUR_POS())++
@@ -156,9 +157,16 @@ static struct ast_node* parse_union_filter_key(PARSER_PARAMS) {
   ret->data.d_list.ht = zend_new_array(1);
 
   while (HAS_TOKEN()) {
-    if (CUR_TOKEN() == LEX_LITERAL) {
+    if (CUR_TOKEN() == LEX_LITERAL || CUR_TOKEN() == LEX_LITERAL_UNESCAPED) {
       ret->type = AST_UNION_KEY;
-      ht_append_string(ret->data.d_list.ht, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN());
+      if (CUR_TOKEN() == LEX_LITERAL_UNESCAPED) {
+        zend_string* str = zend_string_init(CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN(), 0);
+        php_stripcslashes(str);
+        ht_append_string(ret->data.d_list.ht, ZSTR_VAL(str), ZSTR_LEN(str));
+        zend_string_release(str);
+      } else {
+        ht_append_string(ret->data.d_list.ht, CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN());
+      }
     } else {
       throw_jsonpath_exception("Expected string literal, got %s in key union filter", LEX_STR[CUR_TOKEN()]);
       return NULL;
@@ -332,6 +340,7 @@ static struct ast_node* parse_filter(PARSER_PARAMS) {
     case LEX_CHILD_SEP:
     case LEX_LITERAL_NUMERIC:
     case LEX_LITERAL:
+    case LEX_LITERAL_UNESCAPED:
     case LEX_SLICE:
       expr = parse_union_filter(PARSER_ARGS);
       RETURN_IF_NULL(expr);
@@ -465,11 +474,15 @@ static struct ast_node* parse_unary(PARSER_PARAMS) {
 }
 
 static struct ast_node* parse_primary(PARSER_PARAMS) {
-  if (CUR_TOKEN() == LEX_LITERAL) {
+  if (CUR_TOKEN() == LEX_LITERAL || CUR_TOKEN() == LEX_LITERAL_UNESCAPED) {
     struct ast_node* ret = GET_NODE(AST_LITERAL);
     RETURN_IF_NULL(ret);
 
     ret->data.d_literal.str = zend_string_init(CUR_TOKEN_LITERAL(), CUR_TOKEN_LEN(), 0);
+
+    if (CUR_TOKEN() == LEX_LITERAL_UNESCAPED) {
+      php_stripcslashes(ret->data.d_literal.str);
+    }
 
     CONSUME_TOKEN();
     return ret;
