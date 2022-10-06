@@ -296,6 +296,8 @@ Also see the [examples](#examples).
 
 ![Chart showing a performance comparison between JsonPath-PHP, native PHP (JsonPath-PHP sometimes faster, sometimes slower), and the fastest tested PHP library (JsonPath-PHP always faster)](benchmark.png)
 
+The numbers in the chart were obtained when running the benchmark suite in PHP 8.1 with OPcache and JIT enabled.
+
 If you want to run benchmarks yourself, have a look at the [jsonpath-benchmark](https://github.com/supermetrics-public/jsonpath-benchmark) repo.
 
 ## License
