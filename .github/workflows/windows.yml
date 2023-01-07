@@ -7,7 +7,7 @@ jobs:
         shell: cmd
     strategy:
       matrix:
-          version: ['7.4', '8.0', '8.1']
+          version: ['7.4', '8.0', '8.1', '8.2']
           arch: [x64]
           ts: [ts]
     runs-on: windows-2019
@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup PHP
         id: setup-php
-        uses: cmb69/setup-php-sdk@v0.2
+        uses: cmb69/setup-php-sdk@v0.6
         with:
           version: ${{matrix.version}}
           arch: ${{matrix.arch}}
