@@ -61,12 +61,18 @@ $ sudo service php-fpm restart
 ```php
 <?php
 
-$jsonPath = new \JsonPath\JsonPath();
+use JsonPath\JsonPath;
+use JsonPath\JsonPathException;
 
-// Query a data array using a JSONPath expression string.
-// Returns an array of matching elements, or false if nothing was found.
-$result = $jsonPath->find($data, $selector);
+$jsonPath = new JsonPath();
 
+try {
+    // Query a data array using a JSONPath expression string.
+    // Returns an array of matching elements, or false if nothing was found.
+    $result = $jsonPath->find($data, $selector);
+} catch (JsonPathException $exception) {
+    echo $exception->getMessage(); // Usually a syntax error in the selector
+}
 ```
 
 ## Examples
