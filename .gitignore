@@ -1,5 +1,6 @@
 # Build
 .deps
+*.dep
 *.lo
 *.la
 .libs

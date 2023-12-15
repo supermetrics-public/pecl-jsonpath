@@ -1,4 +1,4 @@
-# JsonPath-PHP - extension for PHP 7.4+
+# JsonPath-PHP - extension for PHP 8.0+
 
 [![Build status](https://github.com/supermetrics-public/pecl-jsonpath/workflows/Build/badge.svg)](https://github.com/supermetrics-public/pecl-jsonpath/actions?query=workflow%3ABuild)
 ![Code coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/crocodele/5ceb08845fe95635fc41af2f4c86c631/raw/pecl-jsonpath__main.json&labelColor=343940)

@@ -340,7 +340,7 @@ class PackageXMLElement extends SimpleXMLElement
  <dependencies>
   <required>
    <php>
-    <min>7.4.0</min>
+    <min>8.0.0</min>
    </php>
    <pearinstaller>
     <min>1.10.0</min>
