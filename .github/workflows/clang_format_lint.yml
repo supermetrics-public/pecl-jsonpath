@@ -1,14 +1,18 @@
 name: Run lint check with clang-format
 
-on: [push]
+on:
+  push:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: DoozyX/clang-format-lint-action@v0.12
+      - name: Checkout jsonpath
+        uses: actions/checkout@v2
+
+      - name: Perform linting
+        uses: DoozyX/clang-format-lint-action@v0.12
         with:
           source: './jsonpath.c ./php_jsonpath.h ./src/jsonpath'
           extensions: 'c,h'

@@ -1,36 +1,50 @@
-name: Build and Test
-on: [push, pull_request]
+name: Build and test on Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  release:
+    types: [ created ]
+
 jobs:
-  build:
+  tests:
+    runs-on: windows-2019
+    name: Build and test
     defaults:
       run:
         shell: cmd
     strategy:
       matrix:
-          version: ['8.0', '8.1', '8.2']
-          arch: [x64]
-          ts: [ts]
-    runs-on: windows-2019
+        version: [ "8.0", "8.1", "8.2", "8.3" ]
+        arch: [ "x64" ]
+        ts: [ "ts" ]
     steps:
       - name: Checkout jsonpath
         uses: actions/checkout@v2
+
       - name: Setup PHP
         id: setup-php
-        uses: cmb69/setup-php-sdk@v0.6
+        uses: php/setup-php-sdk@v0.8
         with:
           version: ${{matrix.version}}
           arch: ${{matrix.arch}}
           ts: ${{matrix.ts}}
+
       - name: Enable Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{matrix.arch}}
           toolset: ${{steps.setup-php.outputs.toolset}}
-      - name: phpize
+
+      - name: Run phpize for jsonpath
         run: phpize
-      - name: configure
+
+      - name: Run configure for jsonpath
         run: configure --enable-jsonpath --with-prefix=${{steps.setup-php.outputs.prefix}}
-      - name: make
+
+      - name: Compile jsonpath
         run: nmake
-      - name: test
+
+      - name: Run jsonpath tests
         run: nmake test TESTS="-j2 --show-diff -g FAIL,BORK,WARN,LEAK tests"
