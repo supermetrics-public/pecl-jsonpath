@@ -37,11 +37,14 @@ jobs:
           arch: ${{matrix.arch}}
           toolset: ${{steps.setup-php.outputs.toolset}}
 
+      - name: Run phpize for jsonpath
+        run: phpize
+
+      - name: Run configure for jsonpath
+        run: configure --enable-jsonpath --with-prefix=${{steps.setup-php.outputs.prefix}}
+
       - name: Compile jsonpath
-        run: |
-          phpize \
-          && configure --enable-jsonpath --with-prefix=${{steps.setup-php.outputs.prefix}} \
-          && nmake
+        run: nmake
 
       - name: Run jsonpath tests
         run: nmake test TESTS="-j2 --show-diff -g FAIL,BORK,WARN,LEAK tests"
