@@ -2,7 +2,7 @@
 Test root on scalar false
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
-<?php if (version_compare(PHP_VERSION, '8.0.0', '>=')) print "skip"; ?>
+<?php if (version_compare(PHP_VERSION, '8.0.0', '<')) print "skip"; ?>
 --FILE--
 <?php
 
@@ -14,5 +14,8 @@ $result = $jsonPath->find($data, "$");
 var_dump($result);
 ?>
 --EXPECTF--
-Warning: JsonPath\JsonPath::find() expects parameter 1 to be array, bool given in %s003_php7.php on line %d
-NULL
+Fatal error: Uncaught TypeError: JsonPath\JsonPath::find(): Argument #1 ($data) must be of type array, %s given in %s003.php:%d
+Stack trace:
+%s
+%s
+%s
