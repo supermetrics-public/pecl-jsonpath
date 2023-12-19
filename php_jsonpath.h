@@ -24,7 +24,7 @@
 extern zend_module_entry jsonpath_module_entry;
 #define phpext_jsonpath_ptr &jsonpath_module_entry
 
-#define PHP_JSONPATH_VERSION "1.0.1"
+#define PHP_JSONPATH_VERSION "2.0.0"
 
 #ifdef PHP_WIN32
 #define PHP_JSONPATH_API __declspec(dllexport)

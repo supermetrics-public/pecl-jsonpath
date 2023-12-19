@@ -16,10 +16,10 @@
   <email/>
   <active>yes</active>
  </lead>
- <date>2023-12-14</date>
+ <date>2023-12-19</date>
  <version>
-  <release>1.0.1</release>
-  <api>1.0.0</api>
+  <release>2.0.0</release>
+  <api>2.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -27,12 +27,8 @@
  </stability>
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
-* Issue #164 - refactor string unescaping by @mkaminski1988 in https://github.com/supermetrics-public/pecl-jsonpath/pull/165
-* Update benchmark chart with benchmarks from latest software versions and run in PHP 8.1 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/166
-* Remove release-drafter workflow. by @dawitnida in https://github.com/supermetrics-public/pecl-jsonpath/pull/167
-* Add PHP 8.3 nightly on Linux and PHP 8.2 on Windows to builds to run tests on by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/168
-* relax test for 8.3 by @remicollet in https://github.com/supermetrics-public/pecl-jsonpath/pull/169
-* Add exception catching to usage section in README by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/170
+* Drop support for PHP 7.4 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/172
+* Test with PHP 8.3 on Windows, unify naming and formatting in workflow files by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/173
  </notes>
  <contents>
   <dir name="/">
@@ -41,7 +37,6 @@
    <file name="jsonpath.c" role="src"/>
    <file name="jsonpath.stub.php" role="src"/>
    <file name="jsonpath_arginfo.h" role="src"/>
-   <file name="jsonpath_legacy_arginfo.h" role="src"/>
    <file name="LICENSE" role="doc"/>
    <file name="php_jsonpath.h" role="src"/>
    <file name="README.md" role="doc"/>
@@ -403,7 +398,7 @@
  <dependencies>
   <required>
    <php>
-    <min>7.4.0</min>
+    <min>8.0.0</min>
    </php>
    <pearinstaller>
     <min>1.10.0</min>
@@ -413,6 +408,23 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2023-12-19</date>
+   <time>00:00:29</time>
+   <version>
+    <release>2.0.0</release>
+    <api>2.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+* Drop support for PHP 7.4 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/172
+* Test with PHP 8.3 on Windows, unify naming and formatting in workflow files by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/173
+   </notes>
+  </release>
   <release>
    <date>2023-12-14</date>
    <time>13:31:31</time>
