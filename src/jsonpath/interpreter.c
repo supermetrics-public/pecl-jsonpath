@@ -293,7 +293,11 @@ static bool compare_rgxp(zval* lh, zval* rh) {
 
   zend_string* zs_lh = zend_string_copy(Z_STR_P(lh));
 
+#if PHP_VERSION_ID >= 80400
+  php_pcre_match_impl(pce, zs_lh, &retval, &subpats, 0, 0, 0);
+#else
   php_pcre_match_impl(pce, zs_lh, &retval, &subpats, 0, 0, 0, 0);
+#endif
 
   zend_string_release_ex(zs_lh, 0);
   zval_ptr_dtor(&subpats);
