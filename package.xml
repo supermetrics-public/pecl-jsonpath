@@ -16,9 +16,9 @@
   <email/>
   <active>yes</active>
  </lead>
- <date>2023-12-19</date>
+ <date>2024-01-08</date>
  <version>
-  <release>2.0.0</release>
+  <release>2.1.0</release>
   <api>2.0.0</api>
  </version>
  <stability>
@@ -27,8 +27,8 @@
  </stability>
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
-* Drop support for PHP 7.4 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/172
-* Test with PHP 8.3 on Windows, unify naming and formatting in workflow files by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/173
+* Add support for PHP 8.4 (nightly) and run tests also on PHP 8.4 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/176
+* Remove some tests specific to PHP 7 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/177
  </notes>
  <contents>
   <dir name="/">
@@ -139,8 +139,7 @@
      <file name="011.phpt" role="test"/>
      <file name="012.phpt" role="test"/>
      <file name="013.phpt" role="test"/>
-     <file name="014_php7.phpt" role="test"/>
-     <file name="014_php8.phpt" role="test"/>
+     <file name="014.phpt" role="test"/>
      <file name="015.phpt" role="test"/>
      <file name="016.phpt" role="test"/>
      <file name="017.phpt" role="test"/>
@@ -221,8 +220,7 @@
      <file name="044.phpt" role="test"/>
      <file name="045.phpt" role="test"/>
      <file name="046.phpt" role="test"/>
-     <file name="047_php7.phpt" role="test"/>
-     <file name="047_php8.phpt" role="test"/>
+     <file name="047.phpt" role="test"/>
      <file name="048.phpt" role="test"/>
      <file name="049.phpt" role="test"/>
      <file name="050.phpt" role="test"/>
@@ -315,12 +313,9 @@
     </dir>
     <dir name="comparison_root">
      <file name="001.phpt" role="test"/>
-     <file name="002_php7.phpt" role="test"/>
-     <file name="002_php8.phpt" role="test"/>
-     <file name="003_php7.phpt" role="test"/>
-     <file name="003_php8.phpt" role="test"/>
-     <file name="004_php7.phpt" role="test"/>
-     <file name="004_php8.phpt" role="test"/>
+     <file name="002.phpt" role="test"/>
+     <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
     </dir>
     <dir name="comparison_union">
      <file name="001.phpt" role="test"/>
@@ -408,6 +403,23 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2024-01-08</date>
+   <time>17:31:07</time>
+   <version>
+    <release>2.1.0</release>
+    <api>2.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+* Add support for PHP 8.4 (nightly) and run tests also on PHP 8.4 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/176
+* Remove some tests specific to PHP 7 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/177
+   </notes>
+  </release>
   <release>
    <date>2023-12-19</date>
    <time>00:00:29</time>
