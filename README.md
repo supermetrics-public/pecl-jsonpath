@@ -22,7 +22,9 @@ PHP implementations like [this](https://github.com/SoftCreatR/JSONPath), [this](
 
 ## Installation
 
-### Option 1: Build using PECL
+### Linux and macOS
+
+#### Option 1: Build using PECL
 
 ```bash
 $ pecl install jsonpath
@@ -30,7 +32,7 @@ $ pecl install jsonpath
 
 For more instructions on how to use PECL, [see the PECL documentation](https://www.php.net/manual/en/install.pecl.php).
 
-### Option 2: Build manually
+#### Option 2: Build manually
 
 Clone this repository to the directory of your choice, then run:
 
@@ -42,7 +44,7 @@ $ TEST_PHP_ARGS="-q" make test
 $ sudo make install
 ```
 
-### Enable the extension
+#### Enable the extension
 
 ```bash
 $ sudo touch /etc/php.d/jsonpath.ini
@@ -55,6 +57,14 @@ If you're running PHP with the PHP-FPM service, restart it for the changes to ta
 ```bash
 $ sudo service php-fpm restart
 ```
+
+### Windows
+
+For pre-built Windows DLLs, see the [PHP Extensions Repository](https://phpext.phptools.online/extension/tools-and-utilities/jsonpath-308).
+
+Remember to add `extension=jsonpath` to your php.ini in order to enable the extension.
+
+For more instructions on installing PHP extensions, [see the PECL documentation](https://www.php.net/manual/en/install.pecl.windows.php).
 
 ## Usage
 
