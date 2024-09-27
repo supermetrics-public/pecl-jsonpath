@@ -1,0 +1,25 @@
+{
+  "name": "supermetrics/jsonpath",
+  "type": "php-ext",
+  "license": "PHP-3.01",
+  "description": "Extract data from a decoded JSON document using the versatile JSONPath query language",
+  "require": {
+    "php": ">=8.0,<8.5"
+  },
+  "php-ext": {
+    "extension-name": "jsonpath",
+    "priority": 80,
+    "configure-options": [
+      {
+        "name": "enable-jsonpath",
+        "description": "Whether to enable JSONPath support",
+        "needs-value": false
+      },
+      {
+        "name": "enable-code-coverage",
+        "description": "Whether to enable code coverage (relevant for extension development only!)",
+        "needs-value": false
+      }
+    ]
+  }
+}
