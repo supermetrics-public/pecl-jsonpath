@@ -285,13 +285,38 @@ static bool compare_rgxp(zval* lh, zval* rh) {
     return false;
   }
 
+  zend_string* zs_lh;
+  if (Z_TYPE_P(lh) == IS_STRING) {
+    zs_lh = zend_string_copy(Z_STR_P(lh));
+  } else if (Z_TYPE_P(lh) == IS_ARRAY) {
+    // Skip silently
+    return false;
+  } else if (Z_TYPE_P(lh) == IS_OBJECT) {
+    if (!zend_hash_str_exists(&Z_OBJCE_P(lh)->function_table, "__tostring", sizeof("__tostring") - 1)) {
+      // Object doesn't provide a __toString() method, skip silently
+      return false;
+    }
+
+    zs_lh = zval_get_string(lh);
+  } else if (Z_TYPE_P(lh) == IS_NULL) {
+    zs_lh = zend_string_init("", 0, 0);
+  } else if (Z_TYPE_P(lh) == IS_TRUE) {
+    zs_lh = zend_string_init("true", 4, 0);
+  } else if (Z_TYPE_P(lh) == IS_FALSE) {
+    zs_lh = zend_string_init("false", 5, 0);
+  } else {
+    zs_lh = zval_get_string(lh);
+    if (!zs_lh) {
+      throw_jsonpath_exception("Failed to convert value to string for regex matching");
+      return false;
+    }
+  }
+
   zval retval;
   zval subpats;
 
   ZVAL_NULL(&retval);
   ZVAL_NULL(&subpats);
-
-  zend_string* zs_lh = zend_string_copy(Z_STR_P(lh));
 
 #if PHP_VERSION_ID >= 80400
   php_pcre_match_impl(pce, zs_lh, &retval, &subpats, 0, 0, 0);
