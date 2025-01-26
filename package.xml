@@ -16,9 +16,9 @@
   <email/>
   <active>yes</active>
  </lead>
- <date>2024-01-08</date>
+ <date>2025-01-26</date>
  <version>
-  <release>2.1.0</release>
+  <release>2.1.1</release>
   <api>2.0.0</api>
  </version>
  <stability>
@@ -27,8 +27,15 @@
  </stability>
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
-* Add support for PHP 8.4 (nightly) and run tests also on PHP 8.4 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/176
-* Remove some tests specific to PHP 7 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/177
+* Add link to PHP Extensions Repository for Windows DLLs by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/180
+* Add dependabot configuration by @dawitnida in https://github.com/supermetrics-public/pecl-jsonpath/pull/181
+* Bump actions/checkout from 2 to 4 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/183
+* Bump DoozyX/clang-format-lint-action from 0.12 to 0.17 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/182
+* Bump schneegans/dynamic-badges-action from 1.0.0 to 1.7.0 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/184
+* Bump php/setup-php-sdk from 0.8 to 0.9 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/185
+* Bump DoozyX/clang-format-lint-action from 0.17 to 0.18 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/186
+* Add composer.json for compatibility with PIE by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/187
+* Fix segmentation fault when matching regex string against non-string values by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/190
  </notes>
  <contents>
   <dir name="/">
@@ -383,6 +390,7 @@
      <file name="001.phpt" role="test"/>
      <file name="002.phpt" role="test"/>
      <file name="003.phpt" role="test"/>
+     <file name="004.phpt" role="test"/>
     </dir>
     <dir name="utils">
      <file name="sort_recursively.php" role="test"/>
@@ -403,6 +411,30 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2025-01-26</date>
+   <time>00:57:14</time>
+   <version>
+    <release>2.1.1</release>
+    <api>2.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+* Add link to PHP Extensions Repository for Windows DLLs by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/180
+* Add dependabot configuration by @dawitnida in https://github.com/supermetrics-public/pecl-jsonpath/pull/181
+* Bump actions/checkout from 2 to 4 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/183
+* Bump DoozyX/clang-format-lint-action from 0.12 to 0.17 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/182
+* Bump schneegans/dynamic-badges-action from 1.0.0 to 1.7.0 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/184
+* Bump php/setup-php-sdk from 0.8 to 0.9 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/185
+* Bump DoozyX/clang-format-lint-action from 0.17 to 0.18 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/186
+* Add composer.json for compatibility with PIE by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/187
+* Fix segmentation fault when matching regex string against non-string values by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/190
+   </notes>
+  </release>
   <release>
    <date>2024-01-08</date>
    <time>17:31:07</time>
