@@ -53,7 +53,7 @@ $result = $jsonPath->find($data, "$[?(@.key>42)]");
 var_dump($result);
 ?>
 --EXPECT--
-array(3) {
+array(4) {
   [0]=>
   array(1) {
     ["key"]=>
@@ -68,5 +68,10 @@ array(3) {
   array(1) {
     ["key"]=>
     int(100)
+  }
+  [3]=>
+  array(1) {
+    ["key"]=>
+    string(2) "43"
   }
 }

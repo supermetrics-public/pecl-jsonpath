@@ -525,11 +525,15 @@ static BOOL_OR_ERR evaluate_binary(zval* arr_head, zval* arr_cur, struct ast_nod
   }
 }
 
-/* Determine if two zvals can be checked for inequality (>, <, >=, <=). Specifically forbid comparing strings with
- * numeric values in order to avoid returning true for scenarios such as 42 > "value". */
+/* Determine if two zvals can be checked for inequality (>, <, >=, <=) */
 static bool can_check_inequality(zval* lhs, zval* rhs) {
-  bool lhs_is_numeric = (Z_TYPE_P(lhs) == IS_LONG || Z_TYPE_P(lhs) == IS_DOUBLE);
-  bool rhs_is_numeric = (Z_TYPE_P(rhs) == IS_LONG || Z_TYPE_P(rhs) == IS_DOUBLE);
+  bool lhs_is_numeric =
+      (Z_TYPE_P(lhs) == IS_LONG || Z_TYPE_P(lhs) == IS_DOUBLE ||
+       (Z_TYPE_P(lhs) == IS_STRING && is_numeric_string(Z_STRVAL_P(lhs), Z_STRLEN_P(lhs), NULL, NULL, 0)));
+
+  bool rhs_is_numeric =
+      (Z_TYPE_P(rhs) == IS_LONG || Z_TYPE_P(rhs) == IS_DOUBLE ||
+       (Z_TYPE_P(rhs) == IS_STRING && is_numeric_string(Z_STRVAL_P(rhs), Z_STRLEN_P(rhs), NULL, NULL, 0)));
 
   if (lhs_is_numeric && rhs_is_numeric) {
     return true;
