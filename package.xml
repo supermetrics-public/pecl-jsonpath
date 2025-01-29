@@ -16,10 +16,10 @@
   <email/>
   <active>yes</active>
  </lead>
- <date>2025-01-26</date>
+ <date>2025-01-29</date>
  <version>
-  <release>2.1.1</release>
-  <api>2.0.0</api>
+  <release>3.0.0</release>
+  <api>3.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -27,15 +27,32 @@
  </stability>
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
-* Add link to PHP Extensions Repository for Windows DLLs by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/180
-* Add dependabot configuration by @dawitnida in https://github.com/supermetrics-public/pecl-jsonpath/pull/181
-* Bump actions/checkout from 2 to 4 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/183
-* Bump DoozyX/clang-format-lint-action from 0.12 to 0.17 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/182
-* Bump schneegans/dynamic-badges-action from 1.0.0 to 1.7.0 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/184
-* Bump php/setup-php-sdk from 0.8 to 0.9 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/185
-* Bump DoozyX/clang-format-lint-action from 0.17 to 0.18 by @dependabot in https://github.com/supermetrics-public/pecl-jsonpath/pull/186
-* Add composer.json for compatibility with PIE by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/187
-* Fix segmentation fault when matching regex string against non-string values by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/190
+## Breaking changes
+
+In comparisons involving numbers, numeric strings are now treated as numbers.
+
+Example:
+```
+$data = [
+    'items' =&gt; [
+        [
+            'id' =&gt; 1,
+            'quantity' =&gt; 5,
+        ],
+        [
+            'id' =&gt; 2,
+            'quantity' =&gt; '8',
+        ],
+    ],
+];
+```
+
+Before: `$.items[?(@.quantity &gt; 0)]` returns `[['id' =&gt; 1, 'quantity' =&gt; 5]]`.
+After: `$.items[?(@.quantity &gt; 0)]` returns `[['id' =&gt; 1, 'quantity' =&gt; 5], ['id' =&gt; 2, 'quantity' =&gt; '8']]`.
+
+## What's Changed
+* Test also on PHP 8.4 for Windows and PHP 8.5 (nightly) for Linux, cache PHP-SDK in Windows by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/192
+* Allow numeric strings in number comparisons by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/191
  </notes>
  <contents>
   <dir name="/">
@@ -83,6 +100,9 @@
     <file name="021.phpt" role="test"/>
     <file name="022.phpt" role="test"/>
     <file name="023.phpt" role="test"/>
+    <file name="024.phpt" role="test"/>
+    <file name="025.phpt" role="test"/>
+    <file name="026.phpt" role="test"/>
     <dir name="bounds_checks">
      <file name="002.phpt" role="test"/>
      <file name="003.phpt" role="test"/>
@@ -411,6 +431,47 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2025-01-29</date>
+   <time>12:55:04</time>
+   <version>
+    <release>3.0.0</release>
+    <api>3.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+## Breaking changes
+
+In comparisons involving numbers, numeric strings are now treated as numbers.
+
+Example:
+```
+$data = [
+    'items' =&gt; [
+        [
+            'id' =&gt; 1,
+            'quantity' =&gt; 5,
+        ],
+        [
+            'id' =&gt; 2,
+            'quantity' =&gt; '8',
+        ],
+    ],
+];
+```
+
+Before: `$.items[?(@.quantity &gt; 0)]` returns `[['id' =&gt; 1, 'quantity' =&gt; 5]]`.
+After: `$.items[?(@.quantity &gt; 0)]` returns `[['id' =&gt; 1, 'quantity' =&gt; 5], ['id' =&gt; 2, 'quantity' =&gt; '8']]`.
+
+## What's Changed
+* Test also on PHP 8.4 for Windows and PHP 8.5 (nightly) for Linux, cache PHP-SDK in Windows by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/192
+* Allow numeric strings in number comparisons by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/191
+   </notes>
+  </release>
   <release>
    <date>2025-01-26</date>
    <time>00:57:14</time>
