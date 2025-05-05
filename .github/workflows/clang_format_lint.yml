@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Perform linting
-        uses: DoozyX/clang-format-lint-action@v0.18
+        uses: DoozyX/clang-format-lint-action@v0.20
         with:
           source: './jsonpath.c ./php_jsonpath.h ./src/jsonpath'
           extensions: 'c,h'
