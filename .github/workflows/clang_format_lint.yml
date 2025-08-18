@@ -9,7 +9,7 @@ jobs:
 
     steps:
       - name: Checkout jsonpath
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Perform linting
         uses: DoozyX/clang-format-lint-action@v0.20
