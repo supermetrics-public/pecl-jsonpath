@@ -15,10 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         php: [ "8.0", "8.1", "8.2", "8.3", "8.4", "8.5" ]
-        use-opcache: [ "true", "false" ]
-        exclude:
-          - php: "8.5"
-            use-opcache: "true" # In PHP 8.5, OPCache is always enabled and trying to load opcache.so fails
+        use-opcache: [ "true", "false" ] # In PHP 8.5, OPCache is always enabled and trying to load opcache.so fails
 
     steps:
       - name: Checkout jsonpath
@@ -43,7 +40,13 @@ jobs:
       - name: Define PHP arguments
         run: |
           TEST_PHP_ARGS="-n"
-          [[ "${{ matrix.use-opcache }}" != "true" ]] || TEST_PHP_ARGS="$TEST_PHP_ARGS -d zend_extension=opcache.so -d opcache.enable=1 -d opcache.enable_cli=1"
+          if [[ "${{ matrix.php }}" == "8.5" && "${{ matrix.use-opcache }}" == "false" ]]; then
+            TEST_PHP_ARGS="$TEST_PHP_ARGS -d opcache.enable=0 -d opcache.enable_cli=0"
+          elif [[ "${{ matrix.php }}" == "8.5" && "${{ matrix.use-opcache }}" == "true" ]]; then
+            TEST_PHP_ARGS="$TEST_PHP_ARGS -d opcache.enable=1 -d opcache.enable_cli=1"
+          elif [[ "${{ matrix.use-opcache }}" == "true" ]]; then
+            TEST_PHP_ARGS="$TEST_PHP_ARGS -d zend_extension=opcache.so -d opcache.enable=1 -d opcache.enable_cli=1"
+          fi
           TEST_PHP_ARGS="$TEST_PHP_ARGS -d extension=$PWD/modules/jsonpath.so"
           echo "Test PHP arguments: $TEST_PHP_ARGS"
           echo "TEST_PHP_ARGS=$TEST_PHP_ARGS" >> $GITHUB_ENV
