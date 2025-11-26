@@ -16,6 +16,9 @@ jobs:
       matrix:
         php: [ "8.0", "8.1", "8.2", "8.3", "8.4", "8.5" ]
         use-opcache: [ "true", "false" ]
+        exclude:
+          - php: "8.5"
+            use-opcache: "true" # In PHP 8.5, OPCache is always enabled and trying to load opcache.so fails
 
     steps:
       - name: Checkout jsonpath
