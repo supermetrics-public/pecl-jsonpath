@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         php: [ "8.0", "8.1", "8.2", "8.3", "8.4", "8.5" ]
-        use-opcache: [ "true", "false" ] # In PHP 8.5, OPCache is always enabled and trying to load opcache.so fails
+        use-opcache: [ "true", "false" ]
 
     steps:
       - name: Checkout jsonpath
@@ -40,6 +40,7 @@ jobs:
       - name: Define PHP arguments
         run: |
           TEST_PHP_ARGS="-n"
+          # In PHP 8.5, OPCache is always compiled in, and trying to load opcache.so fails
           if [[ "${{ matrix.php }}" == "8.5" && "${{ matrix.use-opcache }}" == "false" ]]; then
             TEST_PHP_ARGS="$TEST_PHP_ARGS -d opcache.enable=0 -d opcache.enable_cli=0"
           elif [[ "${{ matrix.php }}" == "8.5" && "${{ matrix.use-opcache }}" == "true" ]]; then
