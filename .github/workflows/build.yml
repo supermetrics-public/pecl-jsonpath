@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout jsonpath
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -40,7 +40,14 @@ jobs:
       - name: Define PHP arguments
         run: |
           TEST_PHP_ARGS="-n"
-          [[ "${{ matrix.use-opcache }}" != "true" ]] || TEST_PHP_ARGS="$TEST_PHP_ARGS -d zend_extension=opcache.so -d opcache.enable=1 -d opcache.enable_cli=1"
+          # In PHP 8.5, OPCache is always compiled in, and trying to load opcache.so fails
+          if [[ "${{ matrix.php }}" == "8.5" && "${{ matrix.use-opcache }}" == "false" ]]; then
+            TEST_PHP_ARGS="$TEST_PHP_ARGS -d opcache.enable=0 -d opcache.enable_cli=0"
+          elif [[ "${{ matrix.php }}" == "8.5" && "${{ matrix.use-opcache }}" == "true" ]]; then
+            TEST_PHP_ARGS="$TEST_PHP_ARGS -d opcache.enable=1 -d opcache.enable_cli=1"
+          elif [[ "${{ matrix.use-opcache }}" == "true" ]]; then
+            TEST_PHP_ARGS="$TEST_PHP_ARGS -d zend_extension=opcache.so -d opcache.enable=1 -d opcache.enable_cli=1"
+          fi
           TEST_PHP_ARGS="$TEST_PHP_ARGS -d extension=$PWD/modules/jsonpath.so"
           echo "Test PHP arguments: $TEST_PHP_ARGS"
           echo "TEST_PHP_ARGS=$TEST_PHP_ARGS" >> $GITHUB_ENV
