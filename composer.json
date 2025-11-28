@@ -4,7 +4,7 @@
   "license": "PHP-3.01",
   "description": "Extract data from a decoded JSON document using the versatile JSONPath query language",
   "require": {
-    "php": ">=8.0,<8.5"
+    "php": ">=8.0,<8.6"
   },
   "php-ext": {
     "extension-name": "jsonpath",
