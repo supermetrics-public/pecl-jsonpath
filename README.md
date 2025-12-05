@@ -372,7 +372,7 @@ make lint-code
 
 ## Contributors
 
-JsonPath-PHP is created by [Mike Kaminski](https://github.com/mkaminski1988) and maintained by 
+JsonPath-PHP is created by [Mike Kaminski](https://github.com/mk6i) and maintained by 
 [Supermetrics](https://github.com/supermetrics-public) and Mike Kaminski.
 
 Found a bug, or missing some feature? [Raise an issue](https://github.com/supermetrics-public/pecl-jsonpath/issues) or
