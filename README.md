@@ -1,4 +1,4 @@
-# JsonPath-PHP - extension for PHP 8.0+
+# JsonPath-PHP - extension for PHP 8.1+
 
 [![Linux build status](https://github.com/supermetrics-public/pecl-jsonpath/workflows/Build%20and%20test%20on%20Linux/badge.svg)](https://github.com/supermetrics-public/pecl-jsonpath/actions/workflows/build-linux.yml)
 [![Windows build status](https://github.com/supermetrics-public/pecl-jsonpath/workflows/Build%20and%20test%20on%20Windows/badge.svg)](https://github.com/supermetrics-public/pecl-jsonpath/actions/workflows/build-windows.yml)
