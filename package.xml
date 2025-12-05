@@ -16,9 +16,9 @@
   <email/>
   <active>yes</active>
  </lead>
- <date>2025-01-29</date>
+ <date>2025-12-05</date>
  <version>
-  <release>3.0.0</release>
+  <release>3.1.0</release>
   <api>3.0.0</api>
  </version>
  <stability>
@@ -27,32 +27,21 @@
  </stability>
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
-## Breaking changes
+## Note
 
-In comparisons involving numbers, numeric strings are now treated as numbers.
-
-Example:
-```
-$data = [
-    'items' =&gt; [
-        [
-            'id' =&gt; 1,
-            'quantity' =&gt; 5,
-        ],
-        [
-            'id' =&gt; 2,
-            'quantity' =&gt; '8',
-        ],
-    ],
-];
-```
-
-Before: `$.items[?(@.quantity &gt; 0)]` returns `[['id' =&gt; 1, 'quantity' =&gt; 5]]`.
-After: `$.items[?(@.quantity &gt; 0)]` returns `[['id' =&gt; 1, 'quantity' =&gt; 5], ['id' =&gt; 2, 'quantity' =&gt; '8']]`.
+This will be the last version that supports PHP 8.0.
 
 ## What's Changed
-* Test also on PHP 8.4 for Windows and PHP 8.5 (nightly) for Linux, cache PHP-SDK in Windows by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/192
-* Allow numeric strings in number comparisons by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/191
+* Bump DoozyX/clang-format-lint-action from 0.18 to 0.20 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/196
+* Avoid trying to explicitly load OPCache in PHP 8.5 in CI, because OPCache is always included by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/200
+* Bump actions/checkout from 4 to 6 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/199
+* Bump php/setup-php-sdk from 0.10 to 0.11 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/198
+* Run CI tests on PHP 8.5 in Windows, use latest Windows runner image by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/201
+* Fix Linux build badge image, add Windows build badge by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/202
+* Add support for PHP 8.5 in installation with PIE by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/203
+
+
+**Full Changelog**: https://github.com/supermetrics-public/pecl-jsonpath/compare/v3.0.0...v3.1.0
  </notes>
  <contents>
   <dir name="/">
@@ -431,6 +420,36 @@ After: `$.items[?(@.quantity &gt; 0)]` returns `[['id' =&gt; 1, 'quantity' =&gt;
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2025-12-05</date>
+   <time>12:03:56</time>
+   <version>
+    <release>3.1.0</release>
+    <api>3.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+## Note
+
+This will be the last version that supports PHP 8.0.
+
+## What's Changed
+* Bump DoozyX/clang-format-lint-action from 0.18 to 0.20 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/196
+* Avoid trying to explicitly load OPCache in PHP 8.5 in CI, because OPCache is always included by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/200
+* Bump actions/checkout from 4 to 6 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/199
+* Bump php/setup-php-sdk from 0.10 to 0.11 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/198
+* Run CI tests on PHP 8.5 in Windows, use latest Windows runner image by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/201
+* Fix Linux build badge image, add Windows build badge by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/202
+* Add support for PHP 8.5 in installation with PIE by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/203
+
+
+**Full Changelog**: https://github.com/supermetrics-public/pecl-jsonpath/compare/v3.0.0...v3.1.0
+   </notes>
+  </release>
   <release>
    <date>2025-01-29</date>
    <time>12:55:04</time>
