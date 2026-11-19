@@ -40,6 +40,5 @@ jobs:
           php-version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
           ts: ${{ matrix.ts }}
-          args: --enable-jsonpath
           test-workers: "2"
           test-runner-args: '-q --offline --show-diff --set-timeout 120 -g FAIL,BORK,WARN,LEAK tests'
