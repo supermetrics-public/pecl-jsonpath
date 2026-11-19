@@ -9,43 +9,36 @@ on:
 
 jobs:
   tests:
-    runs-on: windows-latest
     name: Build and test
-    defaults:
-      run:
-        shell: cmd
     strategy:
+      fail-fast: false
       matrix:
-        version: [ "8.1", "8.2", "8.3", "8.4", "8.5" ]
+        version: [ "8.1", "8.2", "8.3", "8.4", "8.5", "8.6" ]
         arch: [ "x64" ]
         ts: [ "ts" ]
+        include:
+          - version: "8.1"
+            os: windows-2022
+          - version: "8.2"
+            os: windows-2022
+          - version: "8.3"
+            os: windows-2022
+          - version: "8.4"
+            os: windows-2022
+          - version: "8.5"
+            os: windows-2022
+          - version: "8.6"
+            os: windows-2025-vs2026
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout jsonpath
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Setup PHP
-        id: setup-php
-        uses: php/setup-php-sdk@v0.12
+      - name: Build and test jsonpath
+        uses: php/php-windows-builder/extension@227d3cb94e4fd9e9ab9459020df2394ee9a00eb4 # v1
         with:
-          version: ${{matrix.version}}
-          arch: ${{matrix.arch}}
-          ts: ${{matrix.ts}}
-          cache: true
-
-      - name: Enable Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: ${{matrix.arch}}
-          toolset: ${{steps.setup-php.outputs.toolset}}
-
-      - name: Run phpize for jsonpath
-        run: phpize
-
-      - name: Run configure for jsonpath
-        run: configure --enable-jsonpath --with-prefix=${{steps.setup-php.outputs.prefix}}
-
-      - name: Compile jsonpath
-        run: nmake
-
-      - name: Run jsonpath tests
-        run: nmake test TESTS="-j2 --show-diff -g FAIL,BORK,WARN,LEAK tests"
+          php-version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+          ts: ${{ matrix.ts }}
+          test-workers: "2"
+          test-runner-args: '-q --offline --show-diff --set-timeout 120 -g FAIL,BORK,WARN,LEAK tests'
