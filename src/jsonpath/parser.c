@@ -614,11 +614,7 @@ static bool make_numeric_node(struct ast_node* tok, char* str, int str_len) {
   int oflow_info;
   zend_uchar res;
 
-#if PHP_MAJOR_VERSION >= 8
   res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info, NULL);
-#else
-  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info);
-#endif
 
   /* did the conversion overflow? */
   if (oflow_info != 0) {
@@ -645,11 +641,7 @@ static bool numeric_to_long(char* str, int str_len, long* dest) {
   int oflow_info;
   zend_uchar res;
 
-#if PHP_MAJOR_VERSION >= 8
   res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info, NULL);
-#else
-  res = _is_numeric_string_ex(str, str_len, &lval, &dval, false, &oflow_info);
-#endif
 
   /* did the conversion overflow? */
   if (oflow_info != 0) {
