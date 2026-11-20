@@ -13,14 +13,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ "8.1", "8.2", "8.3", "8.4", "8.5", "8.6" ]
+        version: [ "8.3", "8.4", "8.5", "8.6" ]
         arch: [ "x64" ]
         ts: [ "ts" ]
         include:
-          - version: "8.1"
-            os: windows-2022
-          - version: "8.2"
-            os: windows-2022
           - version: "8.3"
             os: windows-2022
           - version: "8.4"
