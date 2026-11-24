@@ -2,7 +2,6 @@
 Test root on scalar false
 --SKIPIF--
 <?php if (!extension_loaded("jsonpath")) print "skip"; ?>
-<?php if (version_compare(PHP_VERSION, '8.0.0', '<')) print "skip"; ?>
 --FILE--
 <?php
 
