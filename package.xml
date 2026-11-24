@@ -16,10 +16,10 @@
   <email/>
   <active>yes</active>
  </lead>
- <date>2026-11-19</date>
+ <date>2026-11-24</date>
  <version>
-  <release>4.0.0</release>
-  <api>4.0.0</api>
+  <release>5.0.0</release>
+  <api>5.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,21 +28,13 @@
  <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
  <notes>
 ## Breaking changes
-- The minimum supported PHP version is now 8.1. PHP 8.0 support was dropped in 3.1.0 but was still allowed by `composer.json` and the PECL package metadata; both now require PHP 8.1 or newer.
-- The package API version is now 4.0.0.
+- The minimum supported PHP version is now 8.3. PHP 8.1 reached end of life on 2025-12-31 and PHP 8.2 reaches it on 2026-12-31; `composer.json` and the PECL package metadata now require PHP 8.3 or newer.
+- The package API version is now 5.0.0.
 
 ## What's Changed
-* Add support for PHP 8.6 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/214
-* Drop support for PHP 8.0 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/206
-* Rename workflows for clarity and consistency by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/205
-* Update link to mk6i's GitHub profile by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/207
-* Bump actions/checkout from 6 to 7 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/211
-* Bump php/setup-php-sdk from 0.11 to 0.12 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/208
-* Bump schneegans/dynamic-badges-action from 1.7.0 to 1.8.0 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/209
-* Bump schneegans/dynamic-badges-action from 1.8.0 to 1.9.0 by @dependabot[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/212
-* Configure Renovate by @renovate[bot] in https://github.com/supermetrics-public/pecl-jsonpath/pull/210
+* Drop support for PHP 8.1 and 8.2 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/216
 
-**Full Changelog**: https://github.com/supermetrics-public/pecl-jsonpath/compare/v3.1.0...v4.0.0
+**Full Changelog**: https://github.com/supermetrics-public/pecl-jsonpath/compare/v4.0.0...v5.0.0
  </notes>
  <contents>
   <dir name="/">
@@ -421,6 +413,29 @@
  <providesextension>jsonpath</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <date>2026-11-24</date>
+   <time>12:08:40</time>
+   <version>
+    <release>5.0.0</release>
+    <api>5.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="https://www.php.net/license/3_01.txt">PHP License</license>
+   <notes>
+## Breaking changes
+- The minimum supported PHP version is now 8.3. PHP 8.1 reached end of life on 2025-12-31 and PHP 8.2 reaches it on 2026-12-31; `composer.json` and the PECL package metadata now require PHP 8.3 or newer.
+- The package API version is now 5.0.0.
+
+## What's Changed
+* Drop support for PHP 8.1 and 8.2 by @crocodele in https://github.com/supermetrics-public/pecl-jsonpath/pull/216
+
+**Full Changelog**: https://github.com/supermetrics-public/pecl-jsonpath/compare/v4.0.0...v5.0.0
+   </notes>
+  </release>
   <release>
    <date>2026-11-19</date>
    <time>23:07:04</time>
