@@ -1,0 +1,21 @@
+name: Run lint check with cppcheck
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout jsonpath
+        uses: actions/checkout@v7
+
+      - name: Install cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck
+
+      - name: Perform linting
+        run: make -f Makefile.frag lint-ci

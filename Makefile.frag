@@ -1,6 +1,7 @@
 format_files=jsonpath.c \
 	php_jsonpath.h \
-	src/jsonpath/*.{c,h} \
+	$(wildcard src/jsonpath/*.c) \
+	$(wildcard src/jsonpath/*.h) \
 
 findphp:
 	@echo $(PHP_EXECUTABLE)
@@ -13,6 +14,10 @@ format-code:
 
 lint-code:
 	@cppcheck --enable=all --error-exitcode=1 --std=c89 --suppress=missingInclude $(format_files)
+
+lint-ci:
+	@cppcheck --enable=warning,performance,portability --error-exitcode=1 --std=c89 \
+		--suppress=unknownMacro:jsonpath_arginfo.h $(format_files)
 
 release: php_$(PHP_PECL_EXTENSION).h
 	@php ./tools/build-packagexml.php

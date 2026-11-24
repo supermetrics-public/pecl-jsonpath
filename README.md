@@ -317,6 +317,11 @@ The numbers in the chart were obtained when running the benchmark suite in PHP 8
 
 If you want to run benchmarks yourself, have a look at the [jsonpath-benchmark](https://github.com/supermetrics-public/jsonpath-benchmark) repo.
 
+## Changelog
+
+Release notes for every version are published on the [GitHub releases page](https://github.com/supermetrics-public/pecl-jsonpath/releases).
+The same notes are also stored in `package.xml` and shown on the [PECL changelog page](https://pecl.php.net/package-changelog.php?package=jsonpath).
+
 ## License
 
 JsonPath-PHP is open-sourced software licensed under the [PHP License 3.01](https://opensource.org/licenses/PHP-3.01).
