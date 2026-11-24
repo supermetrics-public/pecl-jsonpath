@@ -46,6 +46,7 @@
    <file name="LICENSE" role="doc"/>
    <file name="php_jsonpath.h" role="src"/>
    <file name="README.md" role="doc"/>
+   <file name="benchmark.png" role="doc"/>
    <dir name="src">
     <dir name="jsonpath">
      <file name="exceptions.c" role="src"/>
